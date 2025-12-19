@@ -79,16 +79,18 @@ func (db *DB) GetUserByID(ctx context.Context, id int) (*models.User, error) {
 	user := &models.User{}
 
 	err := db.Pool.QueryRow(ctx, `
-		SELECT id, email, password_hash, username, region_id, reputation_points, role, email_verified, created_at, updated_at, last_login_at,
-			street_address, city, state, zip_code, latitude, longitude, google_place_id
-		FROM users
-		WHERE id = $1
+		SELECT u.id, u.email, u.password_hash, u.username, u.region_id, r.name as region_name, u.reputation_points, u.role, u.email_verified, u.created_at, u.updated_at, u.last_login_at,
+			u.street_address, u.city, u.state, u.zip_code, u.latitude, u.longitude, u.google_place_id
+		FROM users u
+		LEFT JOIN regions r ON u.region_id = r.id
+		WHERE u.id = $1
 	`, id).Scan(
 		&user.ID,
 		&user.Email,
 		&user.PasswordHash,
 		&user.Username,
 		&user.RegionID,
+		&user.RegionName,
 		&user.ReputationPoints,
 		&user.Role,
 		&user.EmailVerified,
@@ -210,6 +212,20 @@ func (db *DB) UpdateUserLastLogin(ctx context.Context, id int) error {
 		UPDATE users SET last_login_at = NOW() WHERE id = $1
 	`, id)
 	return err
+}
+
+// UpdateUserPassword updates a user's password
+func (db *DB) UpdateUserPassword(ctx context.Context, id int, newPasswordHash string) error {
+	result, err := db.Pool.Exec(ctx, `
+		UPDATE users SET password_hash = $2, updated_at = NOW() WHERE id = $1
+	`, id, newPasswordHash)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+	return nil
 }
 
 // AdminUpdateUser updates a user with admin privileges

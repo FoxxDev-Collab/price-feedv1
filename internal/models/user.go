@@ -18,6 +18,7 @@ type User struct {
 	PasswordHash     string     `json:"-"` // Never expose in JSON
 	Username         *string    `json:"username,omitempty"`
 	RegionID         *int       `json:"region_id,omitempty"`
+	RegionName       *string    `json:"region_name,omitempty"`
 	ReputationPoints int        `json:"reputation_points"`
 	Role             Role       `json:"role"`
 	EmailVerified    bool       `json:"email_verified"`
@@ -111,6 +112,12 @@ type UpdateUserRequest struct {
 	Latitude      *float64 `json:"latitude,omitempty"`
 	Longitude     *float64 `json:"longitude,omitempty"`
 	GooglePlaceID *string  `json:"google_place_id,omitempty"`
+}
+
+// ChangePasswordRequest is the request body for changing password
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
 }
 
 // AdminUpdateUserRequest is the request body for admin user updates

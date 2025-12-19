@@ -106,6 +106,45 @@
           </div>
         </div>
 
+        <!-- Password Change Card -->
+        <div class="user-card" style="margin-bottom: var(--space-6);">
+          <div class="user-card-header">
+            <h3 class="user-card-title">Change Password</h3>
+          </div>
+          <div class="user-card-body">
+            <form id="password-form">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-4);">
+                <div class="user-form-group">
+                  <label class="user-form-label" for="current-password">Current Password</label>
+                  <input type="password" class="user-form-input" id="current-password" required
+                         placeholder="Enter your current password" minlength="8">
+                </div>
+
+                <div class="user-form-group">
+                  <label class="user-form-label" for="new-password">New Password</label>
+                  <input type="password" class="user-form-input" id="new-password" required
+                         placeholder="Enter new password" minlength="8">
+                  <p class="user-form-help">Minimum 8 characters</p>
+                </div>
+
+                <div class="user-form-group">
+                  <label class="user-form-label" for="confirm-password">Confirm New Password</label>
+                  <input type="password" class="user-form-input" id="confirm-password" required
+                         placeholder="Confirm new password" minlength="8">
+                </div>
+              </div>
+
+              <div class="user-form-error" id="password-error" style="display: none;"></div>
+
+              <div class="profile-form-actions" style="margin-top: var(--space-4);">
+                <button type="submit" class="btn btn-primary" id="change-password-btn">
+                  Change Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
         <!-- Stats Card -->
         <div class="user-card profile-stats-card">
           <div class="user-card-header">
@@ -228,10 +267,58 @@
       // Profile form submission
       document.getElementById('profile-form').addEventListener('submit', handleProfileSubmit);
 
+      // Password form submission
+      document.getElementById('password-form').addEventListener('submit', handlePasswordSubmit);
+
       // Location buttons
       document.getElementById('update-location-btn').addEventListener('click', showLocationForm);
       document.getElementById('cancel-location-btn').addEventListener('click', hideLocationForm);
       document.getElementById('save-location-btn').addEventListener('click', saveLocation);
+    }
+
+    async function handlePasswordSubmit(e) {
+      e.preventDefault();
+
+      const errorEl = document.getElementById('password-error');
+      const btn = document.getElementById('change-password-btn');
+
+      const currentPassword = document.getElementById('current-password').value;
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      // Validation
+      errorEl.style.display = 'none';
+
+      if (newPassword.length < 8) {
+        errorEl.textContent = 'New password must be at least 8 characters';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        errorEl.textContent = 'New passwords do not match';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Changing...';
+
+        await userApi.changePassword(user.currentUser.id, currentPassword, newPassword);
+
+        // Clear form
+        document.getElementById('password-form').reset();
+
+        showToast('Password changed successfully', 'success');
+      } catch (err) {
+        console.error('Failed to change password:', err);
+        errorEl.textContent = err.message || 'Failed to change password';
+        errorEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Change Password';
+      }
     }
 
     async function handleProfileSubmit(e) {

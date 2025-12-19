@@ -84,6 +84,7 @@ func main() {
 	users := api.Group("/users", middleware.AuthRequired(cfg))
 	users.Get("/:id", h.GetUser)
 	users.Put("/:id", h.UpdateUser)
+	users.Post("/:id/change-password", h.ChangePassword)
 	users.Get("/:id/stats", h.GetUserStats)
 
 	// Region routes (public read, admin write)

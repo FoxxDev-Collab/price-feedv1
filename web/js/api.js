@@ -233,6 +233,16 @@ const userApi = {
   getStats(id) {
     return api.get(`/users/${id}/stats`);
   },
+
+  /**
+   * Change user password
+   */
+  changePassword(id, currentPassword, newPassword) {
+    return api.post(`/users/${id}/change-password`, {
+      current_password: currentPassword,
+      new_password: newPassword
+    });
+  },
 };
 
 /**

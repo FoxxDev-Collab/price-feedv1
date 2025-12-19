@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/foxxcyber/price-feed/internal/database"
 	"github.com/foxxcyber/price-feed/internal/middleware"
@@ -90,4 +91,64 @@ func (h *Handler) GetUserStats(c *fiber.Ctx) error {
 	}
 
 	return Success(c, stats)
+}
+
+// ChangePassword allows users to change their password
+func (h *Handler) ChangePassword(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid user id")
+	}
+
+	// Check authorization - users can only change their own password
+	currentUserID := middleware.GetUserID(c)
+	if currentUserID != id {
+		return Error(c, fiber.StatusForbidden, "cannot change another user's password")
+	}
+
+	var req models.ChangePasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid request body")
+	}
+
+	// Validate request
+	if req.CurrentPassword == "" {
+		return Error(c, fiber.StatusBadRequest, "current password is required")
+	}
+	if req.NewPassword == "" {
+		return Error(c, fiber.StatusBadRequest, "new password is required")
+	}
+	if len(req.NewPassword) < 8 {
+		return Error(c, fiber.StatusBadRequest, "new password must be at least 8 characters")
+	}
+
+	// Get user to verify current password
+	user, err := h.db.GetUserByID(c.Context(), id)
+	if err != nil {
+		if errors.Is(err, database.ErrUserNotFound) {
+			return Error(c, fiber.StatusNotFound, "user not found")
+		}
+		return Error(c, fiber.StatusInternalServerError, "failed to get user")
+	}
+
+	// Verify current password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+		return Error(c, fiber.StatusUnauthorized, "current password is incorrect")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to process password")
+	}
+
+	// Update password in database
+	if err := h.db.UpdateUserPassword(c.Context(), id, string(hashedPassword)); err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to update password")
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "password changed successfully",
+	})
 }
