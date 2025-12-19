@@ -209,13 +209,48 @@
     .list-item-qty {
       display: flex;
       align-items: center;
-      gap: var(--space-2);
+      gap: 0;
+      background: var(--muted);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
     }
 
     .list-item-qty input {
-      width: 60px;
+      width: 50px;
       text-align: center;
       padding: var(--space-2);
+      border: none;
+      background: transparent;
+      font-weight: var(--font-semibold);
+      font-size: var(--text-base);
+    }
+
+    .list-item-qty input:focus {
+      outline: none;
+    }
+
+    .qty-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--foreground);
+      cursor: pointer;
+      font-size: var(--text-lg);
+      font-weight: var(--font-bold);
+      transition: background 0.15s;
+    }
+
+    .qty-btn:hover {
+      background: var(--color-primary-100);
+      color: var(--color-primary-700);
+    }
+
+    .qty-btn:active {
+      background: var(--color-primary-200);
     }
 
     .list-item-subtotal {
@@ -603,8 +638,11 @@
               </div>
             </div>
             <div class="list-item-qty">
-              <input type="number" class="user-form-input" value="${item.quantity}" min="1"
-                     onchange="updateQuantity(${item.item_id}, this.value)">
+              <button class="qty-btn" onclick="decrementQuantity(${item.item_id})" title="Decrease quantity">−</button>
+              <input type="number" value="${item.quantity}" min="1"
+                     onchange="updateQuantity(${item.item_id}, this.value)"
+                     data-item-id="${item.item_id}">
+              <button class="qty-btn" onclick="incrementQuantity(${item.item_id})" title="Increase quantity">+</button>
             </div>
             <div class="list-item-subtotal">
               ${subtotal ? user.formatCurrency(subtotal) : '-'}
@@ -668,6 +706,20 @@
         updateTotals();
       } catch (err) {
         user.toast('Failed to update quantity', 'error');
+      }
+    }
+
+    function incrementQuantity(itemId) {
+      const item = listData.items.find(i => i.item_id === itemId);
+      if (item) {
+        updateQuantity(itemId, item.quantity + 1);
+      }
+    }
+
+    function decrementQuantity(itemId) {
+      const item = listData.items.find(i => i.item_id === itemId);
+      if (item && item.quantity > 1) {
+        updateQuantity(itemId, item.quantity - 1);
       }
     }
 
