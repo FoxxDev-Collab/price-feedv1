@@ -172,6 +172,7 @@ func main() {
 	lists.Post("/:id/build-plan", h.BuildShoppingPlan)
 	lists.Post("/:id/complete", h.CompleteShoppingList)
 	lists.Post("/:id/reopen", h.ReopenShoppingList)
+	lists.Post("/:id/duplicate", h.DuplicateShoppingList)
 
 	// Price comparison route (authenticated)
 	api.Get("/compare", middleware.AuthRequired(cfg), h.GetPriceComparison)

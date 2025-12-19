@@ -372,6 +372,43 @@ func (h *Handler) GetPriceComparison(c *fiber.Ctx) error {
 	return Success(c, comparison)
 }
 
+// DuplicateShoppingList creates a copy of an existing shopping list
+func (h *Handler) DuplicateShoppingList(c *fiber.Ctx) error {
+	userID, err := getUserID(c)
+	if err != nil {
+		return Error(c, fiber.StatusUnauthorized, err.Error())
+	}
+
+	listID, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid list id")
+	}
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid request body")
+	}
+
+	if req.Name == "" {
+		req.Name = "Copy of list"
+	}
+
+	newList, err := h.db.DuplicateShoppingList(c.Context(), listID, userID, req.Name)
+	if err != nil {
+		if errors.Is(err, database.ErrListNotFound) {
+			return Error(c, fiber.StatusNotFound, "shopping list not found")
+		}
+		if errors.Is(err, database.ErrNotListOwner) {
+			return Error(c, fiber.StatusForbidden, "you do not own this list")
+		}
+		return Error(c, fiber.StatusInternalServerError, "failed to duplicate shopping list")
+	}
+
+	return Success(c, newList)
+}
+
 // CompleteShoppingList marks a shopping list as completed with optional price confirmations
 func (h *Handler) CompleteShoppingList(c *fiber.Ctx) error {
 	userID, err := getUserID(c)

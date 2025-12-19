@@ -20,7 +20,8 @@
       "Bash(if not exist \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\user\\\\prices\" mkdir \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\user\\\\prices\")",
       "Bash(del \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\admin\\\\categories\\\\index.html\")",
       "Bash(grep:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(ls -la \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\user\"\" 2>/dev/null || echo \"Directory not found \")"
     ]
   }
 }

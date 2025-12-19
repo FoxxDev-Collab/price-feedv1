@@ -104,10 +104,11 @@ type SingleStoreOption struct {
 
 // MultiStoreBreakdown represents items to buy at a specific store
 type MultiStoreBreakdown struct {
-	StoreID   int                        `json:"store_id"`
-	StoreName string                     `json:"store_name"`
-	Items     []StorePlanItemWithDetails `json:"items"`
-	Subtotal  float64                    `json:"subtotal"`
+	StoreID      int                        `json:"store_id"`
+	StoreName    string                     `json:"store_name"`
+	StoreAddress string                     `json:"store_address,omitempty"`
+	Items        []StorePlanItemWithDetails `json:"items"`
+	Subtotal     float64                    `json:"subtotal"`
 }
 
 // MultiStoreOption represents the optimal multi-store shopping option

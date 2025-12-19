@@ -332,23 +332,31 @@ func (db *DB) BuildShoppingPlan(ctx context.Context, listID int, userID int, reg
 	// Build price matrix: map[storeID]map[itemID]price
 	priceMatrix := make(map[int]map[int]float64)
 	storeNames := make(map[int]string)
+	storeAddresses := make(map[int]string)
 	itemNames := make(map[int]string)
 
 	// Query all prices for the items in the list
-	// Include both shared prices and user's private prices
+	// Include: shared prices, user's own prices, and prices from stores the user created
 	rows, err := db.Pool.Query(ctx, `
 		SELECT
 			sp.store_id, sp.item_id, sp.price,
-			s.name as store_name, i.name as item_name
+			s.name as store_name, i.name as item_name,
+			COALESCE(s.street_address, '') || ', ' || COALESCE(s.city, '') || ', ' || COALESCE(s.state, '') as store_address
 		FROM store_prices sp
 		JOIN stores s ON sp.store_id = s.id
 		JOIN items i ON sp.item_id = i.id
 		WHERE sp.item_id = ANY($1)
-		AND (sp.is_shared = true OR sp.user_id = $2)
+		AND (
+			-- Include shared prices
+			sp.is_shared = true
+			-- Include user's own prices
+			OR sp.user_id = $2
+			-- Include prices from stores the user created (even if price wasn't marked as theirs)
+			OR s.created_by = $2
+		)
 		AND (s.is_private = false OR s.created_by = $2)
-		AND ($3::int IS NULL OR s.region_id = $3)
-		ORDER BY sp.verified_count DESC, sp.updated_at DESC
-	`, itemIDs, userID, regionID)
+		ORDER BY sp.price ASC, sp.updated_at DESC
+	`, itemIDs, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -357,19 +365,20 @@ func (db *DB) BuildShoppingPlan(ctx context.Context, listID int, userID int, reg
 	for rows.Next() {
 		var storeID, itemID int
 		var price float64
-		var storeName, itemName string
-		if err := rows.Scan(&storeID, &itemID, &price, &storeName, &itemName); err != nil {
+		var storeName, itemName, storeAddress string
+		if err := rows.Scan(&storeID, &itemID, &price, &storeName, &itemName, &storeAddress); err != nil {
 			return nil, err
 		}
 
 		if priceMatrix[storeID] == nil {
 			priceMatrix[storeID] = make(map[int]float64)
 		}
-		// Only keep the first (best verified/most recent) price per store/item
+		// Only keep the first (cheapest) price per store/item
 		if _, exists := priceMatrix[storeID][itemID]; !exists {
 			priceMatrix[storeID][itemID] = price
 		}
 		storeNames[storeID] = storeName
+		storeAddresses[storeID] = storeAddress
 		itemNames[itemID] = itemName
 	}
 
@@ -450,10 +459,11 @@ func (db *DB) BuildShoppingPlan(ctx context.Context, listID int, userID int, reg
 	// Build store breakdowns
 	for storeID, items := range storeItems {
 		breakdown := models.MultiStoreBreakdown{
-			StoreID:   storeID,
-			StoreName: storeNames[storeID],
-			Items:     items,
-			Subtotal:  storeSubtotals[storeID],
+			StoreID:      storeID,
+			StoreName:    storeNames[storeID],
+			StoreAddress: storeAddresses[storeID],
+			Items:        items,
+			Subtotal:     storeSubtotals[storeID],
 		}
 		multiStore.Stores = append(multiStore.Stores, breakdown)
 	}
@@ -662,17 +672,27 @@ func (db *DB) CompleteShoppingList(ctx context.Context, listID int, userID int, 
 					WHERE item_id = $1 AND store_id = $2
 				`, confirmation.ItemID, confirmation.StoreID)
 			} else if confirmation.NewPrice != nil {
-				// User provided a corrected price - update or insert new price
-				_, err := db.Pool.Exec(ctx, `
-					INSERT INTO store_prices (store_id, item_id, price, user_id, is_shared, verified_count, created_at, updated_at)
-					VALUES ($1, $2, $3, $4, true, 1, NOW(), NOW())
-					ON CONFLICT (store_id, item_id) DO UPDATE SET
-						price = $3,
-						user_id = $4,
-						verified_count = 1,
-						last_verified = NOW(),
-						updated_at = NOW()
-				`, confirmation.StoreID, confirmation.ItemID, *confirmation.NewPrice, userID)
+				// User provided a corrected price - update existing or insert new price
+				// First check if a price already exists for this store/item combination
+				var existingID int
+				err := db.Pool.QueryRow(ctx, `
+					SELECT id FROM store_prices WHERE store_id = $1 AND item_id = $2 LIMIT 1
+				`, confirmation.StoreID, confirmation.ItemID).Scan(&existingID)
+				
+				if err == nil {
+					// Update existing price
+					_, err = db.Pool.Exec(ctx, `
+						UPDATE store_prices
+						SET price = $1, user_id = $2, verified_count = 1, last_verified = NOW(), updated_at = NOW()
+						WHERE id = $3
+					`, *confirmation.NewPrice, userID, existingID)
+				} else {
+					// Insert new price
+					_, err = db.Pool.Exec(ctx, `
+						INSERT INTO store_prices (store_id, item_id, price, user_id, is_shared, verified_count, created_at, updated_at)
+						VALUES ($1, $2, $3, $4, true, 1, NOW(), NOW())
+					`, confirmation.StoreID, confirmation.ItemID, *confirmation.NewPrice, userID)
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -696,6 +716,42 @@ func (db *DB) CompleteShoppingList(ctx context.Context, listID int, userID int, 
 	}
 
 	return list, nil
+}
+
+// DuplicateShoppingList creates a copy of an existing list with all its items
+func (db *DB) DuplicateShoppingList(ctx context.Context, listID int, userID int, newName string) (*models.ShoppingListWithItems, error) {
+	// Get the source list with items
+	sourceList, err := db.GetShoppingListByID(ctx, listID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the new list
+	newList := &models.ShoppingList{}
+	err = db.Pool.QueryRow(ctx, `
+		INSERT INTO shopping_lists (user_id, name, status, target_date, created_at, updated_at)
+		VALUES ($1, $2, 'active', NULL, NOW(), NOW())
+		RETURNING id, user_id, name, status, target_date, completed_at, created_at, updated_at
+	`, userID, newName).Scan(
+		&newList.ID, &newList.UserID, &newList.Name, &newList.Status, &newList.TargetDate, &newList.CompletedAt, &newList.CreatedAt, &newList.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy all items from source list to new list
+	for _, item := range sourceList.Items {
+		_, err = db.Pool.Exec(ctx, `
+			INSERT INTO shopping_list_items (list_id, item_id, quantity, created_at)
+			VALUES ($1, $2, $3, NOW())
+		`, newList.ID, item.ItemID, item.Quantity)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Return the new list with items
+	return db.GetShoppingListByID(ctx, newList.ID, userID)
 }
 
 // ReopenShoppingList marks a completed list as active again

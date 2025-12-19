@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit List - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    /* List Editor Layout */
+    .list-editor-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: var(--space-6);
+      min-height: calc(100vh - 200px);
+    }
+
+    @media (max-width: 1200px) {
+      .list-editor-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Item Browser Panel */
+    .item-browser {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 200px);
+    }
+
+    .item-browser-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .item-browser-search {
+      display: flex;
+      gap: var(--space-3);
+    }
+
+    .item-browser-search input {
+      flex: 1;
+    }
+
+    .item-browser-filters {
+      display: flex;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .item-browser-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-2);
+    }
+
+    .item-browser-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: background 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .item-browser-item:hover {
+      background: var(--muted);
+    }
+
+    .item-browser-item.in-list {
+      background: var(--color-primary-50);
+      border-color: var(--color-primary-200);
+    }
+
+    .dark .item-browser-item.in-list {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: var(--color-primary-800);
+    }
+
+    .item-browser-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-browser-item-name {
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-browser-item-meta {
+      font-size: var(--text-xs);
+      color: var(--muted-foreground);
+      display: flex;
+      gap: var(--space-2);
+      margin-top: 2px;
+    }
+
+    .item-browser-item-price {
+      font-weight: var(--font-semibold);
+      color: var(--color-primary-600);
+      white-space: nowrap;
+    }
+
+    .item-browser-item-price.no-price {
+      color: var(--muted-foreground);
+      font-weight: normal;
+      font-size: var(--text-xs);
+    }
+
+    .item-browser-item-action {
+      flex-shrink: 0;
+    }
+
+    /* List Panel */
+    .list-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 200px);
+    }
+
+    .list-panel-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .list-panel-title {
+      font-size: var(--text-lg);
+      font-weight: var(--font-semibold);
+      color: var(--foreground);
+      margin-bottom: var(--space-1);
+    }
+
+    .list-panel-meta {
+      font-size: var(--text-sm);
+      color: var(--muted-foreground);
+    }
+
+    .list-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-2);
+    }
+
+    .list-panel-footer {
+      padding: var(--space-4);
+      border-top: 1px solid var(--border);
+      background: var(--muted);
+    }
+
+    .list-panel-totals {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-3);
+    }
+
+    .list-panel-total-label {
+      font-size: var(--text-sm);
+      color: var(--muted-foreground);
+    }
+
+    .list-panel-total-value {
+      font-size: var(--text-xl);
+      font-weight: var(--font-bold);
+      color: var(--color-primary-600);
+    }
+
+    /* List Item Row */
+    .list-item-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border-radius: var(--radius-lg);
+      background: var(--background);
+      margin-bottom: var(--space-2);
+      border: 1px solid var(--border);
+    }
+
+    .list-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .list-item-name {
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+    }
+
+    .list-item-price {
+      font-size: var(--text-xs);
+      color: var(--muted-foreground);
+    }
+
+    .list-item-qty {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .list-item-qty input {
+      width: 60px;
+      text-align: center;
+      padding: var(--space-2);
+    }
+
+    .list-item-subtotal {
+      font-weight: var(--font-semibold);
+      color: var(--color-primary-600);
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .list-item-remove {
+      padding: var(--space-1);
+      background: transparent;
+      border: none;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      border-radius: var(--radius-md);
+      transition: all 0.15s;
+    }
+
+    .list-item-remove:hover {
+      background: #fef2f2;
+      color: var(--color-error);
+    }
+
+    /* Empty list state */
+    .list-empty {
+      text-align: center;
+      padding: var(--space-8);
+      color: var(--muted-foreground);
+    }
+
+    .list-empty-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto var(--space-3);
+      color: var(--color-gray-300);
+    }
+
+    /* Category pills */
+    .category-pill {
+      padding: var(--space-1) var(--space-3);
+      background: var(--background);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      color: var(--muted-foreground);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .category-pill:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .category-pill.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-foreground);
+    }
+
+    /* Quick add button */
+    .quick-add-btn {
+      padding: var(--space-1) var(--space-2);
+      background: var(--color-primary-600);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .quick-add-btn:hover {
+      background: var(--color-primary-700);
+    }
+
+    .quick-add-btn:disabled {
+      background: var(--muted);
+      color: var(--muted-foreground);
+      cursor: not-allowed;
+    }
+
+    /* Loading states */
+    .loading-skeleton {
+      background: linear-gradient(90deg, var(--muted) 25%, var(--border) 50%, var(--muted) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius-md);
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <div style="display: flex; align-items: center; gap: var(--space-3);">
+            <a href="/user/lists/" class="btn btn-secondary btn-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+            </a>
+            <div>
+              <h1 class="user-page-title" id="page-title">Edit Shopping List</h1>
+              <p class="user-page-subtitle">Add items from the catalog and manage your list</p>
+            </div>
+          </div>
+          <div class="user-page-header-actions">
+            <button class="btn btn-primary" id="build-plan-btn" onclick="goToPlan()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              Build Shopping Plan
+            </button>
+          </div>
+        </div>
+
+        <div class="list-editor-layout">
+          <!-- Item Browser -->
+          <div class="item-browser">
+            <div class="item-browser-header">
+              <div class="item-browser-search">
+                <input type="text" class="user-form-input" id="item-search" placeholder="Search items...">
+              </div>
+              <div class="item-browser-filters" id="category-filters">
+                <button class="category-pill active" data-category="">All Items</button>
+              </div>
+            </div>
+            <div class="item-browser-body" id="item-browser-list">
+              <div style="padding: var(--space-8); text-align: center; color: var(--muted-foreground);">Loading items...</div>
+            </div>
+          </div>
+
+          <!-- Current List -->
+          <div class="list-panel">
+            <div class="list-panel-header">
+              <div class="list-panel-title" id="list-name">Loading...</div>
+              <div class="list-panel-meta" id="list-meta"></div>
+            </div>
+            <div class="list-panel-body" id="list-items">
+              <div class="list-empty">
+                <div class="list-empty-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 11l3 3L22 4"></path>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                  </svg>
+                </div>
+                <div>Your list is empty</div>
+                <div style="font-size: var(--text-xs); margin-top: var(--space-2);">Click items on the left to add them</div>
+              </div>
+            </div>
+            <div class="list-panel-footer">
+              <div class="list-panel-totals">
+                <span class="list-panel-total-label"><span id="item-count">0</span> items</span>
+                <span class="list-panel-total-value" id="list-total">$0.00</span>
+              </div>
+              <button class="btn btn-primary" style="width: 100%;" id="footer-plan-btn" onclick="goToPlan()" disabled>
+                Build Shopping Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let listId = null;
+    let listData = null;
+    let allItems = [];
+    let allTags = [];
+    let currentTag = '';
+    let searchQuery = '';
+    let searchTimeout = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('lists');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Shopping Lists', href: '/user/lists/' },
+        { label: 'Edit List', href: '#' }
+      ]);
+
+      // Get list ID from URL
+      const params = new URLSearchParams(window.location.search);
+      listId = params.get('id');
+
+      if (!listId) {
+        user.toast('No list specified', 'error');
+        window.location.href = '/user/lists/';
+        return;
+      }
+
+      // Setup search
+      document.getElementById('item-search').addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          searchQuery = e.target.value.trim();
+          renderItemBrowser();
+        }, 300);
+      });
+
+      // Load data
+      await Promise.all([
+        loadList(),
+        loadItems(),
+        loadTags()
+      ]);
+    });
+
+    async function loadList() {
+      try {
+        const response = await listsApi.getById(parseInt(listId));
+        listData = response?.data || response;
+
+        // Redirect completed lists to view page
+        if (listData.status === 'completed') {
+          window.location.href = `/user/lists/view.html?id=${listId}`;
+          return;
+        }
+
+        document.getElementById('page-title').textContent = `Edit: ${listData.name}`;
+        document.getElementById('list-name').textContent = listData.name;
+
+        if (listData.target_date) {
+          document.getElementById('list-meta').textContent = `Target: ${user.formatDateShort(listData.target_date)}`;
+        }
+
+        renderListItems();
+        updateTotals();
+      } catch (err) {
+        console.error('Failed to load list:', err);
+        user.toast('Failed to load list', 'error');
+      }
+    }
+
+    async function loadItems() {
+      try {
+        const response = await itemsApi.list({ limit: 500 });
+        allItems = response?.data || response || [];
+        renderItemBrowser();
+      } catch (err) {
+        console.error('Failed to load items:', err);
+        document.getElementById('item-browser-list').innerHTML =
+          '<div style="padding: var(--space-8); text-align: center; color: var(--color-error);">Failed to load items</div>';
+      }
+    }
+
+    async function loadTags() {
+      try {
+        const response = await tagsApi.list();
+        allTags = response?.data || response || [];
+        renderTagFilters();
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    }
+
+    function renderTagFilters() {
+      const container = document.getElementById('category-filters');
+      container.innerHTML = `
+        <button class="category-pill ${currentTag === '' ? 'active' : ''}" data-tag="" onclick="filterByTag('')">All Items</button>
+        ${allTags.slice(0, 8).map(tag => `
+          <button class="category-pill ${currentTag === tag.name ? 'active' : ''}"
+                  data-tag="${user.escapeHtml(tag.name)}"
+                  onclick="filterByTag('${user.escapeHtml(tag.name)}')">${user.escapeHtml(tag.name)}</button>
+        `).join('')}
+      `;
+    }
+
+    function filterByTag(tagName) {
+      currentTag = tagName;
+      renderTagFilters();
+      renderItemBrowser();
+    }
+
+    function renderItemBrowser() {
+      const container = document.getElementById('item-browser-list');
+      const listItemIds = new Set((listData?.items || []).map(i => i.item_id));
+
+      let filtered = allItems;
+
+      // Filter by tag (items may have tags array)
+      if (currentTag) {
+        filtered = filtered.filter(item =>
+          item.tags && item.tags.some(t => t.name === currentTag || t === currentTag)
+        );
+      }
+
+      // Filter by search
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(item =>
+          item.name.toLowerCase().includes(q) ||
+          (item.brand && item.brand.toLowerCase().includes(q))
+        );
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="padding: var(--space-8); text-align: center; color: var(--muted-foreground);">
+            ${searchQuery ? 'No items match your search' : 'No items in this category'}
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const inList = listItemIds.has(item.id);
+        // Use min_price from ItemWithStats, fallback to no price
+        const price = item.min_price || item.best_price;
+        const priceDisplay = price
+          ? `<span class="item-browser-item-price">${user.formatCurrency(price)}</span>`
+          : `<span class="item-browser-item-price no-price">No price data</span>`;
+
+        return `
+          <div class="item-browser-item ${inList ? 'in-list' : ''}" data-item-id="${item.id}">
+            <div class="item-browser-item-info">
+              <div class="item-browser-item-name">${user.escapeHtml(item.name)}</div>
+              <div class="item-browser-item-meta">
+                ${item.brand ? `<span>${user.escapeHtml(item.brand)}</span>` : ''}
+                ${item.size ? `<span>${item.size} ${item.unit || ''}</span>` : ''}
+              </div>
+            </div>
+            ${priceDisplay}
+            <div class="item-browser-item-action">
+              ${inList
+                ? `<button class="quick-add-btn" disabled>In List</button>`
+                : `<button class="quick-add-btn" onclick="quickAddItem(${item.id})">+ Add</button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderListItems() {
+      const container = document.getElementById('list-items');
+      const items = listData?.items || [];
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="list-empty">
+            <div class="list-empty-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+            </div>
+            <div>Your list is empty</div>
+            <div style="font-size: var(--text-xs); margin-top: var(--space-2);">Click items on the left to add them</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = items.map(item => {
+        const subtotal = item.best_price ? item.best_price * item.quantity : null;
+        return `
+          <div class="list-item-row" data-item-id="${item.item_id}">
+            <div class="list-item-info">
+              <div class="list-item-name">${user.escapeHtml(item.item_name)}</div>
+              <div class="list-item-price">
+                ${item.best_price ? `${user.formatCurrency(item.best_price)} each` : 'No price data'}
+                ${item.best_store ? `at ${user.escapeHtml(item.best_store)}` : ''}
+              </div>
+            </div>
+            <div class="list-item-qty">
+              <input type="number" class="user-form-input" value="${item.quantity}" min="1"
+                     onchange="updateQuantity(${item.item_id}, this.value)">
+            </div>
+            <div class="list-item-subtotal">
+              ${subtotal ? user.formatCurrency(subtotal) : '-'}
+            </div>
+            <button class="list-item-remove" onclick="removeItem(${item.item_id})" title="Remove item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateTotals() {
+      const items = listData?.items || [];
+      const total = items.reduce((sum, item) => {
+        return sum + (item.best_price ? item.best_price * item.quantity : 0);
+      }, 0);
+
+      document.getElementById('item-count').textContent = items.length;
+      document.getElementById('list-total').textContent = user.formatCurrency(total);
+
+      const planBtns = [document.getElementById('build-plan-btn'), document.getElementById('footer-plan-btn')];
+      planBtns.forEach(btn => {
+        if (btn) btn.disabled = items.length === 0;
+      });
+    }
+
+    async function quickAddItem(itemId) {
+      try {
+        await listsApi.addItem(parseInt(listId), itemId, 1);
+
+        // Reload list
+        const response = await listsApi.getById(parseInt(listId));
+        listData = response?.data || response;
+
+        renderListItems();
+        renderItemBrowser();
+        updateTotals();
+
+        user.toast('Item added', 'success');
+      } catch (err) {
+        user.toast('Failed to add item: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function updateQuantity(itemId, quantity) {
+      const qty = parseInt(quantity);
+      if (!qty || qty < 1) return;
+
+      try {
+        await listsApi.updateItem(parseInt(listId), itemId, qty);
+
+        // Update local data
+        const item = listData.items.find(i => i.item_id === itemId);
+        if (item) item.quantity = qty;
+
+        renderListItems();
+        updateTotals();
+      } catch (err) {
+        user.toast('Failed to update quantity', 'error');
+      }
+    }
+
+    async function removeItem(itemId) {
+      try {
+        await listsApi.removeItem(parseInt(listId), itemId);
+
+        // Update local data
+        listData.items = listData.items.filter(i => i.item_id !== itemId);
+
+        renderListItems();
+        renderItemBrowser();
+        updateTotals();
+
+        user.toast('Item removed', 'success');
+      } catch (err) {
+        user.toast('Failed to remove item', 'error');
+      }
+    }
+
+    function goToPlan() {
+      if (listData?.items?.length > 0) {
+        window.location.href = `/user/lists/plan.html?id=${listId}`;
+      }
+    }
+  </script>
+</body>
+</html>

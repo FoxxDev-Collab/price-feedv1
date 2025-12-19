@@ -756,7 +756,29 @@
       const newPrice = parseFloat(input.value);
       const key = itemId + '_' + storeId;
 
-      if (!newPrice || newPrice <= 0) {
+      // If clearing the value or setting to 0, delete the price if it exists
+      if (!newPrice || newPrice <= 0 || isNaN(newPrice)) {
+        if (priceId) {
+          // Delete existing price
+          showSaving(true);
+          try {
+            await pricesApi.delete(parseInt(priceId));
+            delete priceMatrix[key];
+            input.dataset.priceId = '';
+            input.value = '';
+            document.getElementById('stat-prices').textContent = Object.keys(priceMatrix).length;
+            user.toast('Price deleted', 'success');
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(function() {
+              render();
+              showSaving(false);
+            }, 500);
+          } catch (err) {
+            console.error('Failed to delete price:', err);
+            user.toast('Failed to delete price: ' + (err.message || 'Unknown error'), 'error');
+            showSaving(false);
+          }
+        }
         return;
       }
 

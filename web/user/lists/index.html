@@ -313,10 +313,12 @@
             </div>
           </div>
           <div class="user-list-card-actions">
-            <button class="btn btn-primary btn-sm" onclick="openListDetail(${list.id})">View</button>
             ${isCompleted
-              ? `<button class="btn btn-secondary btn-sm" onclick="reopenList(${list.id})">Reopen</button>`
-              : `<button class="btn btn-secondary btn-sm" onclick="editList(${list.id}, '${user.escapeHtml(list.name)}', '${list.target_date || ''}')">Edit</button>`
+              ? `<a href="/user/lists/view.html?id=${list.id}" class="btn btn-secondary btn-sm">View</a>
+                 <button class="btn btn-primary btn-sm" onclick="duplicateList(${list.id}, '${user.escapeHtml(list.name)}')">Use as Template</button>
+                 <button class="btn btn-secondary btn-sm" onclick="reopenList(${list.id})">Reopen</button>`
+              : `<a href="/user/lists/edit.html?id=${list.id}" class="btn btn-primary btn-sm">Edit Items</a>
+                 <button class="btn btn-secondary btn-sm" onclick="editListDetails(${list.id}, '${user.escapeHtml(list.name)}', '${list.target_date || ''}')">Rename</button>`
             }
             <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteList(${list.id}, '${user.escapeHtml(list.name)}')">Delete</button>
           </div>
@@ -332,8 +334,8 @@
       userModal.open('list-modal');
     }
 
-    function editList(listId, name, targetDate) {
-      document.getElementById('list-modal-title').textContent = 'Edit Shopping List';
+    function editListDetails(listId, name, targetDate) {
+      document.getElementById('list-modal-title').textContent = 'Edit List Details';
       document.getElementById('list-id').value = listId;
       document.getElementById('list-name').value = name;
       document.getElementById('list-date').value = targetDate ? targetDate.split('T')[0] : '';
@@ -626,18 +628,23 @@
     function renderShoppingPlan(plan) {
       const content = document.getElementById('plan-content');
 
-      if (!plan || !plan.stores || plan.stores.length === 0) {
+      // Fix: Use plan.multi_store.stores instead of plan.stores
+      const stores = plan?.multi_store?.stores || [];
+      const singleStore = plan?.single_store;
+
+      if (stores.length === 0 && !singleStore) {
         content.innerHTML = `
           <div class="user-empty-state" style="padding: var(--space-6);">
             <div class="user-empty-title">No price data available</div>
             <div class="user-empty-text">We couldn't find prices for items in your list. Add prices to stores first.</div>
+            <a href="/user/prices/" class="btn btn-primary" style="margin-top: var(--space-4);">Go to Prices</a>
           </div>
         `;
         return;
       }
 
-      const singleStoreTotal = plan.single_store_total || 0;
-      const multiStoreTotal = plan.multi_store_total || 0;
+      const singleStoreTotal = singleStore?.total_cost || 0;
+      const multiStoreTotal = plan?.multi_store?.total_cost || 0;
       const savings = singleStoreTotal - multiStoreTotal;
       const recommendation = savings > 2 ? 'Multi-store shopping' : 'Single-store shopping';
 
@@ -656,7 +663,7 @@
 
         <h4 style="margin-bottom: var(--space-4); font-weight: var(--font-semibold);">Shopping Plan by Store</h4>
         <div class="user-plan-stores">
-          ${plan.stores.map(store => `
+          ${stores.map(store => `
             <div class="user-plan-store">
               <div class="user-plan-store-header">
                 <div>
@@ -677,11 +684,11 @@
           `).join('')}
         </div>
 
-        ${plan.missing_items && plan.missing_items.length > 0 ? `
+        ${singleStore?.items_missing?.length > 0 ? `
           <div style="margin-top: var(--space-4); padding: var(--space-3); background: var(--color-warning-50); border-radius: var(--radius-lg);">
             <div style="font-weight: var(--font-medium); color: var(--color-warning-700); margin-bottom: var(--space-2);">Items without prices:</div>
             <div style="font-size: var(--text-sm); color: var(--color-warning-600);">
-              ${plan.missing_items.map(item => user.escapeHtml(item)).join(', ')}
+              ${singleStore.items_missing.map(item => user.escapeHtml(item)).join(', ')}
             </div>
           </div>
         ` : ''}
@@ -897,6 +904,36 @@
         await loadLists();
       } catch (err) {
         user.toast('Failed to complete list: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function reopenList(listId) {
+      if (!await user.confirm('Reopen this list? It will become active again and you can edit it.')) {
+        return;
+      }
+
+      try {
+        await listsApi.reopen(listId);
+        user.toast('List reopened successfully', 'success');
+        await loadLists();
+      } catch (err) {
+        user.toast('Failed to reopen list: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function duplicateList(listId, originalName) {
+      const newName = prompt('Name for the new list:', `${originalName} (copy)`);
+      if (!newName) return;
+
+      try {
+        const response = await listsApi.duplicate(listId, newName);
+        const newList = response?.data || response;
+        user.toast('List duplicated successfully', 'success');
+        
+        // Optionally redirect to edit the new list
+        window.location.href = `/user/lists/edit.html?id=${newList.id}`;
+      } catch (err) {
+        user.toast('Failed to duplicate list: ' + (err.message || 'Unknown error'), 'error');
       }
     }
   </script>

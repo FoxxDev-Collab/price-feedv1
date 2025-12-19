@@ -611,6 +611,15 @@ const listsApi = {
   reopen(listId) {
     return api.post(`/lists/${listId}/reopen`, {});
   },
+
+  /**
+   * Duplicate a shopping list (create a copy)
+   * @param {number} listId - Source list ID
+   * @param {string} name - Name for the new list
+   */
+  duplicate(listId, name) {
+    return api.post(`/lists/${listId}/duplicate`, { name });
+  },
 };
 
 /**

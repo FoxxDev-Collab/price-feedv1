@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View List - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    .view-list-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      margin-bottom: var(--space-6);
+    }
+
+    .view-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .view-list-title {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--foreground);
+      margin-bottom: var(--space-1);
+    }
+
+    .view-list-meta {
+      font-size: var(--text-sm);
+      color: var(--muted-foreground);
+    }
+
+    .view-list-stats {
+      display: flex;
+      gap: var(--space-8);
+      margin-bottom: var(--space-6);
+    }
+
+    .view-list-stat {
+      text-align: center;
+    }
+
+    .view-list-stat-value {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--color-primary-600);
+    }
+
+    .view-list-stat-label {
+      font-size: var(--text-sm);
+      color: var(--muted-foreground);
+    }
+
+    .view-list-items {
+      margin-top: var(--space-4);
+    }
+
+    .view-list-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3);
+      border-radius: var(--radius-lg);
+      background: var(--muted);
+      margin-bottom: var(--space-2);
+    }
+
+    .view-list-item-info {
+      flex: 1;
+    }
+
+    .view-list-item-name {
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+    }
+
+    .view-list-item-detail {
+      font-size: var(--text-sm);
+      color: var(--muted-foreground);
+    }
+
+    .view-list-item-qty {
+      font-weight: var(--font-semibold);
+      color: var(--foreground);
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .view-list-item-price {
+      font-weight: var(--font-semibold);
+      color: var(--color-primary-600);
+      min-width: 80px;
+      text-align: right;
+    }
+
+    .view-actions {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .completed-banner {
+      background: var(--color-primary-50);
+      border: 1px solid var(--color-primary-200);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .dark .completed-banner {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: var(--color-primary-800);
+    }
+
+    .completed-banner-icon {
+      color: var(--color-primary-600);
+    }
+
+    .completed-banner-text {
+      flex: 1;
+    }
+
+    .completed-banner-title {
+      font-weight: var(--font-semibold);
+      color: var(--color-primary-700);
+    }
+
+    .dark .completed-banner-title {
+      color: var(--color-primary-400);
+    }
+
+    .completed-banner-subtitle {
+      font-size: var(--text-sm);
+      color: var(--color-primary-600);
+    }
+
+    .dark .completed-banner-subtitle {
+      color: var(--color-primary-500);
+    }
+  </style>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <div>
+            <a href="/user/lists/" class="btn btn-ghost btn-sm" style="margin-bottom: var(--space-2);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"></path>
+              </svg>
+              Back to Lists
+            </a>
+            <h1 class="user-page-title" id="page-title">View List</h1>
+          </div>
+        </div>
+
+        <!-- Completed Banner -->
+        <div class="completed-banner" id="completed-banner" style="display: none;">
+          <div class="completed-banner-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+          </div>
+          <div class="completed-banner-text">
+            <div class="completed-banner-title">Shopping Completed</div>
+            <div class="completed-banner-subtitle" id="completed-date">Completed on -</div>
+          </div>
+        </div>
+
+        <!-- List Content -->
+        <div class="view-list-card" id="list-content">
+          <div style="text-align: center; padding: var(--space-8); color: var(--muted-foreground);">Loading...</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="view-actions" id="list-actions" style="display: none;">
+          <button class="btn btn-primary" onclick="duplicateList()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Use as Template
+          </button>
+          <button class="btn btn-secondary" onclick="reopenList()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+              <path d="M21 2v6h-6"></path>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+              <path d="M3 22v-6h6"></path>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+            </svg>
+            Reopen List
+          </button>
+          <a href="/user/lists/" class="btn btn-secondary">
+            Back to All Lists
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let listId = null;
+    let listData = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('lists');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Shopping Lists', href: '/user/lists/' },
+        { label: 'View List', href: '#' }
+      ]);
+
+      // Get list ID from URL
+      const params = new URLSearchParams(window.location.search);
+      listId = params.get('id');
+
+      if (!listId) {
+        user.toast('No list specified', 'error');
+        window.location.href = '/user/lists/';
+        return;
+      }
+
+      await loadList();
+    });
+
+    async function loadList() {
+      try {
+        const response = await listsApi.getById(parseInt(listId));
+        listData = response?.data || response;
+
+        document.getElementById('page-title').textContent = listData.name;
+
+        // If list is not completed, redirect to edit page
+        if (listData.status !== 'completed') {
+          window.location.href = `/user/lists/edit.html?id=${listId}`;
+          return;
+        }
+
+        // Show completed banner
+        document.getElementById('completed-banner').style.display = 'flex';
+        if (listData.completed_at) {
+          document.getElementById('completed-date').textContent = `Completed on ${user.formatDate(listData.completed_at)}`;
+        }
+
+        renderList();
+        document.getElementById('list-actions').style.display = 'flex';
+      } catch (err) {
+        console.error('Failed to load list:', err);
+        document.getElementById('list-content').innerHTML = `
+          <div style="text-align: center; padding: var(--space-8); color: var(--color-error);">
+            Failed to load list: ${err.message || 'Unknown error'}
+          </div>
+        `;
+      }
+    }
+
+    function renderList() {
+      const items = listData.items || [];
+      const content = document.getElementById('list-content');
+
+      if (items.length === 0) {
+        content.innerHTML = `
+          <div style="text-align: center; padding: var(--space-8); color: var(--muted-foreground);">
+            This list has no items.
+          </div>
+        `;
+        return;
+      }
+
+      let html = `
+        <div class="view-list-header">
+          <div>
+            <div class="view-list-title">${user.escapeHtml(listData.name)}</div>
+            <div class="view-list-meta">
+              ${listData.target_date ? `Target date: ${user.formatDateShort(listData.target_date)}` : ''}
+            </div>
+          </div>
+          <span class="badge badge-success">Completed</span>
+        </div>
+
+        <div class="view-list-stats">
+          <div class="view-list-stat">
+            <div class="view-list-stat-value">${items.length}</div>
+            <div class="view-list-stat-label">Items</div>
+          </div>
+          <div class="view-list-stat">
+            <div class="view-list-stat-value">${user.formatCurrency(listData.estimated_total || 0)}</div>
+            <div class="view-list-stat-label">Est. Total</div>
+          </div>
+        </div>
+
+        <h3 style="font-weight: var(--font-semibold); margin-bottom: var(--space-3);">Items</h3>
+        <div class="view-list-items">
+          ${items.map(item => `
+            <div class="view-list-item">
+              <div class="view-list-item-info">
+                <div class="view-list-item-name">${user.escapeHtml(item.item_name)}</div>
+                <div class="view-list-item-detail">
+                  ${item.item_brand ? user.escapeHtml(item.item_brand) : ''}
+                  ${item.best_store ? ` • Best at ${user.escapeHtml(item.best_store)}` : ''}
+                </div>
+              </div>
+              <div class="view-list-item-qty">×${item.quantity}</div>
+              <div class="view-list-item-price">
+                ${item.best_price ? user.formatCurrency(item.best_price * item.quantity) : '-'}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      content.innerHTML = html;
+    }
+
+    async function duplicateList() {
+      const newName = prompt('Name for the new list:', `${listData.name} (copy)`);
+      if (!newName) return;
+
+      try {
+        const response = await listsApi.duplicate(parseInt(listId), newName);
+        const newList = response?.data || response;
+        user.toast('List duplicated successfully', 'success');
+        window.location.href = `/user/lists/edit.html?id=${newList.id}`;
+      } catch (err) {
+        user.toast('Failed to duplicate list: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function reopenList() {
+      if (!await user.confirm('Reopen this list? It will become active again and you can edit it.')) {
+        return;
+      }
+
+      try {
+        await listsApi.reopen(parseInt(listId));
+        user.toast('List reopened successfully', 'success');
+        window.location.href = `/user/lists/edit.html?id=${listId}`;
+      } catch (err) {
+        user.toast('Failed to reopen list: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+  </script>
+</body>
+</html>
