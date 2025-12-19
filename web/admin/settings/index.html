@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Admin Panel</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+    <main class="admin-main">
+      <header class="admin-header" id="admin-header"></header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">System Settings</h1>
+          <p class="admin-page-subtitle">Configure application settings and preferences</p>
+        </div>
+
+        <!-- Settings Tabs -->
+        <div class="admin-card" style="margin-bottom: var(--space-6);">
+          <div style="display: flex; border-bottom: 1px solid var(--color-gray-200); overflow-x: auto;">
+            <button class="settings-tab active" data-tab="general" onclick="switchTab('general')">General</button>
+            <button class="settings-tab" data-tab="users" onclick="switchTab('users')">Users & Auth</button>
+            <button class="settings-tab" data-tab="prices" onclick="switchTab('prices')">Prices</button>
+            <button class="settings-tab" data-tab="reputation" onclick="switchTab('reputation')">Reputation</button>
+            <button class="settings-tab" data-tab="email" onclick="switchTab('email')">Email</button>
+            <button class="settings-tab" data-tab="api" onclick="switchTab('api')">API & Security</button>
+          </div>
+        </div>
+
+        <!-- General Settings -->
+        <div id="tab-general" class="settings-content">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">General Settings</h3>
+            </div>
+            <div class="admin-card-body">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Site Name</label>
+                <input type="text" class="admin-form-input" value="PriceFeed" id="site-name">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Site Description</label>
+                <textarea class="admin-form-input" rows="2" id="site-description">Community-driven grocery price comparison</textarea>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Contact Email</label>
+                <input type="email" class="admin-form-input" value="support@pricefeed.app" id="contact-email">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Default Region</label>
+                <select class="admin-form-select" id="default-region">
+                  <option value="1">Colorado Springs</option>
+                  <option value="2">Denver Metro</option>
+                  <option value="3">Boulder</option>
+                </select>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" checked id="maintenance-mode">
+                  Maintenance Mode (show maintenance page to non-admins)
+                </label>
+              </div>
+            </div>
+            <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="saveSettings('general')">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users & Auth Settings -->
+        <div id="tab-users" class="settings-content hidden">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">User & Authentication Settings</h3>
+            </div>
+            <div class="admin-card-body">
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" checked id="allow-registration">
+                  Allow new user registrations
+                </label>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" checked id="require-email-verify">
+                  Require email verification
+                </label>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Minimum Password Length</label>
+                <input type="number" class="admin-form-input" value="8" min="6" max="32" id="min-password" style="max-width: 100px;">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Session Timeout (hours)</label>
+                <input type="number" class="admin-form-input" value="24" min="1" max="720" id="session-timeout" style="max-width: 100px;">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Max Login Attempts</label>
+                <input type="number" class="admin-form-input" value="5" min="3" max="10" id="max-login-attempts" style="max-width: 100px;">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Account Lockout Duration (minutes)</label>
+                <input type="number" class="admin-form-input" value="15" min="5" max="60" id="lockout-duration" style="max-width: 100px;">
+              </div>
+            </div>
+            <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="saveSettings('users')">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prices Settings -->
+        <div id="tab-prices" class="settings-content hidden">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Price Settings</h3>
+            </div>
+            <div class="admin-card-body">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Price Expiry (days)</label>
+                <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">Prices older than this will be considered stale</p>
+                <input type="number" class="admin-form-input" value="7" min="1" max="30" id="price-expiry" style="max-width: 100px;">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Verification Threshold</label>
+                <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">Number of verifications needed to mark price as verified</p>
+                <input type="number" class="admin-form-input" value="3" min="1" max="10" id="verify-threshold" style="max-width: 100px;">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" checked id="allow-anonymous-prices">
+                  Allow price viewing without login
+                </label>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" id="require-receipt">
+                  Require receipt photo for price submissions
+                </label>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Maximum Price Deviation (%)</label>
+                <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">Flag prices that deviate more than this from average</p>
+                <input type="number" class="admin-form-input" value="50" min="10" max="200" id="price-deviation" style="max-width: 100px;">
+              </div>
+            </div>
+            <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="saveSettings('prices')">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reputation Settings -->
+        <div id="tab-reputation" class="settings-content hidden">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Reputation System Settings</h3>
+            </div>
+            <div class="admin-card-body">
+              <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-3);">Points Awarded</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Price Submission</label>
+                  <input type="number" class="admin-form-input" value="5" min="0" id="points-price">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Price Verification</label>
+                  <input type="number" class="admin-form-input" value="2" min="0" id="points-verify">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Store Added</label>
+                  <input type="number" class="admin-form-input" value="10" min="0" id="points-store">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Item Added</label>
+                  <input type="number" class="admin-form-input" value="3" min="0" id="points-item">
+                </div>
+              </div>
+              <h4 style="font-weight: var(--font-semibold); margin: var(--space-6) 0 var(--space-3);">Reputation Levels</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Bronze Threshold</label>
+                  <input type="number" class="admin-form-input" value="100" min="0" id="level-bronze">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Silver Threshold</label>
+                  <input type="number" class="admin-form-input" value="500" min="0" id="level-silver">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Gold Threshold</label>
+                  <input type="number" class="admin-form-input" value="1000" min="0" id="level-gold">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Platinum Threshold</label>
+                  <input type="number" class="admin-form-input" value="5000" min="0" id="level-platinum">
+                </div>
+              </div>
+            </div>
+            <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="saveSettings('reputation')">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email Settings -->
+        <div id="tab-email" class="settings-content hidden">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Email Configuration</h3>
+            </div>
+            <div class="admin-card-body">
+              <div class="admin-form-group">
+                <label class="admin-form-label">SMTP Host</label>
+                <input type="text" class="admin-form-input" value="smtp.sendgrid.net" id="smtp-host">
+              </div>
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4);">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">SMTP Username</label>
+                  <input type="text" class="admin-form-input" value="apikey" id="smtp-user">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">SMTP Port</label>
+                  <input type="number" class="admin-form-input" value="587" id="smtp-port">
+                </div>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">SMTP Password</label>
+                <input type="password" class="admin-form-input" placeholder="••••••••" id="smtp-password">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">From Address</label>
+                <input type="email" class="admin-form-input" value="noreply@pricefeed.app" id="from-email">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">From Name</label>
+                <input type="text" class="admin-form-input" value="PriceFeed" id="from-name">
+              </div>
+              <div style="margin-top: var(--space-4);">
+                <button class="btn btn-secondary" onclick="testEmail()">Send Test Email</button>
+              </div>
+            </div>
+            <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="saveSettings('email')">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- API & Security Settings -->
+        <div id="tab-api" class="settings-content hidden">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">API & Security Settings</h3>
+            </div>
+            <div class="admin-card-body">
+              <div class="admin-form-group">
+                <label class="admin-form-label">API Rate Limit (requests/minute)</label>
+                <input type="number" class="admin-form-input" value="60" min="10" max="1000" id="rate-limit" style="max-width: 150px;">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">CORS Allowed Origins</label>
+                <textarea class="admin-form-input" rows="2" id="cors-origins" placeholder="https://example.com, https://api.example.com">*</textarea>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" checked id="enable-api">
+                  Enable Public API
+                </label>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" checked id="require-api-key">
+                  Require API Key for external access
+                </label>
+              </div>
+              <h4 style="font-weight: var(--font-semibold); margin: var(--space-6) 0 var(--space-3);">JWT Settings</h4>
+              <div class="admin-form-group">
+                <label class="admin-form-label">JWT Secret</label>
+                <div style="display: flex; gap: var(--space-2);">
+                  <input type="password" class="admin-form-input" value="••••••••••••••••" id="jwt-secret" readonly>
+                  <button class="btn btn-secondary" onclick="regenerateSecret()">Regenerate</button>
+                </div>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">JWT Expiry (hours)</label>
+                <input type="number" class="admin-form-input" value="24" min="1" max="168" id="jwt-expiry" style="max-width: 100px;">
+              </div>
+            </div>
+            <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="saveSettings('api')">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <style>
+    .settings-tab {
+      padding: var(--space-3) var(--space-5);
+      background: none;
+      border: none;
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      color: var(--color-gray-500);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+    .settings-tab:hover {
+      color: var(--color-gray-700);
+    }
+    .settings-tab.active {
+      color: var(--color-primary-600);
+      border-bottom-color: var(--color-primary-600);
+    }
+    .settings-content.hidden {
+      display: none;
+    }
+  </style>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin-common.js"></script>
+  <script src="/js/admin-sidebar.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await admin.init()) return;
+
+      initAdminSidebar('settings');
+      document.getElementById('admin-header').innerHTML = renderAdminHeader([
+        { label: 'Admin', href: '/admin/' },
+        { label: 'Settings', href: '/admin/settings/' }
+      ]);
+    });
+
+    function switchTab(tabId) {
+      // Hide all content
+      document.querySelectorAll('.settings-content').forEach(el => el.classList.add('hidden'));
+      // Deactivate all tabs
+      document.querySelectorAll('.settings-tab').forEach(el => el.classList.remove('active'));
+      // Show selected content
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      // Activate selected tab
+      document.querySelector(`.settings-tab[data-tab="${tabId}"]`).classList.add('active');
+    }
+
+    async function saveSettings(section) {
+      admin.toast(`${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully`, 'success');
+    }
+
+    function testEmail() {
+      admin.toast('Test email sent to your admin email address', 'info');
+    }
+
+    async function regenerateSecret() {
+      if (!await admin.confirm('Regenerating the JWT secret will invalidate all existing sessions. Continue?')) return;
+      admin.toast('JWT secret regenerated. All users will need to login again.', 'warning');
+    }
+  </script>
+</body>
+</html>

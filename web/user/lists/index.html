@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Lists - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Shopping Lists</h1>
+          <p class="user-page-subtitle">Create and manage your shopping lists, then find the best prices.</p>
+          <div class="user-page-header-actions">
+            <button class="btn btn-primary" onclick="openCreateListModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              New List
+            </button>
+          </div>
+        </div>
+
+        <!-- Status Tabs -->
+        <div class="user-tabs" id="status-tabs">
+          <button class="user-tab active" data-status="active" onclick="filterByStatus('active')">Active</button>
+          <button class="user-tab" data-status="completed" onclick="filterByStatus('completed')">Completed</button>
+          <button class="user-tab" data-status="" onclick="filterByStatus('')">All</button>
+        </div>
+
+        <!-- Lists Grid -->
+        <div id="lists-container" class="user-item-grid">
+          <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create/Edit List Modal -->
+  <div class="user-modal-backdrop hidden" id="list-modal">
+    <div class="user-modal">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title" id="list-modal-title">Create Shopping List</h3>
+        <button class="user-modal-close" onclick="userModal.close('list-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <form id="list-form">
+          <input type="hidden" id="list-id">
+
+          <div class="user-form-group">
+            <label class="user-form-label">List Name *</label>
+            <input type="text" class="user-form-input" id="list-name" required placeholder="e.g., Weekly Groceries">
+          </div>
+
+          <div class="user-form-group">
+            <label class="user-form-label">Target Date (optional)</label>
+            <input type="date" class="user-form-input" id="list-date">
+            <div class="user-form-help">When do you plan to shop?</div>
+          </div>
+
+          <div class="user-form-error" id="list-error" style="display: none;"></div>
+        </form>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('list-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveList()">Save List</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- List Detail Modal -->
+  <div class="user-modal-backdrop hidden" id="list-detail-modal">
+    <div class="user-modal user-modal-lg">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title" id="list-detail-title">Shopping List</h3>
+        <button class="user-modal-close" onclick="userModal.close('list-detail-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <div id="list-detail-content">
+          <div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        </div>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('list-detail-modal')">Close</button>
+        <button type="button" class="btn btn-primary" id="build-plan-btn" onclick="buildShoppingPlan()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          Build Shopping Plan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Item to List Modal -->
+  <div class="user-modal-backdrop hidden" id="add-item-modal">
+    <div class="user-modal">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Add Item to List</h3>
+        <button class="user-modal-close" onclick="userModal.close('add-item-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <form id="add-item-form">
+          <div class="user-form-group">
+            <label class="user-form-label">Search Items</label>
+            <input type="text" class="user-form-input" id="item-search" placeholder="Start typing to search...">
+          </div>
+
+          <div id="item-search-results" style="max-height: 200px; overflow-y: auto; margin-bottom: var(--space-4);">
+            <div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">Type to search for items</div>
+          </div>
+
+          <div class="user-form-group">
+            <label class="user-form-label">Quantity</label>
+            <input type="number" class="user-form-input" id="item-quantity" value="1" min="1">
+          </div>
+
+          <input type="hidden" id="selected-item-id">
+          <div class="user-form-error" id="add-item-error" style="display: none;"></div>
+        </form>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('add-item-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="addItemToList()">Add Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shopping Plan Modal -->
+  <div class="user-modal-backdrop hidden" id="plan-modal">
+    <div class="user-modal user-modal-lg">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Shopping Plan</h3>
+        <button class="user-modal-close" onclick="userModal.close('plan-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <div id="plan-content">
+          <div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Building your plan...</div>
+        </div>
+      </div>
+      <div class="user-modal-footer">
+        <div style="display: flex; gap: var(--space-2);">
+          <button type="button" class="btn btn-secondary" onclick="printPlan()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="copyPlanToClipboard()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div style="display: flex; gap: var(--space-2);">
+          <button type="button" class="btn btn-secondary" onclick="userModal.close('plan-modal')">Close</button>
+          <button type="button" class="btn btn-primary" id="go-shopping-btn" onclick="openCompleteModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            Complete Shopping
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complete Shopping Modal -->
+  <div class="user-modal-backdrop hidden" id="complete-modal">
+    <div class="user-modal user-modal-lg">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Complete Shopping</h3>
+        <button class="user-modal-close" onclick="userModal.close('complete-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <p style="margin-bottom: var(--space-4); color: var(--color-gray-600);">
+          Did the prices match what you expected? Help the community by confirming or updating prices.
+        </p>
+        <div id="complete-content">
+          <div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        </div>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('complete-modal')">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="completeWithoutConfirmation()">Skip & Complete</button>
+        <button type="button" class="btn btn-primary" onclick="completeWithConfirmations()">Submit & Complete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let currentListId = null;
+    let currentListData = null;
+    let currentPlanData = null;
+    let itemSearchTimeout = null;
+    let currentStatusFilter = 'active';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('lists');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Shopping Lists', href: '/user/lists/' }
+      ]);
+
+      userModal.setupBackdropClose();
+
+      // Setup item search
+      document.getElementById('item-search').addEventListener('input', (e) => {
+        clearTimeout(itemSearchTimeout);
+        itemSearchTimeout = setTimeout(() => searchItems(e.target.value), 300);
+      });
+
+      // Check for list ID in URL
+      const params = new URLSearchParams(window.location.search);
+      const listId = params.get('id');
+      if (listId) {
+        await loadLists();
+        openListDetail(parseInt(listId));
+      } else {
+        await loadLists();
+      }
+    });
+
+    function filterByStatus(status) {
+      currentStatusFilter = status;
+      // Update tab UI
+      document.querySelectorAll('#status-tabs .user-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.status === status);
+      });
+      loadLists();
+    }
+
+    async function loadLists() {
+      const container = document.getElementById('lists-container');
+      container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+
+      try {
+        const params = {};
+        if (currentStatusFilter) params.status = currentStatusFilter;
+        const response = await listsApi.getAll(params);
+        const lists = response?.data || response || [];
+
+        if (lists.length === 0) {
+          container.innerHTML = `
+            <div style="grid-column: 1 / -1;" class="user-empty-state">
+              <div class="user-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9 11l3 3L22 4"></path>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+              </div>
+              <div class="user-empty-title">No shopping lists yet</div>
+              <div class="user-empty-text">Create your first shopping list to start tracking prices</div>
+              <button class="btn btn-primary" onclick="openCreateListModal()">Create Your First List</button>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = lists.map(list => renderListCard(list)).join('');
+      } catch (err) {
+        console.error('Failed to load lists:', err);
+        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load lists</div>';
+      }
+    }
+
+    function renderListCard(list) {
+      const isCompleted = list.status === 'completed';
+      const statusBadge = isCompleted
+        ? '<span class="badge badge-success" style="margin-left: var(--space-2);">Completed</span>'
+        : '<span class="badge badge-primary" style="margin-left: var(--space-2);">Active</span>';
+
+      return `
+        <div class="user-list-card ${isCompleted ? 'completed' : ''}">
+          <div class="user-list-card-header">
+            <div style="display: flex; align-items: center;">
+              <div class="user-list-card-title">${user.escapeHtml(list.name)}</div>
+              ${statusBadge}
+            </div>
+            <div class="user-list-card-date">${list.target_date ? user.formatDateShort(list.target_date) : ''}</div>
+          </div>
+          <div class="user-list-card-stats">
+            <div class="user-list-stat">
+              <div class="user-list-stat-value">${list.item_count || 0}</div>
+              <div class="user-list-stat-label">Items</div>
+            </div>
+            <div class="user-list-stat">
+              <div class="user-list-stat-value">${list.estimated_total ? user.formatCurrency(list.estimated_total) : '-'}</div>
+              <div class="user-list-stat-label">Est. Total</div>
+            </div>
+          </div>
+          <div class="user-list-card-actions">
+            <button class="btn btn-primary btn-sm" onclick="openListDetail(${list.id})">View</button>
+            ${isCompleted
+              ? `<button class="btn btn-secondary btn-sm" onclick="reopenList(${list.id})">Reopen</button>`
+              : `<button class="btn btn-secondary btn-sm" onclick="editList(${list.id}, '${user.escapeHtml(list.name)}', '${list.target_date || ''}')">Edit</button>`
+            }
+            <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteList(${list.id}, '${user.escapeHtml(list.name)}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function openCreateListModal() {
+      document.getElementById('list-modal-title').textContent = 'Create Shopping List';
+      document.getElementById('list-form').reset();
+      document.getElementById('list-id').value = '';
+      document.getElementById('list-error').style.display = 'none';
+      userModal.open('list-modal');
+    }
+
+    function editList(listId, name, targetDate) {
+      document.getElementById('list-modal-title').textContent = 'Edit Shopping List';
+      document.getElementById('list-id').value = listId;
+      document.getElementById('list-name').value = name;
+      document.getElementById('list-date').value = targetDate ? targetDate.split('T')[0] : '';
+      document.getElementById('list-error').style.display = 'none';
+      userModal.open('list-modal');
+    }
+
+    async function saveList() {
+      const listId = document.getElementById('list-id').value;
+      const errorEl = document.getElementById('list-error');
+
+      const name = document.getElementById('list-name').value.trim();
+      const targetDate = document.getElementById('list-date').value || null;
+
+      if (!name) {
+        errorEl.textContent = 'Please enter a list name.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      const data = { name };
+      if (targetDate) {
+        data.target_date = targetDate + 'T00:00:00Z';
+      }
+
+      try {
+        if (listId) {
+          await listsApi.update(parseInt(listId), data);
+          user.toast('List updated successfully', 'success');
+        } else {
+          await listsApi.create(data);
+          user.toast('List created successfully', 'success');
+        }
+
+        userModal.close('list-modal');
+        await loadLists();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to save list';
+        errorEl.style.display = 'block';
+      }
+    }
+
+    async function deleteList(listId, listName) {
+      if (!await user.confirm(`Are you sure you want to delete "${listName}"?`)) {
+        return;
+      }
+
+      try {
+        await listsApi.delete(listId);
+        user.toast('List deleted successfully', 'success');
+        await loadLists();
+      } catch (err) {
+        user.toast('Failed to delete list: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function openListDetail(listId) {
+      currentListId = listId;
+      const content = document.getElementById('list-detail-content');
+      content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+      userModal.open('list-detail-modal');
+
+      try {
+        const response = await listsApi.getById(listId);
+        currentListData = response?.data || response;
+
+        document.getElementById('list-detail-title').textContent = currentListData.name;
+        renderListDetail();
+      } catch (err) {
+        content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load list</div>';
+      }
+    }
+
+    function renderListDetail() {
+      const content = document.getElementById('list-detail-content');
+      const items = currentListData.items || [];
+
+      if (items.length === 0) {
+        content.innerHTML = `
+          <div class="user-empty-state" style="padding: var(--space-6);">
+            <div class="user-empty-title">No items in this list</div>
+            <div class="user-empty-text">Add items to start building your shopping list</div>
+            <button class="btn btn-primary" onclick="openAddItemModal()">Add Items</button>
+          </div>
+        `;
+        document.getElementById('build-plan-btn').disabled = true;
+        return;
+      }
+
+      document.getElementById('build-plan-btn').disabled = false;
+
+      content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+          <div>
+            <span style="font-weight: var(--font-semibold);">${items.length} items</span>
+            ${currentListData.target_date ? `<span style="color: var(--color-gray-500); margin-left: var(--space-2);">for ${user.formatDateShort(currentListData.target_date)}</span>` : ''}
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="openAddItemModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Item
+          </button>
+        </div>
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Best Price</th>
+              <th>Subtotal</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr>
+                <td>
+                  <div style="font-weight: var(--font-medium);">${user.escapeHtml(item.item_name)}</div>
+                  <div style="font-size: var(--text-xs); color: var(--color-gray-500);">${item.item_brand ? user.escapeHtml(item.item_brand) : ''}</div>
+                </td>
+                <td>
+                  <input type="number" class="user-form-input" value="${item.quantity}" min="1" style="width: 60px; padding: 4px 8px;"
+                    onchange="updateItemQuantity(${item.item_id}, this.value)">
+                </td>
+                <td>${item.best_price ? user.formatCurrency(item.best_price) : '-'}</td>
+                <td>${item.best_price ? user.formatCurrency(item.best_price * item.quantity) : '-'}</td>
+                <td>
+                  <button class="user-table-btn danger" onclick="removeItemFromList(${item.item_id})">Remove</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: var(--font-bold);">
+              <td colspan="3" style="text-align: right;">Estimated Total:</td>
+              <td>${currentListData.estimated_total ? user.formatCurrency(currentListData.estimated_total) : '-'}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    }
+
+    function openAddItemModal() {
+      document.getElementById('item-search').value = '';
+      document.getElementById('item-quantity').value = 1;
+      document.getElementById('selected-item-id').value = '';
+      document.getElementById('item-search-results').innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">Type to search for items</div>';
+      document.getElementById('add-item-error').style.display = 'none';
+      userModal.open('add-item-modal');
+    }
+
+    async function searchItems(query) {
+      const results = document.getElementById('item-search-results');
+
+      if (query.length < 2) {
+        results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">Type at least 2 characters</div>';
+        return;
+      }
+
+      results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">Searching...</div>';
+
+      try {
+        const response = await itemsApi.search(query, 10);
+        const items = response?.data || response || [];
+
+        if (items.length === 0) {
+          results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">No items found</div>';
+          return;
+        }
+
+        // Filter out items already in the list
+        const existingIds = new Set((currentListData.items || []).map(i => i.item_id));
+        const filteredItems = items.filter(i => !existingIds.has(i.id));
+
+        if (filteredItems.length === 0) {
+          results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">All matching items already in list</div>';
+          return;
+        }
+
+        results.innerHTML = filteredItems.map(item => `
+          <div style="padding: var(--space-2) var(--space-3); cursor: pointer; border-bottom: 1px solid var(--color-gray-100); transition: background 0.15s;"
+               onclick="selectItem(${item.id}, '${user.escapeHtml(item.name)}')"
+               onmouseover="this.style.background='var(--color-gray-50)'"
+               onmouseout="this.style.background='transparent'">
+            <div style="font-weight: var(--font-medium);">${user.escapeHtml(item.name)}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
+              ${item.brand ? user.escapeHtml(item.brand) : ''}
+              ${item.size ? ` - ${item.size} ${item.unit || ''}` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-error);">Search failed</div>';
+      }
+    }
+
+    function selectItem(itemId, itemName) {
+      document.getElementById('selected-item-id').value = itemId;
+      document.getElementById('item-search').value = itemName;
+      document.getElementById('item-search-results').innerHTML = `<div style="padding: var(--space-3); background: var(--color-primary-50); border-radius: var(--radius-md); color: var(--color-primary-700);">Selected: ${itemName}</div>`;
+    }
+
+    async function addItemToList() {
+      const itemId = parseInt(document.getElementById('selected-item-id').value);
+      const quantity = parseInt(document.getElementById('item-quantity').value);
+      const errorEl = document.getElementById('add-item-error');
+
+      if (!itemId) {
+        errorEl.textContent = 'Please select an item.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      if (!quantity || quantity < 1) {
+        errorEl.textContent = 'Please enter a valid quantity.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        await listsApi.addItem(currentListId, itemId, quantity);
+        user.toast('Item added to list', 'success');
+        userModal.close('add-item-modal');
+
+        // Reload list detail
+        const response = await listsApi.getById(currentListId);
+        currentListData = response?.data || response;
+        renderListDetail();
+        await loadLists();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to add item';
+        errorEl.style.display = 'block';
+      }
+    }
+
+    async function updateItemQuantity(itemId, quantity) {
+      const qty = parseInt(quantity);
+      if (!qty || qty < 1) return;
+
+      try {
+        await listsApi.updateItem(currentListId, itemId, qty);
+        // Reload list detail
+        const response = await listsApi.getById(currentListId);
+        currentListData = response?.data || response;
+        renderListDetail();
+      } catch (err) {
+        user.toast('Failed to update quantity', 'error');
+      }
+    }
+
+    async function removeItemFromList(itemId) {
+      if (!await user.confirm('Remove this item from the list?')) {
+        return;
+      }
+
+      try {
+        await listsApi.removeItem(currentListId, itemId);
+        user.toast('Item removed from list', 'success');
+
+        // Reload list detail
+        const response = await listsApi.getById(currentListId);
+        currentListData = response?.data || response;
+        renderListDetail();
+        await loadLists();
+      } catch (err) {
+        user.toast('Failed to remove item: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function buildShoppingPlan() {
+      const planContent = document.getElementById('plan-content');
+      planContent.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Building your optimized shopping plan...</div>';
+      userModal.open('plan-modal');
+
+      try {
+        const response = await listsApi.buildPlan(currentListId);
+        const plan = response?.data || response;
+        currentPlanData = plan; // Store for export/complete features
+
+        renderShoppingPlan(plan);
+      } catch (err) {
+        currentPlanData = null;
+        planContent.innerHTML = `<div style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to build plan: ${err.message || 'Unknown error'}</div>`;
+      }
+    }
+
+    function renderShoppingPlan(plan) {
+      const content = document.getElementById('plan-content');
+
+      if (!plan || !plan.stores || plan.stores.length === 0) {
+        content.innerHTML = `
+          <div class="user-empty-state" style="padding: var(--space-6);">
+            <div class="user-empty-title">No price data available</div>
+            <div class="user-empty-text">We couldn't find prices for items in your list. Add prices to stores first.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const singleStoreTotal = plan.single_store_total || 0;
+      const multiStoreTotal = plan.multi_store_total || 0;
+      const savings = singleStoreTotal - multiStoreTotal;
+      const recommendation = savings > 2 ? 'Multi-store shopping' : 'Single-store shopping';
+
+      content.innerHTML = `
+        <div class="user-plan-summary">
+          <div class="user-plan-title">Recommendation: ${recommendation}</div>
+          <div class="user-plan-recommendation">
+            ${savings > 2
+              ? `Shopping at multiple stores could save you ${user.formatCurrency(savings)}!`
+              : `Shopping at one store is most convenient with minimal savings.`}
+          </div>
+          <div class="user-plan-savings">
+            Best total: ${user.formatCurrency(multiStoreTotal)}
+          </div>
+        </div>
+
+        <h4 style="margin-bottom: var(--space-4); font-weight: var(--font-semibold);">Shopping Plan by Store</h4>
+        <div class="user-plan-stores">
+          ${plan.stores.map(store => `
+            <div class="user-plan-store">
+              <div class="user-plan-store-header">
+                <div>
+                  <div class="user-plan-store-name">${user.escapeHtml(store.store_name)}</div>
+                  <div style="font-size: var(--text-xs); color: var(--color-gray-500);">${user.escapeHtml(store.store_address || '')}</div>
+                </div>
+                <div class="user-plan-store-total">${user.formatCurrency(store.subtotal)}</div>
+              </div>
+              <div class="user-plan-store-items">
+                ${store.items.map(item => `
+                  <div style="display: flex; justify-content: space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--color-gray-100);">
+                    <span>${item.quantity}x ${user.escapeHtml(item.item_name)}</span>
+                    <span>${user.formatCurrency(item.price * item.quantity)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        ${plan.missing_items && plan.missing_items.length > 0 ? `
+          <div style="margin-top: var(--space-4); padding: var(--space-3); background: var(--color-warning-50); border-radius: var(--radius-lg);">
+            <div style="font-weight: var(--font-medium); color: var(--color-warning-700); margin-bottom: var(--space-2);">Items without prices:</div>
+            <div style="font-size: var(--text-sm); color: var(--color-warning-600);">
+              ${plan.missing_items.map(item => user.escapeHtml(item)).join(', ')}
+            </div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    // Generate plain text version of the plan for export
+    function generatePlanText() {
+      if (!currentPlanData || !currentPlanData.multi_store) return '';
+
+      const listName = currentListData?.name || 'Shopping List';
+      const multiStore = currentPlanData.multi_store;
+      let text = `${listName}\n`;
+      text += `${'='.repeat(listName.length)}\n\n`;
+      text += `Total: ${user.formatCurrency(multiStore.total_cost)}\n`;
+      if (multiStore.total_savings > 0) {
+        text += `Savings: ${user.formatCurrency(multiStore.total_savings)}\n`;
+      }
+      text += `\n`;
+
+      for (const store of multiStore.stores || []) {
+        text += `${store.store_name}\n`;
+        text += `${'-'.repeat(store.store_name.length)}\n`;
+        for (const item of store.items || []) {
+          text += `  ${item.quantity}x ${item.item_name} - ${user.formatCurrency(item.price * item.quantity)}\n`;
+        }
+        text += `  Subtotal: ${user.formatCurrency(store.subtotal)}\n\n`;
+      }
+
+      return text;
+    }
+
+    function printPlan() {
+      const planText = generatePlanText();
+      if (!planText) {
+        user.toast('No plan to print', 'error');
+        return;
+      }
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${currentListData?.name || 'Shopping Plan'}</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; }
+              pre { white-space: pre-wrap; font-family: inherit; line-height: 1.6; }
+            </style>
+          </head>
+          <body>
+            <pre>${planText}</pre>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    async function copyPlanToClipboard() {
+      const planText = generatePlanText();
+      if (!planText) {
+        user.toast('No plan to copy', 'error');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(planText);
+        user.toast('Plan copied to clipboard', 'success');
+      } catch (err) {
+        user.toast('Failed to copy to clipboard', 'error');
+      }
+    }
+
+    async function reopenList(listId) {
+      if (!await user.confirm('Reopen this shopping list? It will become active again.')) {
+        return;
+      }
+
+      try {
+        await listsApi.reopen(listId);
+        user.toast('List reopened', 'success');
+        await loadLists();
+      } catch (err) {
+        user.toast('Failed to reopen list: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    function openCompleteModal() {
+      const content = document.getElementById('complete-content');
+
+      if (!currentPlanData || !currentPlanData.multi_store || !currentPlanData.multi_store.stores) {
+        content.innerHTML = `
+          <p style="text-align: center; color: var(--color-gray-500);">
+            No items to confirm. Click "Skip & Complete" to finish.
+          </p>
+        `;
+        userModal.open('complete-modal');
+        return;
+      }
+
+      renderCompleteContent();
+      userModal.open('complete-modal');
+    }
+
+    function renderCompleteContent() {
+      const content = document.getElementById('complete-content');
+      const stores = currentPlanData.multi_store.stores || [];
+
+      let html = '<div class="complete-items">';
+
+      for (const store of stores) {
+        html += `<div class="complete-store" style="margin-bottom: var(--space-4);">`;
+        html += `<h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-2);">${user.escapeHtml(store.store_name)}</h4>`;
+
+        for (const item of store.items || []) {
+          const inputId = `price-${store.store_id}-${item.item_id}`;
+          html += `
+            <div class="complete-item" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-gray-100);">
+              <div style="flex: 1;">
+                <span style="font-weight: var(--font-medium);">${item.quantity}x ${user.escapeHtml(item.item_name)}</span>
+                <span style="color: var(--color-gray-500); margin-left: var(--space-2);">Expected: ${user.formatCurrency(item.price)}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-2);">
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="radio" name="${inputId}" value="accurate" checked
+                    data-item-id="${item.item_id}" data-store-id="${store.store_id}">
+                  <span style="font-size: var(--text-sm);">Correct</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="radio" name="${inputId}" value="different"
+                    data-item-id="${item.item_id}" data-store-id="${store.store_id}">
+                  <span style="font-size: var(--text-sm);">Different</span>
+                </label>
+                <input type="number" step="0.01" min="0" placeholder="New price"
+                  id="${inputId}-new" data-item-id="${item.item_id}" data-store-id="${store.store_id}"
+                  style="width: 80px; padding: 4px 8px; display: none;" class="user-form-input">
+              </div>
+            </div>
+          `;
+        }
+
+        html += `</div>`;
+      }
+
+      html += '</div>';
+      content.innerHTML = html;
+
+      // Add event listeners to show/hide new price input
+      content.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          const name = e.target.name;
+          const newPriceInput = document.getElementById(name + '-new');
+          if (e.target.value === 'different') {
+            newPriceInput.style.display = 'block';
+          } else {
+            newPriceInput.style.display = 'none';
+            newPriceInput.value = '';
+          }
+        });
+      });
+    }
+
+    async function completeWithoutConfirmation() {
+      try {
+        await listsApi.complete(currentListId, null);
+        user.toast('Shopping list completed!', 'success');
+        userModal.close('complete-modal');
+        userModal.close('plan-modal');
+        userModal.close('list-detail-modal');
+        await loadLists();
+      } catch (err) {
+        user.toast('Failed to complete list: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function completeWithConfirmations() {
+      const confirmations = [];
+      const content = document.getElementById('complete-content');
+
+      // Collect all price confirmations
+      content.querySelectorAll('.complete-item').forEach(itemEl => {
+        const radios = itemEl.querySelectorAll('input[type="radio"]');
+        const selectedRadio = Array.from(radios).find(r => r.checked);
+
+        if (selectedRadio) {
+          const itemId = parseInt(selectedRadio.dataset.itemId);
+          const storeId = parseInt(selectedRadio.dataset.storeId);
+          const isAccurate = selectedRadio.value === 'accurate';
+
+          const confirmation = {
+            item_id: itemId,
+            store_id: storeId,
+            is_accurate: isAccurate
+          };
+
+          if (!isAccurate) {
+            const newPriceInput = itemEl.querySelector(`input[type="number"]`);
+            if (newPriceInput && newPriceInput.value) {
+              confirmation.new_price = parseFloat(newPriceInput.value);
+            }
+          }
+
+          confirmations.push(confirmation);
+        }
+      });
+
+      try {
+        await listsApi.complete(currentListId, confirmations);
+        user.toast('Shopping list completed with price updates!', 'success');
+        userModal.close('complete-modal');
+        userModal.close('plan-modal');
+        userModal.close('list-detail-modal');
+        await loadLists();
+      } catch (err) {
+        user.toast('Failed to complete list: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+  </script>
+</body>
+</html>

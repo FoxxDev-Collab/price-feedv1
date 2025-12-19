@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up - Price Feed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="auth-page">
+    <div class="register-container">
+      <div class="register-card">
+        <div class="register-header">
+          <h1>Join Price Feed</h1>
+          <p class="auth-subtitle">Create your account and start tracking prices in your area</p>
+        </div>
+
+        <form id="register-form" class="register-form">
+          <div class="register-grid">
+            <!-- Left Column: Account Details -->
+            <div class="register-column">
+              <h2 class="column-title">Account Details</h2>
+
+              <div class="form-group">
+                <label for="email">Email <span class="required">*</span></label>
+                <input type="email" id="email" name="email" required placeholder="you@example.com">
+              </div>
+
+              <div class="form-group">
+                <label for="username">Username <span class="optional">(optional)</span></label>
+                <input type="text" id="username" name="username" placeholder="Choose a display name">
+              </div>
+
+              <div class="form-group">
+                <label for="password">Password <span class="required">*</span></label>
+                <input type="password" id="password" name="password" required placeholder="At least 8 characters" minlength="8">
+              </div>
+
+              <div class="form-group">
+                <label for="confirmPassword">Confirm Password <span class="required">*</span></label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Confirm your password">
+              </div>
+            </div>
+
+            <!-- Right Column: Location Selection -->
+            <div class="register-column">
+              <h2 class="column-title">Your Location</h2>
+
+              <div class="region-info-box">
+                <div class="region-info-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                </div>
+                <div class="region-info-text">
+                  <strong>Why do we need your location?</strong>
+                  <p>We use your location to connect you with stores and prices in your area. Your full address is private and never shared with other users.</p>
+                </div>
+              </div>
+
+              <!-- Location Detection Button -->
+              <div class="location-actions">
+                <button type="button" class="btn btn-outline btn-full" id="detect-location-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <line x1="12" y1="2" x2="12" y2="4"></line>
+                    <line x1="12" y1="20" x2="12" y2="22"></line>
+                    <line x1="2" y1="12" x2="4" y2="12"></line>
+                    <line x1="20" y1="12" x2="22" y2="12"></line>
+                  </svg>
+                  Use My Current Location
+                </button>
+                <div class="location-divider">
+                  <span>or enter your address</span>
+                </div>
+              </div>
+
+              <!-- Address Autocomplete Input -->
+              <div class="form-group" id="address-search-group">
+                <label for="address-search" class="form-label">Street Address <span class="required">*</span></label>
+                <div class="address-input-wrapper">
+                  <input type="text"
+                         id="address-search"
+                         class="form-input"
+                         placeholder="Start typing your address..."
+                         autocomplete="off">
+                  <span class="address-input-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Interactive Map (hidden initially, shown after location selected) -->
+              <div id="registration-map" class="map-container" style="display: none;"></div>
+
+              <!-- Selected Location Display -->
+              <div id="selected-location" class="selected-region" style="display: none;">
+                <div class="selected-region-header">
+                  <span class="selected-label">Your Location</span>
+                  <button type="button" id="change-location-btn" class="clear-region-btn">Change</button>
+                </div>
+                <div class="selected-region-details">
+                  <div id="selected-address" class="selected-address"></div>
+                  <div id="matched-region" class="matched-region"></div>
+                </div>
+              </div>
+
+              <!-- Hidden form fields for submission -->
+              <input type="hidden" id="region" name="region_id">
+              <input type="hidden" id="user-street-address" name="street_address">
+              <input type="hidden" id="user-city" name="city">
+              <input type="hidden" id="user-state" name="state">
+              <input type="hidden" id="user-zip" name="zip_code">
+              <input type="hidden" id="user-latitude" name="latitude">
+              <input type="hidden" id="user-longitude" name="longitude">
+              <input type="hidden" id="user-place-id" name="google_place_id">
+            </div>
+          </div>
+
+          <div class="register-footer">
+            <div class="error-message"></div>
+            <button type="submit" class="btn btn-primary btn-lg btn-full">Create Account</button>
+            <p class="auth-footer-text">Already have an account? <a href="/login/">Sign in</a></p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/maps.js"></script>
+  <script src="/js/components.js"></script>
+  <script>
+    // State
+    let map = null;
+    let marker = null;
+    let selectedLocation = null;
+    let autocomplete = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // If already logged in, redirect to dashboard
+      if (authApi.isLoggedIn()) {
+        window.location.href = '/dashboard/';
+        return;
+      }
+
+      // Initialize Google Maps
+      await initLocationSelection();
+
+      // Handle form submission
+      const form = document.getElementById('register-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Validate location is selected
+        if (!selectedLocation) {
+          showError('Please select your location to continue');
+          return;
+        }
+
+        await handleRegisterSubmit(form);
+      });
+    });
+
+    async function initLocationSelection() {
+      try {
+        await mapsApi.init();
+
+        // Setup address autocomplete
+        autocomplete = mapsApi.setupAutocomplete('address-search', {
+          types: ['address']
+        });
+
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place.geometry) {
+            handlePlaceSelection(place);
+          }
+        });
+
+        // Setup detect location button
+        document.getElementById('detect-location-btn').addEventListener('click', detectUserLocation);
+
+        // Setup change location button
+        document.getElementById('change-location-btn').addEventListener('click', resetLocationSelection);
+
+      } catch (err) {
+        console.error('Failed to initialize maps:', err);
+        showRegionSearchFallback();
+      }
+    }
+
+    async function detectUserLocation() {
+      const btn = document.getElementById('detect-location-btn');
+      const originalContent = btn.innerHTML;
+
+      try {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner spinner-sm"></span> Detecting...';
+
+        // Get browser location
+        const coords = await mapsApi.getCurrentLocation();
+
+        // Reverse geocode to get address (use client-side method - no auth required)
+        const result = await mapsApi.reverseGeocodeClient(coords.lat, coords.lng);
+
+        if (result && result.formatted_address) {
+          showLocationOnMap(coords, result);
+          await matchToRegion(result);
+        }
+      } catch (err) {
+        console.error('Location detection failed:', err);
+        showError('Could not detect your location. Please enter your address manually.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    }
+
+    function handlePlaceSelection(place) {
+      const coords = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng()
+      };
+
+      const addressInfo = {
+        formatted_address: place.formatted_address,
+        place_id: place.place_id,
+        address_components: place.address_components,
+        components: mapsApi.parseAddressComponents(place.address_components)
+      };
+
+      showLocationOnMap(coords, addressInfo);
+      matchToRegion(addressInfo);
+    }
+
+    function showLocationOnMap(coords, addressInfo) {
+      const mapContainer = document.getElementById('registration-map');
+      mapContainer.style.display = 'block';
+
+      if (!map) {
+        map = mapsApi.createMap('registration-map', {
+          center: coords,
+          zoom: 15
+        });
+      } else {
+        map.setCenter(coords);
+        map.setZoom(15);
+      }
+
+      // Add/update marker
+      if (marker) {
+        marker.setMap(null);
+      }
+      marker = mapsApi.addMarker(map, coords, {
+        animation: 'DROP',
+        icon: mapsApi.createIcon('user')
+      });
+
+      // Parse components if not already parsed
+      let components = addressInfo.components;
+      if (!components && addressInfo.address_components) {
+        components = mapsApi.parseAddressComponents(addressInfo.address_components);
+      }
+
+      // Store selected location
+      selectedLocation = {
+        ...coords,
+        formatted_address: addressInfo.formatted_address,
+        place_id: addressInfo.place_id,
+        components: components
+      };
+
+      // Update hidden form fields
+      populateLocationFields(selectedLocation);
+
+      // Update display
+      updateLocationDisplay(addressInfo);
+    }
+
+    function populateLocationFields(locationData) {
+      const components = locationData.components || {};
+
+      document.getElementById('user-street-address').value = components.street_address || '';
+      document.getElementById('user-city').value = components.city || '';
+      document.getElementById('user-state').value = components.state || '';
+      document.getElementById('user-zip').value = components.zip_code || '';
+      document.getElementById('user-latitude').value = locationData.lat || '';
+      document.getElementById('user-longitude').value = locationData.lng || '';
+      document.getElementById('user-place-id').value = locationData.place_id || '';
+    }
+
+    function updateLocationDisplay(addressInfo) {
+      document.getElementById('selected-address').textContent = addressInfo.formatted_address;
+      document.getElementById('selected-location').style.display = 'block';
+      document.getElementById('address-search-group').style.display = 'none';
+      document.querySelector('.location-actions').style.display = 'none';
+    }
+
+    async function matchToRegion(addressInfo) {
+      const components = addressInfo.components || {};
+      const zipCode = components.zip_code;
+      const city = components.city;
+      const state = components.state;
+
+      try {
+        // Try to find region by ZIP code first
+        let regions = [];
+        if (zipCode) {
+          const response = await regionsApi.search(zipCode, 5);
+          regions = response?.data || response || [];
+        }
+
+        // If no match, try city + state
+        if (!regions || regions.length === 0) {
+          if (city && state) {
+            const response = await regionsApi.search(`${city} ${state}`, 5);
+            regions = response?.data || response || [];
+          }
+        }
+
+        if (regions && regions.length > 0) {
+          const region = regions[0];
+          document.getElementById('region').value = region.id;
+          document.getElementById('matched-region').textContent = `Region: ${region.name}, ${region.state}`;
+          document.getElementById('matched-region').classList.add('region-matched');
+        } else {
+          document.getElementById('region').value = '';
+          document.getElementById('matched-region').textContent = 'No matching region found. You can still register.';
+          document.getElementById('matched-region').classList.remove('region-matched');
+        }
+      } catch (err) {
+        console.error('Region matching failed:', err);
+        document.getElementById('matched-region').textContent = 'Could not match region.';
+      }
+    }
+
+    function resetLocationSelection() {
+      selectedLocation = null;
+
+      // Clear marker
+      if (marker) {
+        marker.setMap(null);
+        marker = null;
+      }
+
+      // Hide map
+      document.getElementById('registration-map').style.display = 'none';
+
+      // Hide selected location, show input
+      document.getElementById('selected-location').style.display = 'none';
+      document.getElementById('address-search-group').style.display = 'block';
+      document.querySelector('.location-actions').style.display = 'block';
+      document.getElementById('address-search').value = '';
+      document.getElementById('address-search').focus();
+
+      // Clear hidden fields
+      document.getElementById('region').value = '';
+      document.getElementById('user-street-address').value = '';
+      document.getElementById('user-city').value = '';
+      document.getElementById('user-state').value = '';
+      document.getElementById('user-zip').value = '';
+      document.getElementById('user-latitude').value = '';
+      document.getElementById('user-longitude').value = '';
+      document.getElementById('user-place-id').value = '';
+    }
+
+    function showRegionSearchFallback() {
+      // If maps fails to load, show a simple text input as fallback
+      const locationActions = document.querySelector('.location-actions');
+      const addressGroup = document.getElementById('address-search-group');
+
+      locationActions.style.display = 'none';
+
+      addressGroup.innerHTML = `
+        <label for="region-search" class="form-label">Find Your Region <span class="required">*</span></label>
+        <div class="region-search-container">
+          <input
+            type="text"
+            id="region-search"
+            class="form-input"
+            placeholder="Type city name, state, or ZIP (e.g., Colorado Springs, CO, 80903)"
+            autocomplete="off"
+          >
+          <div id="region-dropdown" class="region-dropdown"></div>
+        </div>
+        <div class="region-search-hint">Type at least 2 characters to search</div>
+      `;
+
+      // Setup fallback region search
+      setupFallbackRegionSearch();
+    }
+
+    function setupFallbackRegionSearch() {
+      const searchInput = document.getElementById('region-search');
+      let searchTimeout = null;
+      let isLoading = false;
+
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+          if (query.length >= 2) {
+            if (isLoading) return;
+            isLoading = true;
+
+            try {
+              const response = await regionsApi.search(query, 10);
+              const regions = response?.data || response || [];
+              showFallbackDropdown(regions, query);
+            } catch (err) {
+              console.error('Region search failed:', err);
+            } finally {
+              isLoading = false;
+            }
+          } else {
+            hideFallbackDropdown();
+          }
+        }, 200);
+      });
+    }
+
+    function showFallbackDropdown(regions, query) {
+      const dropdown = document.getElementById('region-dropdown');
+
+      if (regions.length === 0) {
+        dropdown.innerHTML = `
+          <div class="region-no-results">
+            <div class="no-results-text">No regions found for "${query}"</div>
+          </div>
+        `;
+      } else {
+        dropdown.innerHTML = regions.map(region => `
+          <div class="region-option" data-id="${region.id}" data-name="${region.name}" data-state="${region.state}">
+            <div class="region-option-name">${region.name}, ${region.state}</div>
+          </div>
+        `).join('');
+
+        dropdown.querySelectorAll('.region-option').forEach(option => {
+          option.addEventListener('click', () => {
+            selectFallbackRegion({
+              id: option.dataset.id,
+              name: option.dataset.name,
+              state: option.dataset.state
+            });
+          });
+        });
+      }
+
+      dropdown.classList.add('show');
+    }
+
+    function hideFallbackDropdown() {
+      const dropdown = document.getElementById('region-dropdown');
+      if (dropdown) {
+        dropdown.classList.remove('show');
+      }
+    }
+
+    function selectFallbackRegion(region) {
+      selectedLocation = { region: region };
+      document.getElementById('region').value = region.id;
+
+      document.getElementById('selected-location').style.display = 'block';
+      document.getElementById('address-search-group').style.display = 'none';
+      document.getElementById('selected-address').textContent = `${region.name}, ${region.state}`;
+      document.getElementById('matched-region').textContent = 'Region selected (location details unavailable)';
+
+      hideFallbackDropdown();
+    }
+
+    async function handleRegisterSubmit(form) {
+      const email = form.querySelector('[name="email"]').value;
+      const password = form.querySelector('[name="password"]').value;
+      const confirmPassword = form.querySelector('[name="confirmPassword"]')?.value;
+      const username = form.querySelector('[name="username"]')?.value || null;
+      const errorEl = form.querySelector('.error-message');
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      // Clear previous errors
+      if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+      }
+
+      // Validate passwords match
+      if (confirmPassword && password !== confirmPassword) {
+        showError('Passwords do not match');
+        return;
+      }
+
+      // Validate password length
+      if (password.length < 8) {
+        showError('Password must be at least 8 characters');
+        return;
+      }
+
+      // Disable submit button
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating account...';
+      }
+
+      // Build registration data with location fields
+      const formData = {
+        email: email.trim(),
+        password: password,
+        username: username ? username.trim() : null,
+        region_id: parseInt(document.getElementById('region').value) || null,
+        street_address: document.getElementById('user-street-address').value || null,
+        city: document.getElementById('user-city').value || null,
+        state: document.getElementById('user-state').value || null,
+        zip_code: document.getElementById('user-zip').value || null,
+        latitude: parseFloat(document.getElementById('user-latitude').value) || null,
+        longitude: parseFloat(document.getElementById('user-longitude').value) || null,
+        google_place_id: document.getElementById('user-place-id').value || null
+      };
+
+      try {
+        const response = await authApi.registerWithLocation(formData);
+        auth.user = response.user;
+        auth.updateUI();
+        window.location.href = '/user/';
+      } catch (err) {
+        showError(err.message || 'Registration failed. Please try again.');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Account';
+        }
+      }
+    }
+
+    function showError(message) {
+      const errorDiv = document.querySelector('.error-message');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+
+      // Scroll to error
+      errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  </script>
+</body>
+</html>

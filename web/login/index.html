@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Price Feed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="auth-page">
+    <div class="auth-container">
+      <div class="auth-card">
+        <h1>Welcome Back</h1>
+        <p class="auth-subtitle">Sign in to your Price Feed account</p>
+
+        <form id="login-form" class="auth-form">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required placeholder="you@example.com">
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Your password">
+          </div>
+
+          <div class="error-message"></div>
+
+          <button type="submit" class="btn btn-primary btn-full">Login</button>
+        </form>
+
+        <div class="auth-footer">
+          <p>Don't have an account? <a href="/register/">Sign up</a></p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/components.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // If already logged in, redirect to dashboard
+      if (authApi.isLoggedIn()) {
+        window.location.href = '/dashboard/';
+        return;
+      }
+
+      // Handle form submission
+      const form = document.getElementById('login-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await auth.handleLoginForm(form);
+      });
+    });
+  </script>
+</body>
+</html>

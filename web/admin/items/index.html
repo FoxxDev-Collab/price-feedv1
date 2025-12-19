@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Items - Admin Panel</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+    <main class="admin-main">
+      <header class="admin-header" id="admin-header"></header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <div>
+            <h1 class="admin-page-title">Item Catalog</h1>
+            <p class="admin-page-subtitle">View product catalog and item metrics</p>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="admin-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="admin-stat-card">
+            <div class="admin-stat-header">
+              <div class="admin-stat-icon primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="admin-stat-value" id="stat-total">0</div>
+            <div class="admin-stat-label">Total Items</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-header">
+              <div class="admin-stat-icon secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="admin-stat-value" id="stat-categories">0</div>
+            <div class="admin-stat-label">Categories</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-header">
+              <div class="admin-stat-icon accent">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="4" y1="9" x2="20" y2="9"></line>
+                  <line x1="4" y1="15" x2="20" y2="15"></line>
+                  <line x1="10" y1="3" x2="8" y2="21"></line>
+                  <line x1="16" y1="3" x2="14" y2="21"></line>
+                </svg>
+              </div>
+            </div>
+            <div class="admin-stat-value" id="stat-tags">0</div>
+            <div class="admin-stat-label">Unique Tags</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-header">
+              <div class="admin-stat-icon gray">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="admin-stat-value" id="stat-priced">0</div>
+            <div class="admin-stat-label">Items with Prices</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="admin-card" style="margin-bottom: var(--space-6);">
+          <div class="admin-card-body" style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 200px;">
+              <input type="text" id="search-input" class="admin-form-input" placeholder="Search items by name...">
+            </div>
+            <!-- Category filter removed -->
+            <button class="btn btn-secondary" onclick="document.getElementById('search-input').value = ''; searchQuery = ''; loadItems();">Clear</button>
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="admin-card">
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>ID</th>
+                  <th>Unit</th>
+                  <th>Avg Price</th>
+                  <th>Price Count</th>
+                </tr>
+              </thead>
+              <tbody id="items-tbody">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading items...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="admin-pagination">
+            <div class="admin-pagination-info" id="pagination-info">Showing 0 of 0 items</div>
+            <div class="admin-pagination-buttons">
+              <button class="admin-pagination-btn" id="prev-btn" onclick="prevPage()" disabled>Previous</button>
+              <span id="page-indicator" style="padding: 0 var(--space-3); font-size: var(--text-sm);">Page 1</span>
+              <button class="admin-pagination-btn" id="next-btn" onclick="nextPage()">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin-common.js"></script>
+  <script src="/js/admin-sidebar.js"></script>
+  <script>
+    let items = [];
+    let currentPage = 0;
+    let totalItems = 0;
+    const pageSize = 20;
+    let searchQuery = '';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await admin.init()) return;
+
+      initAdminSidebar('items');
+      document.getElementById('admin-header').innerHTML = renderAdminHeader([
+        { label: 'Admin', href: '/admin/' },
+        { label: 'Items', href: '/admin/items/' }
+      ]);
+
+      await loadItems();
+      await loadStats();
+
+      document.getElementById('search-input').addEventListener('input', admin.debounce((e) => {
+        searchQuery = e.target.value;
+        currentPage = 0;
+        loadItems();
+      }, 300));
+    });
+
+    async function loadStats() {
+      try {
+        const response = await itemsApi.getStats();
+        const stats = response?.data || response || {};
+        document.getElementById('stat-total').textContent = stats.total_items?.toLocaleString() || '0';
+        document.getElementById('stat-categories').textContent = '-'; // Categories not supported yet
+        document.getElementById('stat-tags').textContent = stats.unique_tags?.toLocaleString() || '0';
+        document.getElementById('stat-priced').textContent = stats.items_with_prices?.toLocaleString() || '0';
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    async function loadItems() {
+      const tbody = document.getElementById('items-tbody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: var(--space-8);">Loading...</td></tr>';
+
+      try {
+        const params = {
+          limit: pageSize,
+          offset: currentPage * pageSize
+        };
+        if (searchQuery) params.search = searchQuery;
+
+        const response = await itemsApi.list(params);
+        items = response?.data || [];
+        totalItems = response?.meta?.total || items.length;
+
+        renderItems(items);
+        updatePagination();
+      } catch (err) {
+        console.error('Failed to load items:', err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: var(--space-8); color: var(--color-error-500);">Failed to load items</td></tr>';
+      }
+    }
+
+    function renderItems(itemList) {
+      const tbody = document.getElementById('items-tbody');
+
+      if (!itemList || itemList.length === 0) {
+        tbody.innerHTML = `
+          <tr><td colspan="5">
+            <div class="admin-empty-state">
+              <svg class="admin-empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              </svg>
+              <div class="admin-empty-title">No items found</div>
+              <div class="admin-empty-text">Items are added by users through the app</div>
+            </div>
+          </td></tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = itemList.map(item => `
+        <tr>
+          <td>
+            <div style="font-weight: var(--font-medium);">${admin.escapeHtml(item.name)}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500);">${admin.escapeHtml(item.brand || 'Generic')}</div>
+          </td>
+          <td><code style="font-size: var(--text-xs); background: var(--color-gray-100); padding: 2px 6px; border-radius: 4px;">${item.id}</code></td>
+          <td>${item.size || ''} ${item.unit || ''}</td>
+          <td><span style="font-weight: var(--font-semibold); color: var(--color-primary-600);">$${(item.avg_price || 0).toFixed(2)}</span></td>
+          <td>${item.price_count || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    function updatePagination() {
+      const start = currentPage * pageSize + 1;
+      const end = Math.min((currentPage + 1) * pageSize, totalItems);
+      document.getElementById('pagination-info').textContent = `Showing ${totalItems > 0 ? start : 0}-${end} of ${totalItems} items`;
+      document.getElementById('page-indicator').textContent = `Page ${currentPage + 1} of ${Math.ceil(totalItems / pageSize) || 1}`;
+      document.getElementById('prev-btn').disabled = currentPage === 0;
+      document.getElementById('next-btn').disabled = (currentPage + 1) * pageSize >= totalItems;
+    }
+
+    function prevPage() { if (currentPage > 0) { currentPage--; loadItems(); } }
+    function nextPage() { if ((currentPage + 1) * pageSize < totalItems) { currentPage++; loadItems(); } }
+  </script>
+</body>
+</html>

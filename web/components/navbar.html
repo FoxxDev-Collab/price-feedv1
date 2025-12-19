@@ -1,0 +1,55 @@
+<!--
+  Navbar Component
+  Usage: Load dynamically or copy into pages
+
+  Slots:
+  - navbar-brand: Logo and brand name
+  - navbar-links: Navigation links
+  - navbar-actions: Action buttons (sign in, get started)
+-->
+
+<nav class="navbar">
+  <div class="container navbar-container">
+    <!-- Brand -->
+    <a href="/" class="navbar-brand">
+      <div class="navbar-logo">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+        </svg>
+      </div>
+      <span class="navbar-title">Price Feed</span>
+    </a>
+
+    <!-- Desktop Navigation Links -->
+    <div class="navbar-links">
+      <a href="#features" class="navbar-link">Features</a>
+      <a href="#how-it-works" class="navbar-link">How It Works</a>
+      <a href="#community" class="navbar-link">Community</a>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="navbar-actions">
+      <button class="btn btn-ghost">Sign In</button>
+      <button class="btn btn-primary">Get Started Free</button>
+    </div>
+
+    <!-- Mobile Menu Button -->
+    <button class="navbar-mobile-btn" aria-label="Toggle menu" aria-expanded="false">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile Menu (hidden by default) -->
+  <div class="navbar-mobile-menu hidden">
+    <div class="container py-4">
+      <a href="#features" class="navbar-link block py-2">Features</a>
+      <a href="#how-it-works" class="navbar-link block py-2">How It Works</a>
+      <a href="#community" class="navbar-link block py-2">Community</a>
+      <hr class="my-4 border-gray-200">
+      <button class="btn btn-ghost w-full mb-2">Sign In</button>
+      <button class="btn btn-primary w-full">Get Started Free</button>
+    </div>
+  </div>
+</nav>

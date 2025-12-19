@@ -1,0 +1,113 @@
+<!--
+  Modal Component
+  Usage: Include in page, toggle visibility via JS
+
+  JS API:
+  - openModal('modal-id') - Show modal
+  - closeModal('modal-id') - Hide modal
+
+  Events:
+  - Click backdrop or X to close
+  - Press Escape to close
+-->
+
+<!-- Example: Confirmation Modal -->
+<div class="modal-backdrop hidden" id="confirm-modal-backdrop">
+  <div class="modal" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div class="modal-header">
+      <h3 class="modal-title" id="confirm-modal-title">Confirm Action</h3>
+      <button class="modal-close" aria-label="Close modal">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to proceed with this action?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline modal-cancel">Cancel</button>
+      <button class="btn btn-primary modal-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Example: Form Modal -->
+<div class="modal-backdrop hidden" id="form-modal-backdrop">
+  <div class="modal" id="form-modal" role="dialog" aria-modal="true" aria-labelledby="form-modal-title">
+    <div class="modal-header">
+      <h3 class="modal-title" id="form-modal-title">Add New Item</h3>
+      <button class="modal-close" aria-label="Close modal">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="item-form">
+        <div class="form-group">
+          <label for="item-name" class="form-label">Item Name</label>
+          <input type="text" id="item-name" name="name" class="form-input" placeholder="e.g., Organic Milk" required>
+        </div>
+
+        <div class="form-group">
+          <label for="item-brand" class="form-label">Brand</label>
+          <input type="text" id="item-brand" name="brand" class="form-input" placeholder="e.g., Horizon">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-group">
+            <label for="item-size" class="form-label">Size</label>
+            <input type="number" id="item-size" name="size" class="form-input" placeholder="1" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label for="item-unit" class="form-label">Unit</label>
+            <select id="item-unit" name="unit" class="form-input form-select" required>
+              <option value="">Select...</option>
+              <option value="gallon">Gallon</option>
+              <option value="oz">Oz</option>
+              <option value="lb">Lb</option>
+              <option value="count">Count</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="item-price" class="form-label">Price</label>
+          <input type="number" id="item-price" name="price" class="form-input" placeholder="0.00" step="0.01" required>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline modal-cancel">Cancel</button>
+      <button class="btn btn-primary modal-confirm" type="submit" form="item-form">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- Example: Alert Modal (no footer) -->
+<div class="modal-backdrop hidden" id="alert-modal-backdrop">
+  <div class="modal" id="alert-modal" role="alertdialog" aria-modal="true" aria-labelledby="alert-modal-title">
+    <div class="modal-header">
+      <h3 class="modal-title" id="alert-modal-title">Notice</h3>
+      <button class="modal-close" aria-label="Close modal">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="flex items-start gap-4">
+        <div class="icon-box icon-box-md icon-box-primary">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-gray-900 mb-2">Your changes have been saved</p>
+          <p class="text-gray-600">The item has been successfully added to your shopping list.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

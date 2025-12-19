@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">My Profile</h1>
+          <p class="user-page-subtitle">Manage your account and location settings</p>
+        </div>
+
+        <!-- Two-column layout for profile -->
+        <div class="profile-grid">
+          <!-- Left: Account Info Card -->
+          <div class="user-card">
+            <div class="user-card-header">
+              <h3 class="user-card-title">Account Information</h3>
+            </div>
+            <div class="user-card-body">
+              <form id="profile-form">
+                <div class="user-form-group">
+                  <label class="user-form-label">Email</label>
+                  <input type="email" class="user-form-input" id="profile-email" disabled>
+                  <p class="user-form-help">Email cannot be changed</p>
+                </div>
+
+                <div class="user-form-group">
+                  <label class="user-form-label" for="profile-username">Username</label>
+                  <input type="text" class="user-form-input" id="profile-username"
+                         placeholder="Choose a display name" minlength="3" maxlength="50">
+                  <p class="user-form-help">This is how other users will see you</p>
+                </div>
+
+                <div class="user-form-group">
+                  <label class="user-form-label">Member Since</label>
+                  <input type="text" class="user-form-input" id="profile-created" disabled>
+                </div>
+
+                <div class="profile-form-actions">
+                  <button type="submit" class="btn btn-primary" id="save-profile-btn">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right: Location Card -->
+          <div class="user-card">
+            <div class="user-card-header">
+              <h3 class="user-card-title">My Location</h3>
+              <button class="btn btn-secondary btn-sm" id="update-location-btn">
+                Update Location
+              </button>
+            </div>
+            <div class="user-card-body">
+              <!-- Current location display (shown when location is set) -->
+              <div id="location-display">
+                <div class="location-summary">
+                  <div class="location-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                  </div>
+                  <div class="location-details">
+                    <div class="location-address" id="display-address">No location set</div>
+                    <div class="location-region" id="display-region">Set your location to discover nearby stores</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location update form (hidden by default) -->
+              <div id="location-form" class="location-form hidden">
+                <div class="user-form-group">
+                  <label class="user-form-label" for="profile-address-search">Search Address</label>
+                  <input type="text" class="user-form-input" id="profile-address-search"
+                         placeholder="Start typing your address..." autocomplete="off">
+                </div>
+
+                <div id="profile-map" class="map-container"></div>
+
+                <div class="location-form-actions">
+                  <button type="button" class="btn btn-secondary" id="cancel-location-btn">
+                    Cancel
+                  </button>
+                  <button type="button" class="btn btn-primary" id="save-location-btn">
+                    Save Location
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Card -->
+        <div class="user-card profile-stats-card">
+          <div class="user-card-header">
+            <h3 class="user-card-title">My Contributions</h3>
+          </div>
+          <div class="user-card-body">
+            <div class="profile-stats-grid">
+              <div class="profile-stat">
+                <div class="profile-stat-value" id="stat-stores">0</div>
+                <div class="profile-stat-label">Stores Added</div>
+              </div>
+              <div class="profile-stat">
+                <div class="profile-stat-value" id="stat-prices">0</div>
+                <div class="profile-stat-label">Prices Reported</div>
+              </div>
+              <div class="profile-stat">
+                <div class="profile-stat-value" id="stat-verifications">0</div>
+                <div class="profile-stat-label">Verifications</div>
+              </div>
+              <div class="profile-stat">
+                <div class="profile-stat-value" id="stat-reputation">0</div>
+                <div class="profile-stat-label">Reputation</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script src="/js/maps.js"></script>
+  <script>
+    // Profile page state
+    let profileMap = null;
+    let profileMarker = null;
+    let pendingLocation = null;
+    let profileAutocomplete = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Auth check
+      if (!await user.init()) return;
+
+      // Initialize sidebar with 'profile' as active
+      initUserSidebar('profile');
+
+      // Initialize header with breadcrumbs
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'My Profile' }
+      ]);
+
+      // Load profile data
+      await loadProfile();
+      await loadStats();
+
+      // Setup event listeners
+      setupEventListeners();
+    });
+
+    async function loadProfile() {
+      const userData = user.currentUser;
+
+      // Populate form fields
+      document.getElementById('profile-email').value = userData.email || '';
+      document.getElementById('profile-username').value = userData.username || '';
+      document.getElementById('profile-created').value = formatDate(userData.created_at);
+
+      // Display location if set
+      if (userData.street_address || userData.city) {
+        const addressParts = [
+          userData.street_address,
+          userData.city,
+          userData.state,
+          userData.zip_code
+        ].filter(Boolean);
+
+        document.getElementById('display-address').textContent = addressParts.join(', ') || 'No address set';
+      } else {
+        document.getElementById('display-address').textContent = 'No location set';
+      }
+
+      // Display region if set
+      if (userData.region_id) {
+        try {
+          const region = await regionsApi.getById(userData.region_id);
+          const regionData = region?.data || region;
+          document.getElementById('display-region').textContent = `Region: ${regionData.name}, ${regionData.state}`;
+        } catch (err) {
+          document.getElementById('display-region').textContent = 'Region assigned';
+        }
+      } else {
+        document.getElementById('display-region').textContent = 'Set your location to discover nearby stores';
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const stats = await userApi.getStats(user.currentUser.id);
+        const statsData = stats?.data || stats || {};
+        document.getElementById('stat-stores').textContent = formatNumber(statsData.stores_added || 0);
+        document.getElementById('stat-prices').textContent = formatNumber(statsData.prices_reported || 0);
+        document.getElementById('stat-verifications').textContent = formatNumber(statsData.verifications || 0);
+        document.getElementById('stat-reputation').textContent = formatNumber(user.currentUser.reputation_points || 0);
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+        // Set defaults on error
+        document.getElementById('stat-stores').textContent = '0';
+        document.getElementById('stat-prices').textContent = '0';
+        document.getElementById('stat-verifications').textContent = '0';
+        document.getElementById('stat-reputation').textContent = formatNumber(user.currentUser.reputation_points || 0);
+      }
+    }
+
+    function setupEventListeners() {
+      // Profile form submission
+      document.getElementById('profile-form').addEventListener('submit', handleProfileSubmit);
+
+      // Location buttons
+      document.getElementById('update-location-btn').addEventListener('click', showLocationForm);
+      document.getElementById('cancel-location-btn').addEventListener('click', hideLocationForm);
+      document.getElementById('save-location-btn').addEventListener('click', saveLocation);
+    }
+
+    async function handleProfileSubmit(e) {
+      e.preventDefault();
+
+      const btn = document.getElementById('save-profile-btn');
+      const username = document.getElementById('profile-username').value.trim();
+
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        await userApi.update(user.currentUser.id, { username: username || null });
+
+        // Update local user data
+        user.currentUser.username = username || null;
+
+        // Update sidebar display
+        user.updateUserInfo();
+
+        showToast('Profile updated successfully', 'success');
+      } catch (err) {
+        console.error('Failed to update profile:', err);
+        showToast('Failed to update profile: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+      }
+    }
+
+    async function showLocationForm() {
+      document.getElementById('location-display').classList.add('hidden');
+      document.getElementById('location-form').classList.remove('hidden');
+      document.getElementById('update-location-btn').classList.add('hidden');
+
+      // Initialize map if not done
+      if (!profileMap) {
+        try {
+          await mapsApi.init();
+
+          // Center on existing location or default
+          const center = (user.currentUser.latitude && user.currentUser.longitude)
+            ? { lat: parseFloat(user.currentUser.latitude), lng: parseFloat(user.currentUser.longitude) }
+            : mapsApi.defaultCenter;
+
+          profileMap = mapsApi.createMap('profile-map', {
+            center: center,
+            zoom: 14
+          });
+
+          // Setup autocomplete
+          profileAutocomplete = mapsApi.setupAutocomplete('profile-address-search', {
+            types: ['address']
+          });
+
+          profileAutocomplete.addListener('place_changed', handleProfilePlaceSelection);
+
+          // Add marker for existing location
+          if (user.currentUser.latitude && user.currentUser.longitude) {
+            profileMarker = mapsApi.addMarker(profileMap, center, {
+              icon: mapsApi.createIcon('user'),
+              title: 'Your location'
+            });
+          }
+        } catch (err) {
+          console.error('Failed to initialize map:', err);
+          showToast('Failed to load map. Please try again.', 'error');
+          hideLocationForm();
+        }
+      }
+    }
+
+    function hideLocationForm() {
+      document.getElementById('location-display').classList.remove('hidden');
+      document.getElementById('location-form').classList.add('hidden');
+      document.getElementById('update-location-btn').classList.remove('hidden');
+      document.getElementById('profile-address-search').value = '';
+      pendingLocation = null;
+    }
+
+    function handleProfilePlaceSelection() {
+      const place = profileAutocomplete.getPlace();
+      if (!place.geometry) {
+        showToast('Please select an address from the dropdown', 'warning');
+        return;
+      }
+
+      const coords = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng()
+      };
+
+      // Update map
+      profileMap.setCenter(coords);
+      profileMap.setZoom(16);
+
+      // Update marker
+      if (profileMarker) {
+        profileMarker.setMap(null);
+      }
+      profileMarker = mapsApi.addMarker(profileMap, coords, {
+        animation: 'DROP',
+        icon: mapsApi.createIcon('user'),
+        title: 'Your new location'
+      });
+
+      // Store pending location
+      pendingLocation = {
+        latitude: coords.lat,
+        longitude: coords.lng,
+        formatted_address: place.formatted_address,
+        place_id: place.place_id,
+        components: mapsApi.parseAddressComponents(place.address_components)
+      };
+    }
+
+    async function saveLocation() {
+      if (!pendingLocation) {
+        showToast('Please select a location first', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('save-location-btn');
+
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        // Find matching region by ZIP
+        let regionId = null;
+        const zipCode = pendingLocation.components?.zip_code;
+
+        if (zipCode) {
+          try {
+            const regions = await regionsApi.search(zipCode, 1);
+            const regionsList = regions?.data || regions || [];
+            if (regionsList.length > 0) {
+              regionId = regionsList[0].id;
+            }
+          } catch (err) {
+            console.warn('Could not find region for ZIP code:', err);
+          }
+        }
+
+        // Prepare update data
+        const updateData = {
+          street_address: pendingLocation.components?.street_address || null,
+          city: pendingLocation.components?.city || null,
+          state: pendingLocation.components?.state || null,
+          zip_code: zipCode || null,
+          latitude: pendingLocation.latitude,
+          longitude: pendingLocation.longitude,
+          google_place_id: pendingLocation.place_id || null
+        };
+
+        // Only include region_id if we found one
+        if (regionId) {
+          updateData.region_id = regionId;
+        }
+
+        // Update user
+        await userApi.update(user.currentUser.id, updateData);
+
+        // Update local user data
+        Object.assign(user.currentUser, {
+          street_address: pendingLocation.components?.street_address,
+          city: pendingLocation.components?.city,
+          state: pendingLocation.components?.state,
+          zip_code: zipCode,
+          latitude: pendingLocation.latitude,
+          longitude: pendingLocation.longitude,
+          region_id: regionId || user.currentUser.region_id
+        });
+
+        // Update sidebar display
+        user.updateUserInfo();
+
+        showToast('Location updated successfully', 'success');
+        hideLocationForm();
+        await loadProfile(); // Refresh display
+
+      } catch (err) {
+        console.error('Failed to save location:', err);
+        showToast('Failed to save location: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Location';
+      }
+    }
+
+    // Utility functions
+    function formatDate(dateStr) {
+      if (!dateStr) return 'Unknown';
+      return new Date(dateStr).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
+    }
+
+    function showToast(message, type = 'info') {
+      // Use existing toast system from user-common.js
+      if (typeof user !== 'undefined' && user.toast) {
+        user.toast(message, type);
+      } else {
+        alert(message);
+      }
+    }
+  </script>
+</body>
+</html>

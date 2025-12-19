@@ -1,0 +1,274 @@
+<!--
+  Form Components Reference
+  Input fields, selects, textareas, and form layouts
+-->
+
+<div class="p-8 space-y-8 max-w-2xl">
+
+  <!-- ================================
+       TEXT INPUTS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Text Inputs</h3>
+    <div class="space-y-4">
+      <!-- Basic Input -->
+      <div class="form-group">
+        <label for="input-basic" class="form-label">Basic Input</label>
+        <input type="text" id="input-basic" class="form-input" placeholder="Enter text...">
+      </div>
+
+      <!-- Input with Value -->
+      <div class="form-group">
+        <label for="input-value" class="form-label">With Value</label>
+        <input type="text" id="input-value" class="form-input" value="Existing value">
+      </div>
+
+      <!-- Required Input -->
+      <div class="form-group">
+        <label for="input-required" class="form-label">Required Field *</label>
+        <input type="text" id="input-required" class="form-input" placeholder="This field is required" required>
+      </div>
+
+      <!-- Input with Error -->
+      <div class="form-group">
+        <label for="input-error" class="form-label">With Error</label>
+        <input type="text" id="input-error" class="form-input" style="border-color: var(--color-error);" value="Invalid input">
+        <p class="form-error">This field is required.</p>
+      </div>
+
+      <!-- Disabled Input -->
+      <div class="form-group">
+        <label for="input-disabled" class="form-label">Disabled</label>
+        <input type="text" id="input-disabled" class="form-input" value="Cannot edit" disabled style="opacity: 0.6; cursor: not-allowed;">
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================
+       INPUT TYPES
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Input Types</h3>
+    <div class="space-y-4">
+      <!-- Email -->
+      <div class="form-group">
+        <label for="input-email" class="form-label">Email</label>
+        <input type="email" id="input-email" class="form-input" placeholder="you@example.com">
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="input-password" class="form-label">Password</label>
+        <input type="password" id="input-password" class="form-input" placeholder="Enter password">
+      </div>
+
+      <!-- Number -->
+      <div class="form-group">
+        <label for="input-number" class="form-label">Number</label>
+        <input type="number" id="input-number" class="form-input" placeholder="0.00" step="0.01">
+      </div>
+
+      <!-- Search -->
+      <div class="form-group">
+        <label for="input-search" class="form-label">Search</label>
+        <input type="search" id="input-search" class="form-input" placeholder="Search items...">
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================
+       SELECT DROPDOWN
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Select Dropdowns</h3>
+    <div class="space-y-4">
+      <!-- Basic Select -->
+      <div class="form-group">
+        <label for="select-basic" class="form-label">Store Type</label>
+        <select id="select-basic" class="form-input form-select">
+          <option value="">Select a type...</option>
+          <option value="grocery">Grocery Store</option>
+          <option value="supermarket">Supermarket</option>
+          <option value="warehouse">Warehouse Club</option>
+          <option value="specialty">Specialty Store</option>
+        </select>
+      </div>
+
+      <!-- Select with Selected -->
+      <div class="form-group">
+        <label for="select-selected" class="form-label">Unit</label>
+        <select id="select-selected" class="form-input form-select">
+          <option value="gallon">Gallon</option>
+          <option value="oz" selected>Oz</option>
+          <option value="lb">Lb</option>
+          <option value="count">Count</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================
+       TEXTAREA
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Textarea</h3>
+    <div class="form-group">
+      <label for="textarea-basic" class="form-label">Description</label>
+      <textarea id="textarea-basic" class="form-input form-textarea" placeholder="Add a description..." rows="4"></textarea>
+    </div>
+  </section>
+
+  <!-- ================================
+       TAG INPUT
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Tag Input</h3>
+    <div class="form-group">
+      <label class="form-label">Tags</label>
+      <div class="tag-input-container">
+        <span class="tag-chip">
+          dairy
+          <button type="button" class="tag-chip-remove">&times;</button>
+        </span>
+        <span class="tag-chip">
+          organic
+          <button type="button" class="tag-chip-remove">&times;</button>
+        </span>
+        <input type="text" class="tag-input" placeholder="Add tag...">
+      </div>
+      <input type="hidden" name="tags" value='["dairy","organic"]'>
+    </div>
+  </section>
+
+  <!-- ================================
+       CHECKBOX & RADIO
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Checkboxes & Radio</h3>
+    <div class="space-y-4">
+      <!-- Checkboxes -->
+      <div class="form-group">
+        <label class="form-label">Notifications</label>
+        <div class="space-y-2">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" class="w-4 h-4" checked>
+            <span>Email notifications</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" class="w-4 h-4">
+            <span>Price drop alerts</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" class="w-4 h-4">
+            <span>Weekly digest</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Radio Buttons -->
+      <div class="form-group">
+        <label class="form-label">Optimization Strategy</label>
+        <div class="space-y-2">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="radio" name="strategy" class="w-4 h-4" checked>
+            <span>Single store (convenience)</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="radio" name="strategy" class="w-4 h-4">
+            <span>Multiple stores (savings)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================
+       FORM LAYOUT: GRID
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Grid Layout</h3>
+    <form class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label for="first-name" class="form-label">First Name</label>
+          <input type="text" id="first-name" class="form-input" placeholder="John">
+        </div>
+        <div class="form-group">
+          <label for="last-name" class="form-label">Last Name</label>
+          <input type="text" id="last-name" class="form-input" placeholder="Doe">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email-grid" class="form-label">Email</label>
+        <input type="email" id="email-grid" class="form-input" placeholder="john@example.com">
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div class="form-group col-span-2">
+          <label for="city" class="form-label">City</label>
+          <input type="text" id="city" class="form-input" placeholder="Colorado Springs">
+        </div>
+        <div class="form-group">
+          <label for="zip" class="form-label">ZIP Code</label>
+          <input type="text" id="zip" class="form-input" placeholder="80918">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+  </section>
+
+  <!-- ================================
+       COMPLETE FORM EXAMPLE
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Complete Form: Add Price</h3>
+    <form class="card">
+      <div class="card-body space-y-4">
+        <h4 class="text-lg font-semibold text-gray-900">Add New Price</h4>
+
+        <div class="form-group">
+          <label for="store-select" class="form-label">Store</label>
+          <select id="store-select" class="form-input form-select" required>
+            <option value="">Select store...</option>
+            <option value="1">King Soopers - 1234 Main St</option>
+            <option value="2">Walmart - 5678 Oak Ave</option>
+            <option value="3">Safeway - 9012 Pine Rd</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="item-select" class="form-label">Item</label>
+          <select id="item-select" class="form-input form-select" required>
+            <option value="">Select item...</option>
+            <option value="1">Organic 2% Milk (Horizon, 1 gallon)</option>
+            <option value="2">Large Eggs (Great Value, 18 count)</option>
+            <option value="3">Ground Beef 80/20 (1 lb)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="price-input" class="form-label">Price</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <input type="number" id="price-input" class="form-input" style="padding-left: 1.75rem;" placeholder="0.00" step="0.01" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" class="w-4 h-4">
+            <span class="text-sm">This is a sale/promotional price</span>
+          </label>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="btn btn-primary">Add Price</button>
+          <button type="button" class="btn btn-outline">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+</div>

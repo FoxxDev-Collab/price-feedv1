@@ -1,0 +1,46 @@
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    container_name: pricefeed-db
+    environment:
+      POSTGRES_USER: pricefeed
+      POSTGRES_PASSWORD: pricefeed_dev
+      POSTGRES_DB: pricefeed
+    volumes:
+      - pricefeed-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pricefeed -d pricefeed"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pricefeed-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pricefeed-app
+    env_file:
+      - .env
+    environment:
+      PORT: "8080"
+      ENVIRONMENT: development
+      ALLOWED_ORIGINS: "*"
+      DATABASE_URL: postgres://pricefeed:pricefeed_dev@db:5432/pricefeed?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pricefeed-net
+
+volumes:
+  pricefeed-data:
+
+networks:
+  pricefeed-net:
+    driver: bridge

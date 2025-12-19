@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users - Admin Panel</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+    <main class="admin-main">
+      <header class="admin-header" id="admin-header"></header>
+
+      <!-- Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-4);">
+            <div>
+              <h1 class="admin-page-title">User Management</h1>
+              <p class="admin-page-subtitle">Manage all registered users, roles, and permissions</p>
+            </div>
+            <button class="btn btn-primary" onclick="openCreateModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Create User
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="admin-card" style="margin-bottom: var(--space-6);">
+          <div class="admin-card-body" style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 200px;">
+              <input type="text" id="search-input" class="admin-form-input" placeholder="Search by email or username...">
+            </div>
+            <select id="role-filter" class="admin-form-select" style="width: auto; min-width: 150px;">
+              <option value="">All Roles</option>
+              <option value="user">User</option>
+              <option value="moderator">Moderator</option>
+              <option value="admin">Admin</option>
+            </select>
+            <select id="status-filter" class="admin-form-select" style="width: auto; min-width: 150px;">
+              <option value="">All Status</option>
+              <option value="verified">Verified</option>
+              <option value="unverified">Unverified</option>
+            </select>
+            <button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
+          </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="admin-card">
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Location</th>
+                  <th>Role</th>
+                  <th>Reputation</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading users...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="admin-pagination">
+            <div class="admin-pagination-info" id="pagination-info">
+              Showing 0 of 0 users
+            </div>
+            <div class="admin-pagination-buttons">
+              <button class="admin-pagination-btn" id="prev-btn" onclick="prevPage()" disabled>Previous</button>
+              <span id="page-indicator" style="padding: 0 var(--space-3); font-size: var(--text-sm);">Page 1</span>
+              <button class="admin-pagination-btn" id="next-btn" onclick="nextPage()">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create User Modal -->
+  <div id="create-modal" class="admin-modal-backdrop hidden" style="display: none;">
+    <div class="admin-modal admin-modal-lg">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title">Create New User</h3>
+        <button class="admin-modal-close" onclick="closeCreateModal()">&times;</button>
+      </div>
+      <form id="create-form" onsubmit="handleCreate(event)">
+        <div class="admin-modal-body">
+          <div class="admin-form-group">
+            <label class="admin-form-label">Email *</label>
+            <input type="email" name="email" class="admin-form-input" required placeholder="user@example.com">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Username</label>
+            <input type="text" name="username" class="admin-form-input" placeholder="Optional username">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Password *</label>
+            <input type="password" name="password" class="admin-form-input" required minlength="8" placeholder="Minimum 8 characters">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+            <div class="admin-form-group">
+              <label class="admin-form-label">Role</label>
+              <select name="role" class="admin-form-select">
+                <option value="user">User</option>
+                <option value="moderator">Moderator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Region</label>
+              <div class="region-selector" id="create-region-selector">
+                <input type="text" class="region-search-input admin-form-input" placeholder="Search region..." autocomplete="off">
+                <input type="hidden" name="region_id" id="create-region-id">
+                <div class="region-dropdown"></div>
+              </div>
+            </div>
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-checkbox">
+              <input type="checkbox" name="email_verified">
+              Email Verified
+            </label>
+          </div>
+          <div class="admin-form-error" id="create-error"></div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div id="edit-modal" class="admin-modal-backdrop hidden" style="display: none;">
+    <div class="admin-modal admin-modal-lg">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title">Edit User</h3>
+        <button class="admin-modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <form id="edit-form" onsubmit="handleEdit(event)">
+        <input type="hidden" name="id" id="edit-id">
+        <div class="admin-modal-body">
+          <div class="admin-form-group">
+            <label class="admin-form-label">Email</label>
+            <input type="email" name="email" id="edit-email" class="admin-form-input">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Username</label>
+            <input type="text" name="username" id="edit-username" class="admin-form-input">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+            <div class="admin-form-group">
+              <label class="admin-form-label">Role</label>
+              <select name="role" id="edit-role" class="admin-form-select">
+                <option value="user">User</option>
+                <option value="moderator">Moderator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Region</label>
+              <div class="region-selector" id="edit-region-selector">
+                <input type="text" class="region-search-input admin-form-input" placeholder="Search region..." autocomplete="off">
+                <input type="hidden" name="region_id" id="edit-region-id">
+                <div class="region-dropdown"></div>
+              </div>
+            </div>
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-checkbox">
+              <input type="checkbox" name="email_verified" id="edit-verified">
+              Email Verified
+            </label>
+          </div>
+          <div class="admin-form-error" id="edit-error"></div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View User Modal -->
+  <div id="view-modal" class="admin-modal-backdrop hidden" style="display: none;">
+    <div class="admin-modal" style="max-width: 600px;">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title">User Details</h3>
+        <button class="admin-modal-close" onclick="closeViewModal()">&times;</button>
+      </div>
+      <div class="admin-modal-body" id="view-content">
+        <!-- Populated by JS -->
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeViewModal()">Close</button>
+        <button type="button" class="btn btn-primary" id="view-edit-btn">Edit User</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin-common.js"></script>
+  <script src="/js/admin-sidebar.js"></script>
+  <script>
+    // State
+    let users = [];
+    let allRegions = [];
+    let regionsMap = {};
+    let currentPage = 0;
+    let totalUsers = 0;
+    const pageSize = 20;
+    let searchQuery = '';
+    let roleFilter = '';
+    let statusFilter = '';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await admin.init()) return;
+
+      // Initialize sidebar and header
+      initAdminSidebar('users');
+      document.getElementById('admin-header').innerHTML = renderAdminHeader([
+        { label: 'Admin', href: '/admin/' },
+        { label: 'Users', href: '/admin/users/' }
+      ]);
+
+      // Load initial data
+      await loadRegions();
+      await loadUsers();
+
+      // Setup search with debounce
+      const searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('input', admin.debounce((e) => {
+        searchQuery = e.target.value;
+        currentPage = 0;
+        loadUsers();
+      }, 300));
+
+      // Setup filters
+      document.getElementById('role-filter').addEventListener('change', (e) => {
+        roleFilter = e.target.value;
+        currentPage = 0;
+        loadUsers();
+      });
+
+      document.getElementById('status-filter').addEventListener('change', (e) => {
+        statusFilter = e.target.value;
+        currentPage = 0;
+        loadUsers();
+      });
+
+      // Setup region selectors
+      setupRegionSelector('create-region-selector', 'create-region-id');
+      setupRegionSelector('edit-region-selector', 'edit-region-id');
+
+      // Setup modal backdrop clicks
+      modal.setupBackdropClose();
+    });
+
+    // Load regions for dropdowns
+    async function loadRegions() {
+      try {
+        const response = await fetch('/api/regions?limit=100');
+        const data = await response.json();
+        allRegions = data.data || [];
+        // Build lookup map
+        allRegions.forEach(r => regionsMap[r.id] = r);
+      } catch (err) {
+        console.error('Failed to load regions:', err);
+      }
+    }
+
+    // Region selector setup
+    function setupRegionSelector(selectorId, hiddenInputId) {
+      const container = document.getElementById(selectorId);
+      if (!container) return;
+
+      const searchInput = container.querySelector('.region-search-input');
+      const hiddenInput = document.getElementById(hiddenInputId);
+      const dropdown = container.querySelector('.region-dropdown');
+      let searchTimeout = null;
+
+      // Search function using server API
+      const doSearch = async (query) => {
+        if (query.length < 2) {
+          renderOptions(allRegions.slice(0, 10));
+          return;
+        }
+        try {
+          const response = await regionsApi.search(query, 15);
+          const regions = response?.data || response || [];
+          renderOptions(regions);
+        } catch (err) {
+          console.error('Region search failed:', err);
+        }
+      };
+
+      // Render dropdown options
+      const renderOptions = (regions) => {
+        dropdown.innerHTML = '';
+
+        // "No Region" option
+        const noRegion = document.createElement('div');
+        noRegion.className = 'region-option';
+        noRegion.innerHTML = '<em style="color: var(--color-gray-500);">No Region</em>';
+        noRegion.onclick = () => selectRegion(null);
+        dropdown.appendChild(noRegion);
+
+        if (regions.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'region-option';
+          empty.style.cssText = 'color: var(--color-gray-500); cursor: default;';
+          empty.textContent = 'No regions found';
+          dropdown.appendChild(empty);
+        } else {
+          regions.forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'region-option';
+            if (hiddenInput.value == r.id) div.classList.add('selected');
+            div.innerHTML = `
+              <div style="font-weight: var(--font-medium);">${r.name}, ${r.state}</div>
+              ${r.zip_codes && r.zip_codes.length > 0 ? `<div class="region-option-meta">${r.zip_codes.slice(0, 3).join(', ')}${r.zip_codes.length > 3 ? '...' : ''}</div>` : ''}
+            `;
+            div.onclick = () => selectRegion(r);
+            dropdown.appendChild(div);
+          });
+        }
+      };
+
+      const selectRegion = (region) => {
+        if (region) {
+          hiddenInput.value = region.id;
+          searchInput.value = `${region.name}, ${region.state}`;
+        } else {
+          hiddenInput.value = '';
+          searchInput.value = '';
+        }
+        dropdown.classList.remove('show');
+      };
+
+      // Event listeners
+      searchInput.addEventListener('focus', () => {
+        renderOptions(allRegions.slice(0, 10));
+        dropdown.classList.add('show');
+      });
+
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => doSearch(e.target.value.trim()), 200);
+        dropdown.classList.add('show');
+      });
+
+      // Close on click outside
+      document.addEventListener('click', (e) => {
+        if (!container.contains(e.target)) {
+          dropdown.classList.remove('show');
+        }
+      });
+
+      // Store update function for edit modal
+      container.setRegion = (regionId) => {
+        const region = regionsMap[regionId];
+        selectRegion(region || null);
+      };
+    }
+
+    // Load users
+    async function loadUsers() {
+      const tbody = document.getElementById('users-tbody');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</td></tr>';
+
+      try {
+        const response = await adminApi.listUsers(pageSize, currentPage * pageSize);
+        users = response?.data || response || [];
+        totalUsers = response?.meta?.total || users.length;
+
+        // Client-side filtering
+        let filtered = [...users];
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          filtered = filtered.filter(u =>
+            u.email.toLowerCase().includes(q) ||
+            (u.username && u.username.toLowerCase().includes(q))
+          );
+        }
+        if (roleFilter) {
+          filtered = filtered.filter(u => u.role === roleFilter);
+        }
+        if (statusFilter) {
+          filtered = filtered.filter(u =>
+            statusFilter === 'verified' ? u.email_verified : !u.email_verified
+          );
+        }
+
+        renderUsers(filtered);
+        updatePagination();
+      } catch (err) {
+        console.error('Failed to load users:', err);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load users</td></tr>';
+      }
+    }
+
+    // Render users table
+    function renderUsers(userList) {
+      const tbody = document.getElementById('users-tbody');
+
+      if (userList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="admin-empty-state">
+                <svg class="admin-empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                </svg>
+                <div class="admin-empty-title">No users found</div>
+                <div class="admin-empty-text">Try adjusting your search or filter criteria</div>
+                <button class="btn btn-primary" onclick="openCreateModal()">Create First User</button>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = userList.map(user => {
+        const region = user.region_id ? regionsMap[user.region_id] : null;
+        let regionDisplay;
+        if (region) {
+          regionDisplay = `<span class="badge badge-secondary">${admin.escapeHtml(region.name)}, ${region.state}</span>`;
+        } else if (user.city && user.state) {
+          regionDisplay = `<span style="color: var(--color-gray-500);">${admin.escapeHtml(user.city)}, ${user.state}</span>`;
+        } else {
+          regionDisplay = '<span style="color: var(--color-gray-400);">—</span>';
+        }
+
+        return `
+          <tr>
+            <td>
+              <div class="admin-user-cell">
+                <div class="admin-user-cell-avatar">${(user.username || user.email)[0].toUpperCase()}</div>
+                <div class="admin-user-cell-info">
+                  <div class="admin-user-cell-name">${admin.escapeHtml(user.username || 'No username')}</div>
+                  <div class="admin-user-cell-email">${admin.escapeHtml(user.email)}</div>
+                </div>
+              </div>
+            </td>
+            <td>${regionDisplay}</td>
+            <td>
+              <span class="badge badge-${getRoleBadgeClass(user.role)}">${user.role}</span>
+            </td>
+            <td>
+              <span style="font-weight: var(--font-medium);">${user.reputation_points}</span>
+            </td>
+            <td>
+              ${user.email_verified
+                ? '<span class="badge badge-success">Verified</span>'
+                : '<span class="badge badge-secondary">Pending</span>'
+              }
+            </td>
+            <td>${admin.formatDate(user.created_at)}</td>
+            <td>
+              <div class="admin-table-actions">
+                <button class="admin-table-btn" onclick="viewUser(${user.id})" title="View">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+                <button class="admin-table-btn" onclick="editUser(${user.id})" title="Edit">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button class="admin-table-btn danger" onclick="deleteUser(${user.id})" title="Delete">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function getRoleBadgeClass(role) {
+      switch (role) {
+        case 'admin': return 'error';
+        case 'moderator': return 'warning';
+        default: return 'secondary';
+      }
+    }
+
+    // Pagination
+    function updatePagination() {
+      const start = currentPage * pageSize + 1;
+      const end = Math.min((currentPage + 1) * pageSize, totalUsers);
+
+      document.getElementById('pagination-info').textContent =
+        `Showing ${totalUsers > 0 ? start : 0}-${end} of ${totalUsers} users`;
+      document.getElementById('page-indicator').textContent =
+        `Page ${currentPage + 1} of ${Math.ceil(totalUsers / pageSize) || 1}`;
+
+      document.getElementById('prev-btn').disabled = currentPage === 0;
+      document.getElementById('next-btn').disabled = (currentPage + 1) * pageSize >= totalUsers;
+    }
+
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        loadUsers();
+      }
+    }
+
+    function nextPage() {
+      if ((currentPage + 1) * pageSize < totalUsers) {
+        currentPage++;
+        loadUsers();
+      }
+    }
+
+    function clearFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('role-filter').value = '';
+      document.getElementById('status-filter').value = '';
+      searchQuery = '';
+      roleFilter = '';
+      statusFilter = '';
+      currentPage = 0;
+      loadUsers();
+    }
+
+    // Create User
+    function openCreateModal() {
+      document.getElementById('create-form').reset();
+      document.getElementById('create-region-id').value = '';
+      document.getElementById('create-error').textContent = '';
+      const selector = document.getElementById('create-region-selector');
+      if (selector) selector.querySelector('.region-search-input').value = '';
+      modal.open('create-modal');
+    }
+
+    function closeCreateModal() {
+      modal.close('create-modal');
+    }
+
+    async function handleCreate(e) {
+      e.preventDefault();
+      const form = e.target;
+      const errorEl = document.getElementById('create-error');
+
+      const regionId = document.getElementById('create-region-id').value;
+      const data = {
+        email: form.email.value,
+        password: form.password.value,
+        username: form.username.value || undefined,
+        role: form.role.value,
+        email_verified: form.email_verified.checked,
+        region_id: regionId ? parseInt(regionId) : undefined
+      };
+
+      try {
+        await adminApi.createUser(data);
+        closeCreateModal();
+        admin.toast('User created successfully', 'success');
+        loadUsers();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to create user';
+      }
+    }
+
+    // Edit User
+    async function editUser(userId) {
+      try {
+        const response = await adminApi.getUser(userId);
+        const data = response?.data || response;
+        const user = data.user || data;
+
+        document.getElementById('edit-id').value = user.id;
+        document.getElementById('edit-email').value = user.email || '';
+        document.getElementById('edit-username').value = user.username || '';
+        document.getElementById('edit-role').value = user.role || 'user';
+        document.getElementById('edit-verified').checked = user.email_verified || false;
+        document.getElementById('edit-error').textContent = '';
+
+        // Set region
+        const selector = document.getElementById('edit-region-selector');
+        if (selector && selector.setRegion) {
+          selector.setRegion(user.region_id);
+        }
+
+        modal.open('edit-modal');
+      } catch (err) {
+        admin.toast('Failed to load user: ' + err.message, 'error');
+      }
+    }
+
+    function closeEditModal() {
+      modal.close('edit-modal');
+    }
+
+    async function handleEdit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const errorEl = document.getElementById('edit-error');
+      const userId = document.getElementById('edit-id').value;
+
+      const regionId = document.getElementById('edit-region-id').value;
+      const data = {
+        email: form.email.value || undefined,
+        username: form.username.value || undefined,
+        role: form.role.value,
+        email_verified: form.email_verified.checked,
+        region_id: regionId ? parseInt(regionId) : null
+      };
+
+      try {
+        await adminApi.updateUser(userId, data);
+        closeEditModal();
+        admin.toast('User updated successfully', 'success');
+        loadUsers();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to update user';
+      }
+    }
+
+    // View User
+    async function viewUser(userId) {
+      try {
+        const response = await adminApi.getUser(userId);
+        const data = response?.data || response;
+        const user = data.user || data;
+        const stats = data.stats || {};
+
+        const region = user.region_id ? regionsMap[user.region_id] : null;
+        let regionDisplay;
+        if (region) {
+          regionDisplay = `${region.name}, ${region.state}`;
+        } else if (user.city && user.state) {
+          regionDisplay = `${user.city}, ${user.state}`;
+        } else {
+          regionDisplay = 'No location set';
+        }
+
+        document.getElementById('view-content').innerHTML = `
+          <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6);">
+            <div style="width: 4rem; height: 4rem; border-radius: var(--radius-full); background: var(--color-primary-100); color: var(--color-primary-700); display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); font-weight: var(--font-bold);">
+              ${(user.username || user.email)[0].toUpperCase()}
+            </div>
+            <div>
+              <div style="font-size: var(--text-lg); font-weight: var(--font-semibold);">${admin.escapeHtml(user.username || 'No username')}</div>
+              <div style="color: var(--color-gray-500);">${admin.escapeHtml(user.email)}</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+            <div style="padding: var(--space-3); background: var(--color-gray-50); border-radius: var(--radius-lg);">
+              <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-bottom: 4px;">Role</div>
+              <span class="badge badge-${getRoleBadgeClass(user.role)}">${user.role}</span>
+            </div>
+            <div style="padding: var(--space-3); background: var(--color-gray-50); border-radius: var(--radius-lg);">
+              <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-bottom: 4px;">Status</div>
+              ${user.email_verified
+                ? '<span class="badge badge-success">Verified</span>'
+                : '<span class="badge badge-secondary">Pending</span>'
+              }
+            </div>
+            <div style="padding: var(--space-3); background: var(--color-gray-50); border-radius: var(--radius-lg);">
+              <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-bottom: 4px;">Region</div>
+              <div style="font-weight: var(--font-medium);">${admin.escapeHtml(regionDisplay)}</div>
+            </div>
+            <div style="padding: var(--space-3); background: var(--color-gray-50); border-radius: var(--radius-lg);">
+              <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-bottom: 4px;">Reputation</div>
+              <div style="font-weight: var(--font-semibold);">${user.reputation_points} points</div>
+            </div>
+          </div>
+
+          <div style="margin-top: var(--space-4); padding: var(--space-3); background: var(--color-gray-50); border-radius: var(--radius-lg);">
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-bottom: 4px;">Member Since</div>
+            <div style="font-weight: var(--font-medium);">${admin.formatDateFull(user.created_at)}</div>
+          </div>
+
+          ${stats ? `
+            <h4 style="margin-top: var(--space-6); margin-bottom: var(--space-3); font-size: var(--text-sm); font-weight: var(--font-semibold);">Activity Stats</h4>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3);">
+              <div style="text-align: center; padding: var(--space-3); background: var(--color-gray-50); border-radius: var(--radius-lg);">
+                <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-primary-600);">${stats.prices_reported || 0}</div>
+                <div style="font-size: var(--text-xs); color: var(--color-gray-500);">Prices</div>
+              </div>
+              <div style="text-align: center; padding: var(--space-3); background: var(--color-gray-50); border-radius: var(--radius-lg);">
+                <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-secondary-600);">${stats.stores_added || 0}</div>
+                <div style="font-size: var(--text-xs); color: var(--color-gray-500);">Stores</div>
+              </div>
+              <div style="text-align: center; padding: var(--space-3); background: var(--color-gray-50); border-radius: var(--radius-lg);">
+                <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-accent-600);">${stats.items_added || 0}</div>
+                <div style="font-size: var(--text-xs); color: var(--color-gray-500);">Items</div>
+              </div>
+            </div>
+          ` : ''}
+        `;
+
+        document.getElementById('view-edit-btn').onclick = () => {
+          closeViewModal();
+          editUser(userId);
+        };
+
+        modal.open('view-modal');
+      } catch (err) {
+        admin.toast('Failed to load user details: ' + err.message, 'error');
+      }
+    }
+
+    function closeViewModal() {
+      modal.close('view-modal');
+    }
+
+    // Delete User
+    async function deleteUser(userId) {
+      const confirmed = await admin.confirm('Are you sure you want to delete this user? This action cannot be undone.');
+      if (!confirmed) return;
+
+      try {
+        await adminApi.deleteUser(userId);
+        admin.toast('User deleted successfully', 'success');
+        loadUsers();
+      } catch (err) {
+        admin.toast('Failed to delete user: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

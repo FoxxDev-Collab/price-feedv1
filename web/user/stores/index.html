@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stores - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Stores</h1>
+          <p class="user-page-subtitle">Find and add stores to track prices.</p>
+          <div class="user-page-header-actions">
+            <button class="btn btn-secondary" onclick="openDiscoverModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+              </svg>
+              Discover Nearby
+            </button>
+            <button class="btn btn-primary" onclick="openAddStoreModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Store
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="user-search-bar">
+          <input type="text" class="user-search-input" id="search-input" placeholder="Search stores by name, address, or chain...">
+          <select class="user-form-select" id="state-filter" style="width: auto;">
+            <option value="">All States</option>
+          </select>
+        </div>
+
+        <!-- Stores Grid -->
+        <div id="stores-grid" class="user-item-grid">
+          <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        </div>
+
+        <div id="stores-pagination" class="user-pagination" style="display: none;">
+          <div class="user-pagination-info" id="stores-pagination-info"></div>
+          <div class="user-pagination-buttons">
+            <button class="user-pagination-btn" id="stores-prev-btn" onclick="loadStores(currentPage - 1)">Previous</button>
+            <button class="user-pagination-btn" id="stores-next-btn" onclick="loadStores(currentPage + 1)">Next</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Store Modal -->
+  <div class="user-modal-backdrop hidden" id="store-modal">
+    <div class="user-modal user-modal-lg">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title" id="store-modal-title">Add Store</h3>
+        <button class="user-modal-close" onclick="userModal.close('store-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <form id="store-form">
+          <input type="hidden" id="store-id">
+
+          <div class="user-form-group">
+            <label class="user-form-label">Store Name *</label>
+            <input type="text" class="user-form-input" id="store-name" required placeholder="e.g., King Soopers">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+            <div class="user-form-group">
+              <label class="user-form-label">Chain (optional)</label>
+              <input type="text" class="user-form-input" id="store-chain" placeholder="e.g., Kroger">
+            </div>
+            <div class="user-form-group">
+              <label class="user-form-label">Store Type</label>
+              <select class="user-form-select" id="store-type">
+                <option value="grocery">Grocery</option>
+                <option value="supermarket">Supermarket</option>
+                <option value="warehouse">Warehouse Club</option>
+                <option value="convenience">Convenience</option>
+                <option value="specialty">Specialty</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="user-form-group">
+            <label class="user-form-label">Street Address *</label>
+            <input type="text" class="user-form-input" id="store-address" required placeholder="123 Main St">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-4);">
+            <div class="user-form-group">
+              <label class="user-form-label">City *</label>
+              <input type="text" class="user-form-input" id="store-city" required>
+            </div>
+            <div class="user-form-group">
+              <label class="user-form-label">State *</label>
+              <input type="text" class="user-form-input" id="store-state" required maxlength="2" placeholder="CO">
+            </div>
+            <div class="user-form-group">
+              <label class="user-form-label">ZIP *</label>
+              <input type="text" class="user-form-input" id="store-zip" required maxlength="10" placeholder="80202">
+            </div>
+          </div>
+
+          <div class="user-form-error" id="store-error" style="display: none;"></div>
+        </form>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('store-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveStore()">Save Store</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Store Prices Modal -->
+  <div class="user-modal-backdrop hidden" id="store-prices-modal">
+    <div class="user-modal user-modal-lg">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title" id="store-prices-title">Store Prices</h3>
+        <button class="user-modal-close" onclick="userModal.close('store-prices-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <div id="store-prices-content">
+          <div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        </div>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('store-prices-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discover Nearby Stores Modal -->
+  <div class="user-modal-backdrop hidden" id="discover-modal">
+    <div class="user-modal user-modal-xl">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Discover Nearby Stores</h3>
+        <button class="user-modal-close" onclick="closeDiscoverModal()">&times;</button>
+      </div>
+
+      <div class="user-modal-body">
+        <!-- Location Prompt (shown if no location set) -->
+        <div id="discover-location-prompt" class="discover-prompt">
+          <div class="discover-prompt-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+          </div>
+          <h4>Set Your Location</h4>
+          <p>To discover nearby stores, we need your location.</p>
+          <div class="discover-prompt-actions">
+            <button class="btn btn-primary" onclick="detectLocationForDiscover()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="3"></circle>
+                <line x1="12" y1="2" x2="12" y2="4"></line>
+                <line x1="12" y1="20" x2="12" y2="22"></line>
+                <line x1="2" y1="12" x2="4" y2="12"></line>
+                <line x1="20" y1="12" x2="22" y2="12"></line>
+              </svg>
+              Use Current Location
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='/user/profile/'">
+              Set Address in Profile
+            </button>
+          </div>
+        </div>
+
+        <!-- Discovery Content (shown when location is available) -->
+        <div id="discover-content" class="discover-layout hidden">
+          <!-- Left: Map Panel -->
+          <div class="discover-map-panel">
+            <div id="discover-map" class="discover-map"></div>
+            <div class="discover-controls">
+              <select id="discover-radius" class="user-form-select" onchange="refreshDiscoverSearch()">
+                <option value="1000">Within 1 km</option>
+                <option value="2000">Within 2 km</option>
+                <option value="5000" selected>Within 5 km</option>
+                <option value="10000">Within 10 km</option>
+                <option value="20000">Within 20 km</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" onclick="refreshDiscoverSearch()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Results Panel -->
+          <div class="discover-results-panel">
+            <div class="discover-results-header">
+              <h4>Found Stores</h4>
+              <span class="discover-results-count" id="discover-count">0 stores</span>
+            </div>
+            <div class="discover-results-list" id="discover-results">
+              <!-- Store cards rendered here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeDiscoverModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/maps.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    const PAGE_SIZE = 12;
+    let currentPage = 1;
+    let totalStores = 0;
+    let searchTimeout = null;
+
+    // Discovery state
+    let discoverMap = null;
+    let discoverMarkers = [];
+    let userLocationMarker = null;
+    let discoveredStores = [];
+    let currentDiscoverLocation = null;
+    let existingStoreIds = new Set();
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('stores');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Stores', href: '/user/stores/' }
+      ]);
+
+      userModal.setupBackdropClose();
+
+      // Load states for filter
+      await loadStates();
+
+      // Setup search
+      const searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => loadStores(1), 300);
+      });
+
+      document.getElementById('state-filter').addEventListener('change', () => loadStores(1));
+
+      await loadStores(1);
+    });
+
+    async function loadStates() {
+      try {
+        const response = await regionsApi.getStates();
+        const states = response?.data || response || [];
+        const select = document.getElementById('state-filter');
+        states.forEach(state => {
+          select.innerHTML += `<option value="${state}">${state}</option>`;
+        });
+      } catch (err) {
+        console.error('Failed to load states:', err);
+      }
+    }
+
+    async function loadStores(page) {
+      const grid = document.getElementById('stores-grid');
+      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+
+      try {
+        const params = {
+          limit: PAGE_SIZE,
+          offset: (page - 1) * PAGE_SIZE,
+          search: document.getElementById('search-input').value,
+          state: document.getElementById('state-filter').value,
+        };
+
+        const response = await storesApi.list(params);
+        const stores = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+        totalStores = response?.meta?.total || response?.total || stores.length;
+        currentPage = page;
+
+        if (stores.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1;" class="user-empty-state">
+              <div class="user-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+              <div class="user-empty-title">No stores found</div>
+              <div class="user-empty-text">Add a store or discover nearby stores</div>
+              <button class="btn btn-primary" onclick="openDiscoverModal()">Discover Nearby</button>
+            </div>
+          `;
+          document.getElementById('stores-pagination').style.display = 'none';
+          return;
+        }
+
+        grid.innerHTML = stores.map(store => renderStoreCard(store)).join('');
+        updatePagination(page, totalStores);
+      } catch (err) {
+        console.error('Failed to load stores:', err);
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load stores</div>';
+      }
+    }
+
+    function renderStoreCard(store) {
+      const canEdit = store.created_by === user.getUserId();
+
+      return `
+        <div class="user-item-card">
+          <div class="user-item-card-header">
+            <div>
+              <div class="user-item-card-title">${user.escapeHtml(store.name)}</div>
+              <div class="user-item-card-subtitle">${user.escapeHtml(store.chain || store.store_type || '')}</div>
+            </div>
+            ${store.verified ? '<span class="user-item-card-badge" style="background: var(--color-primary-100); color: var(--color-primary-700);">Verified</span>' : ''}
+          </div>
+          <div class="user-item-card-meta">
+            <span>${user.escapeHtml(store.street_address)}</span>
+            <span>${user.escapeHtml(store.city)}, ${store.state} ${store.zip_code}</span>
+          </div>
+          <div class="user-item-card-meta">
+            <span>${store.price_count || 0} prices</span>
+          </div>
+          <div class="user-item-card-actions">
+            <button class="btn btn-secondary btn-sm" onclick="viewStorePrices(${store.id}, '${user.escapeHtml(store.name).replace(/'/g, "\\'")}')">View Prices</button>
+            ${canEdit ? `
+              <button class="btn btn-secondary btn-sm" onclick="editStore(${store.id})">Edit</button>
+              <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteStore(${store.id}, '${user.escapeHtml(store.name).replace(/'/g, "\\'")}')">Delete</button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function updatePagination(page, total) {
+      const pagination = document.getElementById('stores-pagination');
+      const info = document.getElementById('stores-pagination-info');
+      const prevBtn = document.getElementById('stores-prev-btn');
+      const nextBtn = document.getElementById('stores-next-btn');
+
+      if (total <= PAGE_SIZE) {
+        pagination.style.display = 'none';
+        return;
+      }
+
+      pagination.style.display = 'flex';
+      const start = (page - 1) * PAGE_SIZE + 1;
+      const end = Math.min(page * PAGE_SIZE, total);
+      info.textContent = `Showing ${start}-${end} of ${total}`;
+
+      prevBtn.disabled = page <= 1;
+      nextBtn.disabled = end >= total;
+    }
+
+    function openAddStoreModal() {
+      document.getElementById('store-modal-title').textContent = 'Add Store';
+      document.getElementById('store-form').reset();
+      document.getElementById('store-id').value = '';
+      document.getElementById('store-error').style.display = 'none';
+      userModal.open('store-modal');
+    }
+
+    async function editStore(storeId) {
+      try {
+        const store = await storesApi.getById(storeId);
+        const data = store?.data || store;
+
+        document.getElementById('store-modal-title').textContent = 'Edit Store';
+        document.getElementById('store-id').value = data.id;
+        document.getElementById('store-name').value = data.name;
+        document.getElementById('store-chain').value = data.chain || '';
+        document.getElementById('store-type').value = data.store_type || 'grocery';
+        document.getElementById('store-address').value = data.street_address;
+        document.getElementById('store-city').value = data.city;
+        document.getElementById('store-state').value = data.state;
+        document.getElementById('store-zip').value = data.zip_code;
+        document.getElementById('store-error').style.display = 'none';
+
+        userModal.open('store-modal');
+      } catch (err) {
+        user.toast('Failed to load store details', 'error');
+      }
+    }
+
+    async function saveStore() {
+      const storeId = document.getElementById('store-id').value;
+      const errorEl = document.getElementById('store-error');
+
+      const data = {
+        name: document.getElementById('store-name').value.trim(),
+        chain: document.getElementById('store-chain').value.trim() || null,
+        store_type: document.getElementById('store-type').value,
+        street_address: document.getElementById('store-address').value.trim(),
+        city: document.getElementById('store-city').value.trim(),
+        state: document.getElementById('store-state').value.trim().toUpperCase(),
+        zip_code: document.getElementById('store-zip').value.trim(),
+      };
+
+      if (!data.name || !data.street_address || !data.city || !data.state || !data.zip_code) {
+        errorEl.textContent = 'Please fill in all required fields.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        if (storeId) {
+          await storesApi.update(parseInt(storeId), data);
+          user.toast('Store updated successfully', 'success');
+        } else {
+          await storesApi.create(data);
+          user.toast('Store added successfully', 'success');
+        }
+
+        userModal.close('store-modal');
+        loadStores(currentPage);
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to save store';
+        errorEl.style.display = 'block';
+      }
+    }
+
+    async function deleteStore(storeId, storeName) {
+      if (!await user.confirm(`Are you sure you want to delete "${storeName}"? This will also delete all prices for this store.`)) {
+        return;
+      }
+
+      try {
+        await storesApi.delete(storeId);
+        user.toast('Store deleted successfully', 'success');
+        loadStores(currentPage);
+      } catch (err) {
+        user.toast('Failed to delete store: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function viewStorePrices(storeId, storeName) {
+      document.getElementById('store-prices-title').textContent = `Prices at ${storeName}`;
+      const content = document.getElementById('store-prices-content');
+      content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+      userModal.open('store-prices-modal');
+
+      try {
+        const response = await pricesApi.getByStore(storeId);
+        const prices = response?.data || response || [];
+
+        if (prices.length === 0) {
+          content.innerHTML = `
+            <div class="user-empty-state">
+              <div class="user-empty-title">No prices yet</div>
+              <div class="user-empty-text">Be the first to add prices at this store!</div>
+            </div>
+          `;
+          return;
+        }
+
+        content.innerHTML = `
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Price</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${prices.map(p => `
+                <tr>
+                  <td>
+                    <div style="font-weight: var(--font-medium);">${user.escapeHtml(p.item_name)}</div>
+                    <div style="font-size: var(--text-xs); color: var(--color-gray-500);">${user.escapeHtml(p.item_brand || '')}</div>
+                  </td>
+                  <td style="font-weight: var(--font-bold); color: var(--color-primary-600);">${user.formatCurrency(p.price)}</td>
+                  <td>${user.formatDate(p.updated_at)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load prices</div>';
+      }
+    }
+
+    // ==========================================
+    // Discover Nearby Stores Functions
+    // ==========================================
+
+    async function openDiscoverModal() {
+      document.getElementById('discover-modal').classList.remove('hidden');
+
+      // Check if user has location set
+      if (user.currentUser && user.currentUser.latitude && user.currentUser.longitude) {
+        currentDiscoverLocation = {
+          lat: user.currentUser.latitude,
+          lng: user.currentUser.longitude
+        };
+        document.getElementById('discover-location-prompt').classList.add('hidden');
+        document.getElementById('discover-content').classList.remove('hidden');
+        await initDiscoverMap();
+        await searchNearbyStores();
+      } else {
+        // Show location prompt
+        document.getElementById('discover-location-prompt').classList.remove('hidden');
+        document.getElementById('discover-content').classList.add('hidden');
+      }
+    }
+
+    function closeDiscoverModal() {
+      document.getElementById('discover-modal').classList.add('hidden');
+      clearDiscoverMarkers();
+    }
+
+    async function detectLocationForDiscover() {
+      const btn = event.target.closest('button');
+      const originalContent = btn.innerHTML;
+
+      try {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-sm"></span> Detecting...';
+
+        currentDiscoverLocation = await mapsApi.getCurrentLocation();
+
+        document.getElementById('discover-location-prompt').classList.add('hidden');
+        document.getElementById('discover-content').classList.remove('hidden');
+
+        await initDiscoverMap();
+        await searchNearbyStores();
+
+      } catch (err) {
+        console.error('Location detection failed:', err);
+        user.toast('Could not detect location. Please set your address in Profile.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    }
+
+    async function initDiscoverMap() {
+      if (!mapsApi.isLoaded) {
+        await mapsApi.init();
+      }
+
+      if (!discoverMap) {
+        discoverMap = mapsApi.createMap('discover-map', {
+          center: currentDiscoverLocation,
+          zoom: 13
+        });
+      } else {
+        discoverMap.setCenter(currentDiscoverLocation);
+      }
+
+      if (userLocationMarker) userLocationMarker.setMap(null);
+      userLocationMarker = mapsApi.addMarker(discoverMap, currentDiscoverLocation, {
+        icon: mapsApi.createIcon('user'),
+        title: 'Your location'
+      });
+
+      await loadExistingStoreIds();
+    }
+
+    async function loadExistingStoreIds() {
+      try {
+        const response = await storesApi.list({ limit: 100 });
+        existingStoreIds.clear();
+        const stores = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+        stores.forEach(store => {
+          if (store.google_place_id) {
+            existingStoreIds.add(store.google_place_id);
+          }
+          if (store.name && store.zip_code) {
+            existingStoreIds.add(`${store.name.toLowerCase()}_${store.zip_code}`);
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load existing stores:', err);
+      }
+    }
+
+    async function searchNearbyStores() {
+      const resultsContainer = document.getElementById('discover-results');
+      resultsContainer.innerHTML = '<div class="discover-loading"><span class="spinner"></span> Searching for stores...</div>';
+
+      const radius = parseInt(document.getElementById('discover-radius').value);
+
+      try {
+        const response = await mapsApi.findNearbyStores(
+          currentDiscoverLocation.lat,
+          currentDiscoverLocation.lng,
+          radius
+        );
+
+        discoveredStores = Array.isArray(response?.data) ? response.data : (response?.stores || response?.results || []);
+        clearDiscoverMarkers();
+
+        discoveredStores.forEach((store, index) => {
+          const lat = store.latitude || store.geometry?.location?.lat;
+          const lng = store.longitude || store.geometry?.location?.lng;
+
+          if (lat && lng) {
+            const marker = mapsApi.addMarker(discoverMap,
+              { lat, lng },
+              {
+                icon: mapsApi.createIcon(checkIfStoreExists(store) ? 'store-selected' : 'store'),
+                title: store.name
+              }
+            );
+
+            marker.addListener('click', () => highlightStore(index));
+            discoverMarkers.push(marker);
+          }
+        });
+
+        if (discoveredStores.length > 0) {
+          const positions = [currentDiscoverLocation, ...discoveredStores.map(s => ({
+            lat: s.latitude || s.geometry?.location?.lat,
+            lng: s.longitude || s.geometry?.location?.lng
+          })).filter(p => p.lat && p.lng)];
+          mapsApi.fitBounds(discoverMap, positions);
+        }
+
+        renderDiscoverResults();
+
+      } catch (err) {
+        console.error('Store search failed:', err);
+        resultsContainer.innerHTML = `
+          <div class="discover-error">
+            <p>Failed to search for stores.</p>
+            <button class="btn btn-secondary btn-sm" onclick="searchNearbyStores()">Try Again</button>
+          </div>
+        `;
+      }
+    }
+
+    function renderDiscoverResults() {
+      const container = document.getElementById('discover-results');
+      document.getElementById('discover-count').textContent = `${discoveredStores.length} stores found`;
+
+      if (discoveredStores.length === 0) {
+        container.innerHTML = `
+          <div class="discover-empty">
+            <p>No grocery stores found in this area.</p>
+            <p>Try increasing the search radius.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = discoveredStores.map((store, index) => {
+        const isExisting = checkIfStoreExists(store);
+
+        return `
+          <div class="discover-store-card ${isExisting ? 'existing' : ''}" data-index="${index}" onclick="highlightStore(${index})">
+            <div class="discover-store-number">${index + 1}</div>
+            <div class="discover-store-info">
+              <div class="discover-store-name">${escapeHtml(store.name)}</div>
+              <div class="discover-store-address">${escapeHtml(store.formatted_address || store.address || store.vicinity || '')}</div>
+              ${store.rating ? `
+                <div class="discover-store-rating">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  ${store.rating.toFixed(1)}
+                </div>
+              ` : ''}
+            </div>
+            <div class="discover-store-actions">
+              ${isExisting ? `
+                <span class="discover-badge discover-badge-exists">Already Added</span>
+              ` : `
+                <button class="btn btn-primary btn-sm" onclick="addDiscoveredStore(${index}, event)">
+                  Add Store
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function highlightStore(index) {
+      if (discoverMarkers[index]) {
+        discoverMarkers[index].setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(() => discoverMarkers[index].setAnimation(null), 1500);
+      }
+
+      document.querySelectorAll('.discover-store-card').forEach((card, i) => {
+        card.classList.toggle('active', i === index);
+      });
+
+      const store = discoveredStores[index];
+      const lat = store.latitude || store.geometry?.location?.lat;
+      const lng = store.longitude || store.geometry?.location?.lng;
+      if (lat && lng) {
+        discoverMap.panTo({ lat, lng });
+      }
+
+      const activeCard = document.querySelector('.discover-store-card.active');
+      if (activeCard) {
+        activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    async function addDiscoveredStore(index, event) {
+      event.stopPropagation();
+
+      const store = discoveredStores[index];
+      const btn = event.target;
+      const originalText = btn.textContent;
+
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Adding...';
+
+        let details = store;
+        if (store.place_id) {
+          try {
+            const response = await mapsApi.getPlaceDetails(store.place_id);
+            details = response?.data || response || store;
+          } catch (err) {
+            console.warn('Could not fetch place details, using basic info');
+          }
+        }
+
+        await storesApi.create({
+          name: details.name || store.name,
+          street_address: details.street_address || store.address || store.vicinity || '',
+          city: details.city || '',
+          state: details.state || '',
+          zip_code: details.zip_code || '',
+          latitude: details.latitude || store.latitude || store.geometry?.location?.lat,
+          longitude: details.longitude || store.longitude || store.geometry?.location?.lng,
+          store_type: determineStoreType(store.types || []),
+          chain: extractChainName(store.name),
+          google_place_id: store.place_id || null
+        });
+
+        user.toast(`${store.name} added successfully!`, 'success');
+
+        btn.textContent = 'Added!';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        btn.disabled = true;
+
+        if (store.place_id) existingStoreIds.add(store.place_id);
+
+        const card = btn.closest('.discover-store-card');
+        if (card) card.classList.add('existing');
+
+        if (discoverMarkers[index]) {
+          discoverMarkers[index].setIcon(mapsApi.createIcon('store-selected'));
+        }
+
+        loadStores(1);
+
+      } catch (err) {
+        console.error('Failed to add store:', err);
+        user.toast('Failed to add store: ' + (err.message || 'Unknown error'), 'error');
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    function checkIfStoreExists(googleStore) {
+      if (googleStore.place_id && existingStoreIds.has(googleStore.place_id)) {
+        return true;
+      }
+      const name = googleStore.name?.toLowerCase();
+      const zip = googleStore.zip_code;
+      if (name && zip && existingStoreIds.has(`${name}_${zip}`)) {
+        return true;
+      }
+      return false;
+    }
+
+    function determineStoreType(types) {
+      if (!types || !Array.isArray(types)) return 'grocery';
+      if (types.includes('supermarket')) return 'supermarket';
+      if (types.includes('grocery_or_supermarket')) return 'grocery';
+      if (types.includes('convenience_store')) return 'convenience';
+      if (types.includes('department_store')) return 'department';
+      return 'grocery';
+    }
+
+    function extractChainName(storeName) {
+      if (!storeName) return null;
+      const chains = [
+        'Walmart', 'Target', 'Kroger', 'Safeway', 'Albertsons',
+        'King Soopers', 'Publix', 'H-E-B', 'Whole Foods', "Trader Joe's",
+        'Costco', "Sam's Club", 'Aldi', 'Lidl', 'Sprouts', 'Natural Grocers',
+        'Save-A-Lot', 'Food Lion', 'Giant', 'Stop & Shop', 'Wegmans', 'WinCo'
+      ];
+
+      const lowerName = storeName.toLowerCase();
+      for (const chain of chains) {
+        if (lowerName.includes(chain.toLowerCase())) {
+          return chain;
+        }
+      }
+      return null;
+    }
+
+    function clearDiscoverMarkers() {
+      discoverMarkers.forEach(m => m.setMap(null));
+      discoverMarkers = [];
+    }
+
+    function refreshDiscoverSearch() {
+      searchNearbyStores();
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

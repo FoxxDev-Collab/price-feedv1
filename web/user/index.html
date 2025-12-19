@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Dashboard</h1>
+          <p class="user-page-subtitle">Welcome back! Here's an overview of your price tracking.</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="user-stats-grid">
+          <div class="user-stat-card">
+            <div class="user-stat-header">
+              <div class="user-stat-icon primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+            </div>
+            <div class="user-stat-value" id="stat-stores">0</div>
+            <div class="user-stat-label">My Stores</div>
+          </div>
+
+          <div class="user-stat-card">
+            <div class="user-stat-header">
+              <div class="user-stat-icon secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="user-stat-value" id="stat-prices">0</div>
+            <div class="user-stat-label">Prices Tracked</div>
+          </div>
+
+          <div class="user-stat-card">
+            <div class="user-stat-header">
+              <div class="user-stat-icon accent">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 11l3 3L22 4"></path>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="user-stat-value" id="stat-lists">0</div>
+            <div class="user-stat-label">Shopping Lists</div>
+          </div>
+
+          <div class="user-stat-card">
+            <div class="user-stat-header">
+              <div class="user-stat-icon gray">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20v-6M6 20V10M18 20V4"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="user-stat-value" id="stat-verifications">0</div>
+            <div class="user-stat-label">Verifications</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <h2 style="font-size: var(--text-lg); font-weight: var(--font-semibold); margin-bottom: var(--space-4); color: var(--color-gray-900);">Quick Actions</h2>
+        <div class="user-actions-grid">
+          <a href="/user/lists/" class="user-action-card" onclick="quickCreateList(event)">
+            <div class="user-action-icon" style="background: var(--color-primary-100); color: var(--color-primary-600);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <div class="user-action-content">
+              <div class="user-action-title">New Shopping List</div>
+              <div class="user-action-desc">Create a new list</div>
+            </div>
+          </a>
+
+          <a href="/user/stores/" class="user-action-card">
+            <div class="user-action-icon" style="background: var(--color-secondary-100); color: var(--color-secondary-600);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </div>
+            <div class="user-action-content">
+              <div class="user-action-title">Browse Stores</div>
+              <div class="user-action-desc">View community stores</div>
+            </div>
+          </a>
+
+          <a href="/user/items/" class="user-action-card">
+            <div class="user-action-icon" style="background: var(--color-accent-100); color: var(--color-accent-600);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </div>
+            <div class="user-action-content">
+              <div class="user-action-title">Browse Items</div>
+              <div class="user-action-desc">View items and prices</div>
+            </div>
+          </a>
+
+          <a href="/user/compare/" class="user-action-card">
+            <div class="user-action-icon" style="background: var(--color-gray-100); color: var(--color-gray-600);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </div>
+            <div class="user-action-content">
+              <div class="user-action-title">Compare Prices</div>
+              <div class="user-action-desc">Compare across stores</div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-top: var(--space-6);">
+          <!-- Recent Shopping Lists -->
+          <div class="user-card">
+            <div class="user-card-header">
+              <h3 class="user-card-title">Recent Shopping Lists</h3>
+              <a href="/user/lists/" class="btn btn-secondary btn-sm">View All</a>
+            </div>
+            <div class="user-card-body" id="recent-lists">
+              <div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+            </div>
+          </div>
+
+          <!-- Recent Price Updates -->
+          <div class="user-card">
+            <div class="user-card-header">
+              <h3 class="user-card-title">Recent Community Prices</h3>
+              <a href="/user/items/" class="btn btn-secondary btn-sm">View All</a>
+            </div>
+            <div class="user-card-body" id="recent-prices">
+              <div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('dashboard');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' }
+      ]);
+
+      await Promise.all([
+        loadStats(),
+        loadRecentLists(),
+        loadRecentPrices()
+      ]);
+    });
+
+    async function loadStats() {
+      try {
+        // Load user stats from various endpoints
+        const [listsResponse, storesResponse, pricesResponse] = await Promise.all([
+          listsApi.getAll().catch(() => ({ data: [] })),
+          storesApi.list({ limit: 1000 }).catch(() => ({ data: [], total: 0 })),
+          pricesApi.list({ limit: 1000 }).catch(() => ({ data: [], total: 0 }))
+        ]);
+
+        const lists = Array.isArray(listsResponse?.data) ? listsResponse.data : (Array.isArray(listsResponse) ? listsResponse : []);
+        const storesData = Array.isArray(storesResponse?.data) ? storesResponse.data : (Array.isArray(storesResponse) ? storesResponse : []);
+        const pricesData = Array.isArray(pricesResponse?.data) ? pricesResponse.data : (Array.isArray(pricesResponse) ? pricesResponse : []);
+
+        document.getElementById('stat-lists').textContent = user.formatNumber(lists.length);
+        document.getElementById('stat-stores').textContent = user.formatNumber(storesResponse?.total || storesData.length || 0);
+        document.getElementById('stat-prices').textContent = user.formatNumber(pricesResponse?.total || pricesData.length || 0);
+        document.getElementById('stat-verifications').textContent = '0'; // Would need a separate endpoint
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    async function loadRecentLists() {
+      const container = document.getElementById('recent-lists');
+      try {
+        const response = await listsApi.getAll();
+        const lists = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+
+        if (lists.length === 0) {
+          container.innerHTML = `
+            <div class="user-empty-state" style="padding: var(--space-6);">
+              <div class="user-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9 11l3 3L22 4"></path>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+              </div>
+              <div class="user-empty-title">No shopping lists yet</div>
+              <div class="user-empty-text">Create your first shopping list to get started</div>
+              <a href="/user/lists/" class="btn btn-primary">Create List</a>
+            </div>
+          `;
+          return;
+        }
+
+        // Show up to 3 recent lists
+        const recentLists = lists.slice(0, 3);
+        container.innerHTML = recentLists.map(list => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--color-gray-100);">
+            <div>
+              <div style="font-weight: var(--font-medium); color: var(--color-gray-900);">${user.escapeHtml(list.name)}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
+                ${list.item_count || 0} items ${list.target_date ? '&bull; ' + user.formatDateShort(list.target_date) : ''}
+              </div>
+            </div>
+            <a href="/user/lists/?id=${list.id}" class="btn btn-secondary btn-sm">View</a>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load recent lists:', err);
+        container.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load lists</div>';
+      }
+    }
+
+    async function loadRecentPrices() {
+      const container = document.getElementById('recent-prices');
+      try {
+        const response = await pricesApi.list({ limit: 5 });
+        const prices = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+
+        if (prices.length === 0) {
+          container.innerHTML = `
+            <div class="user-empty-state" style="padding: var(--space-6);">
+              <div class="user-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </div>
+              <div class="user-empty-title">No price data yet</div>
+              <div class="user-empty-text">Browse items to see community prices</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = prices.map(price => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--color-gray-100);">
+            <div>
+              <div style="font-weight: var(--font-medium); color: var(--color-gray-900);">${user.escapeHtml(price.item_name)}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
+                ${user.escapeHtml(price.store_name)} &bull; ${user.formatDate(price.updated_at)}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-weight: var(--font-bold); color: var(--color-primary-600);">${user.formatCurrency(price.price)}</div>
+              ${price.verified_count > 0 ? `<div style="font-size: var(--text-xs); color: var(--color-gray-500);">${price.verified_count} verified</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load recent prices:', err);
+        container.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load prices</div>';
+      }
+    }
+
+    function quickCreateList(event) {
+      // Allow default navigation - could be enhanced with inline modal later
+    }
+  </script>
+</body>
+</html>

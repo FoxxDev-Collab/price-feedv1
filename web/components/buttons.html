@@ -1,0 +1,179 @@
+<!--
+  Button Component Reference
+  All button variants and sizes
+
+  Classes:
+  - Base: .btn
+  - Variants: .btn-primary, .btn-secondary, .btn-outline, .btn-ghost
+  - Sizes: .btn-sm, .btn-lg
+  - Modifiers: .btn-shadow
+-->
+
+<div class="p-8 space-y-8">
+
+  <!-- ================================
+       PRIMARY BUTTONS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Primary Buttons</h3>
+    <div class="flex flex-wrap items-center gap-4">
+      <button class="btn btn-primary btn-sm">Small</button>
+      <button class="btn btn-primary">Default</button>
+      <button class="btn btn-primary btn-lg">Large</button>
+      <button class="btn btn-primary btn-lg btn-shadow">With Shadow</button>
+      <button class="btn btn-primary" disabled>Disabled</button>
+    </div>
+  </section>
+
+  <!-- ================================
+       SECONDARY BUTTONS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Secondary Buttons</h3>
+    <div class="flex flex-wrap items-center gap-4">
+      <button class="btn btn-secondary btn-sm">Small</button>
+      <button class="btn btn-secondary">Default</button>
+      <button class="btn btn-secondary btn-lg">Large</button>
+      <button class="btn btn-secondary btn-lg btn-shadow">With Shadow</button>
+      <button class="btn btn-secondary" disabled>Disabled</button>
+    </div>
+  </section>
+
+  <!-- ================================
+       OUTLINE BUTTONS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Outline Buttons</h3>
+    <div class="flex flex-wrap items-center gap-4">
+      <button class="btn btn-outline btn-sm">Small</button>
+      <button class="btn btn-outline">Default</button>
+      <button class="btn btn-outline btn-lg">Large</button>
+      <button class="btn btn-outline" disabled>Disabled</button>
+    </div>
+  </section>
+
+  <!-- ================================
+       GHOST BUTTONS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Ghost Buttons</h3>
+    <div class="flex flex-wrap items-center gap-4">
+      <button class="btn btn-ghost btn-sm">Small</button>
+      <button class="btn btn-ghost">Default</button>
+      <button class="btn btn-ghost btn-lg">Large</button>
+      <button class="btn btn-ghost" disabled>Disabled</button>
+    </div>
+  </section>
+
+  <!-- ================================
+       BUTTONS WITH ICONS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Buttons with Icons</h3>
+    <div class="flex flex-wrap items-center gap-4">
+      <!-- Icon Left -->
+      <button class="btn btn-primary">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Add Item
+      </button>
+
+      <!-- Icon Right -->
+      <button class="btn btn-outline">
+        Continue
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+
+      <!-- Icon Only -->
+      <button class="btn btn-primary p-3" aria-label="Add">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+      </button>
+
+      <button class="btn btn-outline p-3" aria-label="Search">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </button>
+
+      <button class="btn btn-ghost p-2" aria-label="Close">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ================================
+       BUTTON GROUPS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Button Groups</h3>
+    <div class="flex flex-wrap gap-4">
+      <!-- Simple Group -->
+      <div class="flex">
+        <button class="btn btn-outline rounded-r-none border-r-0">Left</button>
+        <button class="btn btn-outline rounded-none border-r-0">Center</button>
+        <button class="btn btn-outline rounded-l-none">Right</button>
+      </div>
+
+      <!-- Tabs-like Group -->
+      <div class="flex bg-gray-100 p-1 rounded-lg">
+        <button class="btn btn-primary btn-sm">Active</button>
+        <button class="btn btn-ghost btn-sm">Inactive</button>
+        <button class="btn btn-ghost btn-sm">Inactive</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================
+       FULL WIDTH BUTTONS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Full Width Buttons</h3>
+    <div class="max-w-md space-y-3">
+      <button class="btn btn-primary w-full">Sign Up Free</button>
+      <button class="btn btn-outline w-full">Learn More</button>
+    </div>
+  </section>
+
+  <!-- ================================
+       LOADING STATE
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Loading State</h3>
+    <div class="flex flex-wrap items-center gap-4">
+      <button class="btn btn-primary" disabled>
+        <div class="spinner spinner-sm"></div>
+        Loading...
+      </button>
+
+      <button class="btn btn-secondary" disabled>
+        <div class="spinner spinner-sm" style="border-top-color: white;"></div>
+        Saving...
+      </button>
+
+      <button class="btn btn-outline" disabled>
+        <div class="spinner spinner-sm"></div>
+        Processing...
+      </button>
+    </div>
+  </section>
+
+  <!-- ================================
+       LINK BUTTONS
+       ================================ -->
+  <section>
+    <h3 class="text-lg font-semibold mb-4">Link Buttons (as anchor tags)</h3>
+    <div class="flex flex-wrap items-center gap-4">
+      <a href="#" class="btn btn-primary">Link Button</a>
+      <a href="#" class="btn btn-outline">Outline Link</a>
+      <a href="#" class="btn btn-ghost">Ghost Link</a>
+    </div>
+  </section>
+
+</div>

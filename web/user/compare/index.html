@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price Comparison - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Price Comparison</h1>
+          <p class="user-page-subtitle">Compare prices across stores to find the best deals.</p>
+        </div>
+
+        <!-- Store Selection -->
+        <div class="user-card" style="margin-bottom: var(--space-6);">
+          <div class="user-card-header">
+            <h3 class="user-card-title">Select Stores to Compare</h3>
+          </div>
+          <div class="user-card-body">
+            <div style="display: flex; flex-wrap: wrap; gap: var(--space-3);" id="store-selection">
+              <div style="color: var(--color-gray-500);">Loading stores...</div>
+            </div>
+            <div style="margin-top: var(--space-4);">
+              <button class="btn btn-primary" onclick="loadComparison()" id="compare-btn" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                Compare Prices
+              </button>
+              <span style="margin-left: var(--space-3); font-size: var(--text-sm); color: var(--color-gray-500);" id="selection-count">Select 2-5 stores</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="user-search-bar" style="display: none;" id="comparison-filters">
+          <input type="text" class="user-search-input" id="item-filter" placeholder="Filter items by name...">
+          <select class="user-form-select" id="tag-filter" style="width: auto;">
+            <option value="">All Categories</option>
+          </select>
+          <label class="user-form-checkbox" style="white-space: nowrap;">
+            <input type="checkbox" id="verified-only">
+            <span>Verified prices only</span>
+          </label>
+        </div>
+
+        <!-- Comparison Grid -->
+        <div id="comparison-container" style="display: none;">
+          <div class="user-comparison-grid">
+            <div id="comparison-content" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">
+              Select stores and click "Compare Prices" to see the comparison
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="user-card">
+          <div class="user-card-body">
+            <div class="user-empty-state">
+              <div class="user-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+              </div>
+              <div class="user-empty-title">Compare Prices Across Stores</div>
+              <div class="user-empty-text">
+                Select 2-5 stores above to compare prices side by side.<br>
+                This helps you find the best deals for your shopping list.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let allStores = [];
+    let selectedStores = new Set();
+    let comparisonData = null;
+    let filterTimeout = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('compare');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Price Comparison', href: '/user/compare/' }
+      ]);
+
+      await Promise.all([
+        loadStores(),
+        loadTags()
+      ]);
+
+      // Setup filters
+      document.getElementById('item-filter').addEventListener('input', () => {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(applyFilters, 300);
+      });
+
+      document.getElementById('tag-filter').addEventListener('change', applyFilters);
+      document.getElementById('verified-only').addEventListener('change', applyFilters);
+    });
+
+    async function loadStores() {
+      try {
+        const response = await storesApi.list({ limit: 100 });
+        allStores = response?.data || response || [];
+
+        const container = document.getElementById('store-selection');
+        if (allStores.length === 0) {
+          container.innerHTML = '<div style="color: var(--color-gray-500);">No stores available. Add stores first.</div>';
+          return;
+        }
+
+        container.innerHTML = allStores.map(store => `
+          <label class="user-filter-pill" style="cursor: pointer;">
+            <input type="checkbox" value="${store.id}" onchange="toggleStore(${store.id})" style="display: none;">
+            <span>${user.escapeHtml(store.name)}</span>
+          </label>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load stores:', err);
+        document.getElementById('store-selection').innerHTML = '<div style="color: var(--color-error);">Failed to load stores</div>';
+      }
+    }
+
+    async function loadTags() {
+      try {
+        const response = await tagsApi.list();
+        const tags = response?.data || response || [];
+        const select = document.getElementById('tag-filter');
+        tags.forEach(tag => {
+          select.innerHTML += `<option value="${user.escapeHtml(tag.name)}">${user.escapeHtml(tag.name)}</option>`;
+        });
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    }
+
+    function toggleStore(storeId) {
+      const pill = document.querySelector(`.user-filter-pill input[value="${storeId}"]`).parentElement;
+
+      if (selectedStores.has(storeId)) {
+        selectedStores.delete(storeId);
+        pill.classList.remove('active');
+      } else {
+        if (selectedStores.size >= 5) {
+          user.toast('You can compare up to 5 stores at a time', 'warning');
+          // Uncheck the checkbox
+          pill.querySelector('input').checked = false;
+          return;
+        }
+        selectedStores.add(storeId);
+        pill.classList.add('active');
+      }
+
+      updateSelectionCount();
+    }
+
+    function updateSelectionCount() {
+      const count = selectedStores.size;
+      const countEl = document.getElementById('selection-count');
+      const btn = document.getElementById('compare-btn');
+
+      if (count === 0) {
+        countEl.textContent = 'Select 2-5 stores';
+        btn.disabled = true;
+      } else if (count === 1) {
+        countEl.textContent = 'Select at least one more store';
+        btn.disabled = true;
+      } else {
+        countEl.textContent = `${count} stores selected`;
+        btn.disabled = false;
+      }
+    }
+
+    async function loadComparison() {
+      const storeIds = Array.from(selectedStores);
+      if (storeIds.length < 2) {
+        user.toast('Please select at least 2 stores', 'warning');
+        return;
+      }
+
+      const container = document.getElementById('comparison-container');
+      const content = document.getElementById('comparison-content');
+      const emptyState = document.getElementById('empty-state');
+      const filters = document.getElementById('comparison-filters');
+
+      container.style.display = 'block';
+      filters.style.display = 'flex';
+      emptyState.style.display = 'none';
+      content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading comparison...</div>';
+
+      try {
+        const response = await compareApi.getComparison(storeIds);
+        comparisonData = response?.data || response;
+        renderComparison();
+      } catch (err) {
+        console.error('Failed to load comparison:', err);
+        content.innerHTML = `<div style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load comparison: ${err.message || 'Unknown error'}</div>`;
+      }
+    }
+
+    function applyFilters() {
+      if (!comparisonData) return;
+      renderComparison();
+    }
+
+    function renderComparison() {
+      const content = document.getElementById('comparison-content');
+
+      if (!comparisonData || !comparisonData.items || comparisonData.items.length === 0) {
+        content.innerHTML = `
+          <div class="user-empty-state" style="padding: var(--space-8);">
+            <div class="user-empty-title">No price data found</div>
+            <div class="user-empty-text">There are no prices to compare for the selected stores.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const stores = comparisonData.stores || [];
+      const items = comparisonData.items || [];
+
+      // Apply filters
+      const searchTerm = document.getElementById('item-filter').value.toLowerCase();
+      const tagFilter = document.getElementById('tag-filter').value;
+      const verifiedOnly = document.getElementById('verified-only').checked;
+
+      let filteredItems = items;
+
+      if (searchTerm) {
+        filteredItems = filteredItems.filter(item =>
+          item.name.toLowerCase().includes(searchTerm) ||
+          (item.brand && item.brand.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      if (tagFilter) {
+        filteredItems = filteredItems.filter(item =>
+          item.tags && item.tags.includes(tagFilter)
+        );
+      }
+
+      if (filteredItems.length === 0) {
+        content.innerHTML = `
+          <div class="user-empty-state" style="padding: var(--space-8);">
+            <div class="user-empty-title">No matching items</div>
+            <div class="user-empty-text">Try adjusting your filters.</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Build comparison table
+      content.innerHTML = `
+        <table class="user-comparison-table">
+          <thead>
+            <tr>
+              <th style="min-width: 200px;">Item</th>
+              ${stores.map(store => `
+                <th style="min-width: 120px; text-align: center;">
+                  <div>${user.escapeHtml(store.name)}</div>
+                  <div style="font-weight: normal; font-size: 10px; text-transform: none;">${store.city}, ${store.state}</div>
+                </th>
+              `).join('')}
+              <th style="min-width: 80px; text-align: center;">Best</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredItems.map(item => renderComparisonRow(item, stores, verifiedOnly)).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderComparisonRow(item, stores, verifiedOnly) {
+      const prices = item.prices || {};
+
+      // Find best price
+      let bestPrice = null;
+      let bestStoreId = null;
+
+      for (const store of stores) {
+        const priceInfo = prices[store.id];
+        if (priceInfo && priceInfo.price !== null) {
+          if (verifiedOnly && priceInfo.verified_count === 0) continue;
+          if (bestPrice === null || priceInfo.price < bestPrice) {
+            bestPrice = priceInfo.price;
+            bestStoreId = store.id;
+          }
+        }
+      }
+
+      return `
+        <tr>
+          <td>
+            <div style="font-weight: var(--font-medium);">${user.escapeHtml(item.name)}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
+              ${item.brand ? user.escapeHtml(item.brand) : ''}
+              ${item.size ? ` - ${item.size} ${item.unit || ''}` : ''}
+            </div>
+          </td>
+          ${stores.map(store => {
+            const priceInfo = prices[store.id];
+            if (!priceInfo || priceInfo.price === null) {
+              return `<td style="text-align: center;"><span class="user-comparison-price missing">-</span></td>`;
+            }
+            if (verifiedOnly && priceInfo.verified_count === 0) {
+              return `<td style="text-align: center;"><span class="user-comparison-price missing">-</span></td>`;
+            }
+            const isBest = store.id === bestStoreId;
+            return `
+              <td style="text-align: center;">
+                <span class="user-comparison-price ${isBest ? 'best' : ''}">${user.formatCurrency(priceInfo.price)}</span>
+                ${priceInfo.verified_count > 0 ? `<div class="user-comparison-verified">(${priceInfo.verified_count} verified)</div>` : ''}
+              </td>
+            `;
+          }).join('')}
+          <td style="text-align: center;">
+            ${bestStoreId ? `
+              <span style="font-weight: var(--font-bold); color: var(--color-primary-600);">
+                ${user.formatCurrency(bestPrice)}
+              </span>
+            ` : '-'}
+          </td>
+        </tr>
+      `;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Items - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Items</h1>
+          <p class="user-page-subtitle">Products you want to track prices for.</p>
+          <div class="user-page-header-actions">
+            <button class="btn btn-primary" onclick="openAddItemModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Item
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="user-search-bar">
+          <input type="text" class="user-search-input" id="search-input" placeholder="Search items by name, brand, or UPC...">
+          <select class="user-form-select" id="category-filter" style="width: auto;">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+
+        <!-- Items Grid -->
+        <div id="items-grid" class="user-item-grid">
+          <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        </div>
+
+        <div id="items-pagination" class="user-pagination" style="display: none;">
+          <div class="user-pagination-info" id="items-pagination-info"></div>
+          <div class="user-pagination-buttons">
+            <button class="user-pagination-btn" id="items-prev-btn" onclick="loadItems(currentPage - 1)">Previous</button>
+            <button class="user-pagination-btn" id="items-next-btn" onclick="loadItems(currentPage + 1)">Next</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Item Modal -->
+  <div class="user-modal-backdrop hidden" id="item-modal">
+    <div class="user-modal">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title" id="item-modal-title">Add Item</h3>
+        <button class="user-modal-close" onclick="userModal.close('item-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <form id="item-form">
+          <input type="hidden" id="item-id">
+
+          <div class="user-form-group">
+            <label class="user-form-label">Item Name *</label>
+            <input type="text" class="user-form-input" id="item-name" required placeholder="e.g., Whole Milk">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+            <div class="user-form-group">
+              <label class="user-form-label">Brand (optional)</label>
+              <input type="text" class="user-form-input" id="item-brand" placeholder="e.g., Horizon">
+            </div>
+            <div class="user-form-group">
+              <label class="user-form-label">Category</label>
+              <input type="text" class="user-form-input" id="item-category" list="category-suggestions" placeholder="e.g., Dairy, Produce, Meat...">
+              <datalist id="category-suggestions"></datalist>
+              <div class="user-form-help">Type a category or select from suggestions</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+            <div class="user-form-group">
+              <label class="user-form-label">Size (optional)</label>
+              <input type="text" class="user-form-input" id="item-size" placeholder="e.g., 1">
+            </div>
+            <div class="user-form-group">
+              <label class="user-form-label">Unit</label>
+              <select class="user-form-select" id="item-unit">
+                <option value="">No unit</option>
+                <option value="oz">oz</option>
+                <option value="lb">lb</option>
+                <option value="gal">gal</option>
+                <option value="qt">qt</option>
+                <option value="pt">pt</option>
+                <option value="ct">ct</option>
+                <option value="pk">pk</option>
+                <option value="kg">kg</option>
+                <option value="g">g</option>
+                <option value="L">L</option>
+                <option value="mL">mL</option>
+                <option value="fl oz">fl oz</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="user-form-group">
+            <label class="user-form-label">Description (optional)</label>
+            <textarea class="user-form-input" id="item-description" rows="2" placeholder="Additional details about the item..."></textarea>
+          </div>
+
+          <div class="user-form-error" id="item-error" style="display: none;"></div>
+        </form>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('item-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveItem()">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    const PAGE_SIZE = 24;
+    let currentPage = 1;
+    let totalItems = 0;
+    let allTags = [];
+    let searchTimeout = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('items');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Items', href: '/user/items/' }
+      ]);
+
+      userModal.setupBackdropClose();
+
+      // Load tags for filter and dropdown
+      await loadTags();
+
+      // Setup search
+      const searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => loadItems(1), 300);
+      });
+
+      document.getElementById('category-filter').addEventListener('change', () => loadItems(1));
+
+      await loadItems(1);
+    });
+
+    async function loadTags() {
+      try {
+        const response = await tagsApi.list();
+        // Handle wrapped response: {success: true, data: [...]}
+        const tagsData = response?.data || response || [];
+        allTags = Array.isArray(tagsData) ? tagsData : [];
+
+        const filterSelect = document.getElementById('category-filter');
+        const categoryDatalist = document.getElementById('category-suggestions');
+
+        // Populate filter dropdown
+        allTags.forEach(tag => {
+          filterSelect.innerHTML += `<option value="${user.escapeHtml(tag.name)}">${user.escapeHtml(tag.name)}</option>`;
+        });
+
+        // Populate category suggestions datalist
+        categoryDatalist.innerHTML = allTags.map(tag =>
+          `<option value="${user.escapeHtml(tag.name)}">`
+        ).join('');
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+        allTags = [];
+      }
+    }
+
+    async function loadItems(page) {
+      const grid = document.getElementById('items-grid');
+      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+
+      try {
+        const params = {
+          limit: PAGE_SIZE,
+          offset: (page - 1) * PAGE_SIZE,
+          search: document.getElementById('search-input').value,
+          tag: document.getElementById('category-filter').value,
+        };
+
+        const response = await itemsApi.list(params);
+        const items = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+        totalItems = response?.meta?.total || response?.total || items.length;
+        currentPage = page;
+
+        if (items.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1;" class="user-empty-state">
+              <div class="user-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+              </div>
+              <div class="user-empty-title">No items yet</div>
+              <div class="user-empty-text">Add items you want to track prices for</div>
+              <button class="btn btn-primary" onclick="openAddItemModal()">Add Your First Item</button>
+            </div>
+          `;
+          document.getElementById('items-pagination').style.display = 'none';
+          return;
+        }
+
+        grid.innerHTML = items.map(item => renderItemCard(item)).join('');
+        updatePagination(page, totalItems);
+      } catch (err) {
+        console.error('Failed to load items:', err);
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load items</div>';
+      }
+    }
+
+    function renderItemCard(item) {
+      const tags = item.tags || [];
+      const sizeLabel = item.size ? `${item.size} ${item.unit || ''}`.trim() : '';
+
+      return `
+        <div class="user-item-card">
+          <div class="user-item-card-header">
+            <div>
+              <div class="user-item-card-title">${user.escapeHtml(item.name)}</div>
+              <div class="user-item-card-subtitle">${user.escapeHtml(item.brand || '')}</div>
+            </div>
+            ${tags.length > 0 ? `<span class="user-item-card-badge">${user.escapeHtml(tags[0])}</span>` : ''}
+          </div>
+          <div class="user-item-card-meta">
+            ${sizeLabel ? `<span>${user.escapeHtml(sizeLabel)}</span>` : ''}
+          </div>
+          <div class="user-item-card-meta">
+            <span>${item.price_count || 0} prices tracked</span>
+          </div>
+          <div class="user-item-card-actions">
+            <button class="btn btn-secondary btn-sm" onclick="editItem(${item.id})">Edit</button>
+            <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteItem(${item.id}, '${user.escapeHtml(item.name).replace(/'/g, "\\'")}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function updatePagination(page, total) {
+      const pagination = document.getElementById('items-pagination');
+      const info = document.getElementById('items-pagination-info');
+      const prevBtn = document.getElementById('items-prev-btn');
+      const nextBtn = document.getElementById('items-next-btn');
+
+      if (total <= PAGE_SIZE) {
+        pagination.style.display = 'none';
+        return;
+      }
+
+      pagination.style.display = 'flex';
+      const start = (page - 1) * PAGE_SIZE + 1;
+      const end = Math.min(page * PAGE_SIZE, total);
+      info.textContent = `Showing ${start}-${end} of ${total}`;
+
+      prevBtn.disabled = page <= 1;
+      nextBtn.disabled = end >= total;
+    }
+
+    function openAddItemModal() {
+      document.getElementById('item-modal-title').textContent = 'Add Item';
+      document.getElementById('item-form').reset();
+      document.getElementById('item-id').value = '';
+      document.getElementById('item-error').style.display = 'none';
+      userModal.open('item-modal');
+    }
+
+    async function editItem(itemId) {
+      try {
+        const response = await itemsApi.getById(itemId);
+        const item = response?.data || response;
+
+        document.getElementById('item-modal-title').textContent = 'Edit Item';
+        document.getElementById('item-id').value = item.id;
+        document.getElementById('item-name').value = item.name;
+        document.getElementById('item-brand').value = item.brand || '';
+        document.getElementById('item-category').value = (item.tags && item.tags[0]) || '';
+        document.getElementById('item-size').value = item.size || '';
+        document.getElementById('item-unit').value = item.unit || '';
+        document.getElementById('item-description').value = item.description || '';
+        document.getElementById('item-error').style.display = 'none';
+
+        userModal.open('item-modal');
+      } catch (err) {
+        user.toast('Failed to load item details', 'error');
+      }
+    }
+
+    async function saveItem() {
+      const itemId = document.getElementById('item-id').value;
+      const errorEl = document.getElementById('item-error');
+
+      const category = document.getElementById('item-category').value.trim();
+      const sizeValue = document.getElementById('item-size').value.trim();
+      const data = {
+        name: document.getElementById('item-name').value.trim(),
+        brand: document.getElementById('item-brand').value.trim() || null,
+        size: sizeValue ? parseFloat(sizeValue) : null,
+        unit: document.getElementById('item-unit').value || null,
+        description: document.getElementById('item-description').value.trim() || null,
+        tags: category ? [category] : [],
+      };
+
+      if (!data.name) {
+        errorEl.textContent = 'Please enter an item name.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        if (itemId) {
+          await itemsApi.update(parseInt(itemId), data);
+          user.toast('Item updated successfully', 'success');
+        } else {
+          await itemsApi.create(data);
+          user.toast('Item created successfully', 'success');
+        }
+
+        userModal.close('item-modal');
+        loadItems(currentPage);
+        // Refresh tags to include any newly created categories
+        refreshTagSuggestions();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to save item';
+        errorEl.style.display = 'block';
+      }
+    }
+
+    async function refreshTagSuggestions() {
+      try {
+        const response = await tagsApi.list();
+        const tagsData = response?.data || response || [];
+        allTags = Array.isArray(tagsData) ? tagsData : [];
+
+        const filterSelect = document.getElementById('category-filter');
+        const categoryDatalist = document.getElementById('category-suggestions');
+
+        // Reset filter dropdown (keeping first option)
+        filterSelect.innerHTML = '<option value="">All Categories</option>';
+        allTags.forEach(tag => {
+          filterSelect.innerHTML += `<option value="${user.escapeHtml(tag.name)}">${user.escapeHtml(tag.name)}</option>`;
+        });
+
+        // Update category suggestions
+        categoryDatalist.innerHTML = allTags.map(tag =>
+          `<option value="${user.escapeHtml(tag.name)}">`
+        ).join('');
+      } catch (err) {
+        console.error('Failed to refresh tags:', err);
+      }
+    }
+
+    async function deleteItem(itemId, itemName) {
+      if (!await user.confirm(`Are you sure you want to delete "${itemName}"? This will also delete all prices for this item.`)) {
+        return;
+      }
+
+      try {
+        await itemsApi.delete(itemId);
+        user.toast('Item deleted successfully', 'success');
+        loadItems(currentPage);
+      } catch (err) {
+        user.toast('Failed to delete item: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+  </script>
+</body>
+</html>

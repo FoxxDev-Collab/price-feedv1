@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Price Feed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="dashboard-page">
+    <div class="container">
+      <header class="dashboard-header">
+        <h1>Welcome back, <span id="user-name">User</span></h1>
+        <p class="dashboard-subtitle">Here's your price tracking overview</p>
+      </header>
+
+      <!-- User Stats -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-stores">0</div>
+          <div class="stat-label">Stores Added</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-items">0</div>
+          <div class="stat-label">Items Added</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-prices">0</div>
+          <div class="stat-label">Prices Reported</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-reputation">0</div>
+          <div class="stat-label">Reputation</div>
+        </div>
+      </section>
+
+      <!-- Quick Actions -->
+      <section class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-grid">
+          <a href="/stores/new/" class="action-card">
+            <span class="action-icon">+</span>
+            <span class="action-title">Add Store</span>
+          </a>
+          <a href="/items/new/" class="action-card">
+            <span class="action-icon">+</span>
+            <span class="action-title">Add Item</span>
+          </a>
+          <a href="/lists/new/" class="action-card">
+            <span class="action-icon">+</span>
+            <span class="action-title">New List</span>
+          </a>
+          <a href="/stores/" class="action-card">
+            <span class="action-icon">S</span>
+            <span class="action-title">Browse Stores</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Shopping Lists -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2>Your Shopping Lists</h2>
+          <a href="/lists/" class="btn btn-secondary">View All</a>
+        </div>
+        <div id="shopping-lists" class="lists-container">
+          <p class="empty-state">No shopping lists yet. <a href="/lists/new/">Create one</a></p>
+        </div>
+      </section>
+
+      <!-- Recent Activity -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2>Recent Activity</h2>
+        </div>
+        <div id="recent-activity" class="activity-feed">
+          <p class="empty-state">No recent activity</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/components.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Wait for auth to initialize first
+      await auth.init();
+
+      // Require authentication
+      if (!auth.requireAuth()) return;
+
+      // Update user name
+      const userName = auth.user?.username || auth.user?.email?.split('@')[0] || 'User';
+      document.getElementById('user-name').textContent = userName;
+
+      // Load user stats
+      try {
+        if (auth.user?.id) {
+          const statsResponse = await userApi.getStats(auth.user.id);
+          const stats = statsResponse?.data || statsResponse;
+
+          document.getElementById('stat-stores').textContent = stats.stores_added || 0;
+          document.getElementById('stat-items').textContent = stats.items_added || 0;
+          document.getElementById('stat-prices').textContent = stats.prices_reported || 0;
+          document.getElementById('stat-reputation').textContent = auth.user?.reputation_points || 0;
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    });
+  </script>
+</body>
+</html>

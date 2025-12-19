@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Compare grocery prices across stores in your area. Join thousands of shoppers sharing real-time prices and saving big on every shopping trip.">
+  <meta name="keywords" content="grocery prices, price comparison, shopping, savings, community">
+
+  <title>Price Feed - Community Price Discovery for Groceries</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+</head>
+<body class="gradient-bg">
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="container navbar-container">
+      <a href="/" class="navbar-brand">
+        <div class="navbar-logo">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+          </svg>
+        </div>
+        <span class="navbar-title">Price Feed</span>
+      </a>
+
+      <div class="navbar-links">
+        <a href="#features" class="navbar-link">Features</a>
+        <a href="#how-it-works" class="navbar-link">How It Works</a>
+        <a href="#community" class="navbar-link">Community</a>
+      </div>
+
+      <div class="navbar-actions">
+        <a href="/login/" class="btn btn-ghost">Sign In</a>
+        <a href="/register/" class="btn btn-primary">Get Started Free</a>
+      </div>
+
+      <button class="navbar-mobile-btn" aria-label="Toggle menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <!-- Hero Content -->
+        <div class="animate-fade-in-up">
+          <span class="badge badge-primary badge-lg mb-6">
+            Built by the community, for the community
+          </span>
+
+          <h1 class="hero-title">
+            Know before <span class="hero-title-highlight">you go</span>
+          </h1>
+
+          <p class="hero-description">
+            Compare grocery prices across stores in your area. Join thousands of shoppers sharing real-time prices and saving big on every shopping trip.
+          </p>
+
+          <div class="hero-actions">
+            <a href="/register/" class="btn btn-primary btn-lg btn-shadow">
+              Start Saving Today
+            </a>
+            <a href="#features" class="btn btn-outline btn-lg">
+              See How It Works
+            </a>
+          </div>
+
+          <div class="hero-features">
+            <div class="hero-feature">
+              <svg class="hero-feature-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+              </svg>
+              <span class="font-medium">Free to use</span>
+            </div>
+            <div class="hero-feature">
+              <svg class="hero-feature-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span class="font-medium">Your data stays private</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mockup Cards -->
+        <div class="mockup-container animate-fade-in-up animation-delay-200">
+          <div class="mockup-glow"></div>
+          <div class="mockup-card" id="feed-mockup">
+            <!-- Feed items will be rendered here by JS, or static fallback below -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="bg-white py-16">
+    <div class="container">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center" id="stats-section">
+        <div class="stat">
+          <div class="stat-value primary">$1,200</div>
+          <div class="stat-label">Average annual savings per family</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value secondary">50K+</div>
+          <div class="stat-label">Active price hunters</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value accent">2.5M+</div>
+          <div class="stat-label">Prices tracked weekly</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Everything you need to save</h2>
+        <p class="section-subtitle">Powerful features, 100% free</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="features-grid">
+        <!-- Feature: Community Powered -->
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <div class="icon-box icon-box-lg icon-box-primary">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+            </div>
+          </div>
+          <h3 class="feature-card-title">Community Powered</h3>
+          <p class="feature-card-description">
+            Real shoppers sharing real prices in real time. The more people use it, the better it gets.
+          </p>
+        </div>
+
+        <!-- Feature: Smart Lists -->
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <div class="icon-box icon-box-lg icon-box-secondary">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+              </svg>
+            </div>
+          </div>
+          <h3 class="feature-card-title">Smart Lists</h3>
+          <p class="feature-card-description">
+            Build your shopping list and instantly see which stores have the best total price. Shop smart, save time.
+          </p>
+        </div>
+
+        <!-- Feature: Price History -->
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <div class="icon-box icon-box-lg icon-box-accent">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+          </div>
+          <h3 class="feature-card-title">Price History</h3>
+          <p class="feature-card-description">
+            Track price trends over time. Know when prices are really low and stock up at the right moment.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="section-cta">
+    <div class="container text-center">
+      <h2 class="section-title" style="color: white;">Ready to start saving?</h2>
+      <p class="section-subtitle mb-8" style="color: var(--color-primary-100);">
+        Join Price Feed today. It's free, it's easy, and it works.
+      </p>
+      <a href="/register/" class="btn btn-lg btn-shadow" style="background-color: white; color: var(--color-primary-600);">
+        Create Free Account
+      </a>
+      <p class="text-sm mt-4" style="color: var(--color-primary-100);">
+        No credit card required &bull; Colorado Springs launching soon
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <!-- Brand Column -->
+        <div>
+          <div class="footer-brand">
+            <div class="footer-logo">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+              </svg>
+            </div>
+            <span class="footer-title">Price Feed</span>
+          </div>
+          <p class="footer-description">Community-driven grocery price comparison for smart shoppers.</p>
+        </div>
+
+        <!-- Product Column -->
+        <div>
+          <h4 class="footer-heading">Product</h4>
+          <ul class="footer-links">
+            <li><a href="#features" class="footer-link">Features</a></li>
+            <li><a href="#how-it-works" class="footer-link">How It Works</a></li>
+            <li><a href="#" class="footer-link">Pricing</a></li>
+          </ul>
+        </div>
+
+        <!-- Company Column -->
+        <div>
+          <h4 class="footer-heading">Company</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">About</a></li>
+            <li><a href="#" class="footer-link">Blog</a></li>
+            <li><a href="#" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+
+        <!-- Legal Column -->
+        <div>
+          <h4 class="footer-heading">Legal</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">Privacy</a></li>
+            <li><a href="#" class="footer-link">Terms</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2025 Foxx Cyber LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/js/script.js"></script>
+  <script>
+    // Initialize feed mockup
+    document.addEventListener('DOMContentLoaded', function() {
+      const { renderComponent, mount } = window.PriceFeed;
+
+      // Render feed items
+      const feedItems = [
+        renderComponent('FeedItem', {
+          userName: 'Sarah M.',
+          time: '2m ago',
+          text: 'Updated milk prices at King Soopers',
+          price: '$3.49',
+          priceLabel: 'Organic 2% Gallon',
+          variant: 'primary'
+        }),
+        renderComponent('FeedItem', {
+          userName: 'Jake P.',
+          time: '15m ago',
+          text: 'Hot deal: Ground beef at Safeway',
+          price: '$2.99/lb',
+          variant: 'secondary',
+          badge: 'Verified by 8'
+        }),
+        renderComponent('FeedItem', {
+          userName: 'Linda R.',
+          time: '1h ago',
+          text: 'Price drop on eggs at Walmart',
+          price: '$4.29',
+          oldPrice: '$5.49',
+          variant: 'accent'
+        })
+      ];
+
+      mount('#feed-mockup', feedItems.join(''));
+    });
+  </script>
+</body>
+</html>

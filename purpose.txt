@@ -1,0 +1,32 @@
+What is the purpose of this app?
+
+initially the idea started when my wife spent a few hours going online and viewing many different stores to build her shopping list. She was determined to find the best prices for each item. This was a tedious process and I thought there must be a better way.
+
+She made an incredible excel spreadsheet, showed me and said "Can you make something like this? I would love to scan receipts and have it automatically add to my shopping list." I said "Sure, I can do that." And here we are.
+
+What started as a simple idea to create a list of stores, items and prices has grown into a full fledged app that will become a SaaS.
+
+Instead of just helping my wife, I want to help everyone. We need to start with the basics and build up from there.
+- Create stores
+- Create items
+- Create prices
+- Create shopping lists
+- Scan receipts (this will be a paid feature in the full SaaS)
+
+Then we can build the broader picture: full community members. 
+
+Stores keep their data API private, this means users will have to be responsible for building the knowledge base. This is a good thing. It means that the data is accurate and up to date. This is why I have already implemented the region feature. This will allow users to share data with each other based on their region.
+
+My wife will be the first user in our region. She will be responsible for building the knowledge base for our region, for starters. Then we can invite other users to join and help build the knowledge base.
+
+I can imagine that some day, after getting enough users in enough regions, that stores/grocers will want to join and help build the knowledge base. This will be a great way to get the data into the app and help users save money. They can even become more competitive by offering better prices to their customers.
+
+Do i dare take money from stores/grocers? I don't know, it would feel wrong. Why would I want to be incentivised to advertise for them? Perhaps I could offer stores/grocers a way to announce their sales and promotions. This would be a great way to help users save money.
+
+Features:
+- How cool would it be for my wife to be able to copy and paste a link of a product page and have it automatically add to a store? This would be a great way to build the knowledge base.
+- How cool would it be to have a way to leverage google maps to find the best prices in your area? Users could search for a product and see the best prices in their area. They can also plan their shopping trip based on the best prices and locations.
+- (Paid) scanning receipts to automatically update the store prices based on real data. This would be a great way to keep the data accurate and up to date. Everytime a user scans a receipt, the app takes the scans of other receipts in that region and automatically updates the prices. This would be a great way to keep the data accurate and up to date.
+- Export shopping lists to a PDF, or printable list.
+- Share lists with other users?
+- Mobile app?
