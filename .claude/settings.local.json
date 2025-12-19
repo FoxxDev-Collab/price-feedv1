@@ -17,7 +17,10 @@
       "Bash(podman exec:*)",
       "Bash(tree:*)",
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6InRlc3R1c2VyMTIzQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJzdWIiOiJ0ZXN0dXNlcjEyM0BleGFtcGxlLmNvbSIsImV4cCI6MTc2NjIxNTk1NiwiaWF0IjoxNzY2MTI5NTU2fQ.50ElfjG4MQuq7VHd3nWNdjtvJ2cx4YmkAL7x2ukIDc0\")",
-      "Bash(if not exist \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\user\\\\prices\" mkdir \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\user\\\\prices\")"
+      "Bash(if not exist \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\user\\\\prices\" mkdir \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\user\\\\prices\")",
+      "Bash(del \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\admin\\\\categories\\\\index.html\")",
+      "Bash(grep:*)",
+      "Bash(wc:*)"
     ]
   }
 }

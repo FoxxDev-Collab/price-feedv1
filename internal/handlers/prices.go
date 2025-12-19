@@ -158,7 +158,8 @@ func (h *Handler) UpdatePrice(c *fiber.Ctx) error {
 	return Success(c, price)
 }
 
-// UserUpdatePrice allows users to update their own prices
+// UserUpdatePrice allows any authenticated user to update prices
+// Prices are community data - anyone can report/update the current price
 func (h *Handler) UserUpdatePrice(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
@@ -171,18 +172,13 @@ func (h *Handler) UserUpdatePrice(c *fiber.Ctx) error {
 		return Error(c, fiber.StatusUnauthorized, "unauthorized")
 	}
 
-	// Get the price to verify ownership
-	price, err := h.db.GetPriceByID(c.Context(), id)
+	// Verify price exists
+	_, err = h.db.GetPriceByID(c.Context(), id)
 	if err != nil {
 		if errors.Is(err, database.ErrPriceNotFound) {
 			return Error(c, fiber.StatusNotFound, "price not found")
 		}
 		return Error(c, fiber.StatusInternalServerError, "failed to get price")
-	}
-
-	// Verify user owns this price
-	if price.UserID == nil || *price.UserID != userID {
-		return Error(c, fiber.StatusForbidden, "cannot update others' prices")
 	}
 
 	var req models.UpdatePriceRequest
@@ -206,7 +202,8 @@ func (h *Handler) UserUpdatePrice(c *fiber.Ctx) error {
 	return Success(c, updatedPrice)
 }
 
-// UserDeletePrice allows users to delete their own prices
+// UserDeletePrice allows any authenticated user to delete prices
+// Prices are community data - users can remove outdated prices
 func (h *Handler) UserDeletePrice(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
@@ -217,20 +214,6 @@ func (h *Handler) UserDeletePrice(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 	if userID == 0 {
 		return Error(c, fiber.StatusUnauthorized, "unauthorized")
-	}
-
-	// Get the price to verify ownership
-	price, err := h.db.GetPriceByID(c.Context(), id)
-	if err != nil {
-		if errors.Is(err, database.ErrPriceNotFound) {
-			return Error(c, fiber.StatusNotFound, "price not found")
-		}
-		return Error(c, fiber.StatusInternalServerError, "failed to get price")
-	}
-
-	// Verify user owns this price
-	if price.UserID == nil || *price.UserID != userID {
-		return Error(c, fiber.StatusForbidden, "cannot delete others' prices")
 	}
 
 	if err := h.db.DeletePrice(c.Context(), id); err != nil {

@@ -18,18 +18,9 @@
 
       <div class="admin-content">
         <div class="admin-page-header">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-4);">
-            <div>
-              <h1 class="admin-page-title">Store Management</h1>
-              <p class="admin-page-subtitle">Manage all stores, verify locations, and monitor submissions</p>
-            </div>
-            <button class="btn btn-primary" onclick="openCreateModal()">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Add Store
-            </button>
+          <div>
+            <h1 class="admin-page-title">Store Directory</h1>
+            <p class="admin-page-subtitle">View store submissions and location metrics</p>
           </div>
         </div>
 
@@ -68,7 +59,7 @@
               </div>
             </div>
             <div class="admin-stat-value" id="stat-pending">0</div>
-            <div class="admin-stat-label">Pending Review</div>
+            <div class="admin-stat-label">Pending</div>
           </div>
           <div class="admin-stat-card">
             <div class="admin-stat-header">
@@ -114,12 +105,11 @@
                   <th>Prices</th>
                   <th>Status</th>
                   <th>Added</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="stores-tbody">
                 <tr>
-                  <td colspan="7" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading stores...</td>
+                  <td colspan="6" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading stores...</td>
                 </tr>
               </tbody>
             </table>
@@ -137,64 +127,6 @@
     </main>
   </div>
 
-  <!-- Create/Edit Modal -->
-  <div id="store-modal" class="admin-modal-backdrop hidden" style="display: none;">
-    <div class="admin-modal">
-      <div class="admin-modal-header">
-        <h3 class="admin-modal-title" id="modal-title">Add Store</h3>
-        <button class="admin-modal-close" onclick="closeModal()">&times;</button>
-      </div>
-      <form id="store-form" onsubmit="handleSubmit(event)">
-        <input type="hidden" name="id" id="store-id">
-        <div class="admin-modal-body">
-          <div class="admin-form-group">
-            <label class="admin-form-label">Store Name *</label>
-            <input type="text" name="name" id="store-name" class="admin-form-input" required placeholder="e.g., King Soopers">
-          </div>
-          <div class="admin-form-group">
-            <label class="admin-form-label">Chain/Brand</label>
-            <input type="text" name="chain" id="store-chain" class="admin-form-input" placeholder="e.g., Kroger">
-          </div>
-          <div class="admin-form-group">
-            <label class="admin-form-label">Street Address *</label>
-            <input type="text" name="street_address" id="store-address" class="admin-form-input" required placeholder="123 Main St">
-          </div>
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-4);">
-            <div class="admin-form-group">
-              <label class="admin-form-label">City *</label>
-              <input type="text" name="city" id="store-city" class="admin-form-input" required placeholder="Colorado Springs">
-            </div>
-            <div class="admin-form-group">
-              <label class="admin-form-label">State *</label>
-              <input type="text" name="state" id="store-state" class="admin-form-input" required value="CO" maxlength="2">
-            </div>
-            <div class="admin-form-group">
-              <label class="admin-form-label">ZIP *</label>
-              <input type="text" name="zip_code" id="store-zip" class="admin-form-input" required placeholder="80903">
-            </div>
-          </div>
-          <div class="admin-form-group">
-            <label class="admin-form-label">Region</label>
-            <select name="region_id" id="store-region" class="admin-form-select">
-              <option value="">Select Region</option>
-            </select>
-          </div>
-          <div class="admin-form-group">
-            <label class="admin-form-checkbox">
-              <input type="checkbox" name="verified" id="store-verified">
-              Verified Location
-            </label>
-          </div>
-          <div class="admin-form-error" id="form-error"></div>
-        </div>
-        <div class="admin-modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="submit-btn">Add Store</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/admin-common.js"></script>
@@ -205,7 +137,6 @@
     let currentPage = 0;
     let totalStores = 0;
     const pageSize = 20;
-    let editingId = null;
     let searchQuery = '';
     let regionFilter = '';
     let statusFilter = '';
@@ -246,16 +177,9 @@
       try {
         const response = await regionsApi.list({ limit: 100 });
         regions = response?.data || [];
-
-        const selects = ['region-filter', 'store-region'];
-        selects.forEach(id => {
-          const select = document.getElementById(id);
-          const currentValue = select.value;
-          const defaultOption = id === 'region-filter' ? 'All Regions' : 'Select Region';
-          select.innerHTML = `<option value="">${defaultOption}</option>` +
-            regions.map(r => `<option value="${r.id}">${admin.escapeHtml(r.name)}, ${r.state}</option>`).join('');
-          select.value = currentValue;
-        });
+        const select = document.getElementById('region-filter');
+        select.innerHTML = '<option value="">All Regions</option>' +
+          regions.map(r => `<option value="${r.id}">${admin.escapeHtml(r.name)}, ${r.state}</option>`).join('');
       } catch (err) {
         console.error('Failed to load regions:', err);
       }
@@ -276,7 +200,7 @@
 
     async function loadStores() {
       const tbody = document.getElementById('stores-tbody');
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: var(--space-8);">Loading...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--space-8);">Loading...</td></tr>';
 
       try {
         const params = {
@@ -296,7 +220,7 @@
         updatePagination();
       } catch (err) {
         console.error('Failed to load stores:', err);
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: var(--space-8); color: var(--color-error-500);">Failed to load stores</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--space-8); color: var(--color-error-500);">Failed to load stores</td></tr>';
       }
     }
 
@@ -305,14 +229,13 @@
 
       if (!storeList || storeList.length === 0) {
         tbody.innerHTML = `
-          <tr><td colspan="7">
+          <tr><td colspan="6">
             <div class="admin-empty-state">
               <svg class="admin-empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               </svg>
               <div class="admin-empty-title">No stores found</div>
-              <div class="admin-empty-text">Add your first store to get started</div>
-              <button class="btn btn-primary" onclick="openCreateModal()">Add Store</button>
+              <div class="admin-empty-text">Stores are added by users through the app</div>
             </div>
           </td></tr>
         `;
@@ -336,29 +259,6 @@
             : '<span class="badge badge-warning">Pending</span>'
           }</td>
           <td>${admin.formatDate(store.created_at)}</td>
-          <td>
-            <div class="admin-table-actions">
-              <button class="admin-table-btn" onclick="editStore(${store.id})" title="Edit">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-              </button>
-              ${!store.verified ? `
-                <button class="admin-table-btn" onclick="verifyStore(${store.id})" title="Verify" style="color: var(--color-primary-600);">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </button>
-              ` : ''}
-              <button class="admin-table-btn danger" onclick="deleteStore(${store.id})" title="Delete">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-              </button>
-            </div>
-          </td>
         </tr>
       `).join('');
     }
@@ -383,94 +283,6 @@
       statusFilter = '';
       currentPage = 0;
       loadStores();
-    }
-
-    function openCreateModal() {
-      editingId = null;
-      document.getElementById('modal-title').textContent = 'Add Store';
-      document.getElementById('submit-btn').textContent = 'Add Store';
-      document.getElementById('store-form').reset();
-      document.getElementById('store-state').value = 'CO';
-      document.getElementById('form-error').textContent = '';
-      modal.open('store-modal');
-    }
-
-    function editStore(id) {
-      const store = stores.find(s => s.id === id);
-      if (!store) return;
-
-      editingId = id;
-      document.getElementById('modal-title').textContent = 'Edit Store';
-      document.getElementById('submit-btn').textContent = 'Save Changes';
-      document.getElementById('store-id').value = store.id;
-      document.getElementById('store-name').value = store.name || '';
-      document.getElementById('store-chain').value = store.chain || '';
-      document.getElementById('store-address').value = store.street_address || '';
-      document.getElementById('store-city').value = store.city || '';
-      document.getElementById('store-state').value = store.state || 'CO';
-      document.getElementById('store-zip').value = store.zip_code || '';
-      document.getElementById('store-region').value = store.region_id || '';
-      document.getElementById('store-verified').checked = store.verified || false;
-      document.getElementById('form-error').textContent = '';
-      modal.open('store-modal');
-    }
-
-    function closeModal() {
-      modal.close('store-modal');
-    }
-
-    async function handleSubmit(e) {
-      e.preventDefault();
-      const form = e.target;
-      const data = {
-        name: form.name.value.trim(),
-        chain: form.chain.value.trim() || null,
-        street_address: form.street_address.value.trim(),
-        city: form.city.value.trim(),
-        state: form.state.value.trim().toUpperCase(),
-        zip_code: form.zip_code.value.trim(),
-        region_id: form.region_id.value ? parseInt(form.region_id.value) : null,
-        verified: form.verified.checked
-      };
-
-      try {
-        if (editingId) {
-          await storesApi.update(editingId, data);
-          admin.toast('Store updated successfully', 'success');
-        } else {
-          await storesApi.create(data);
-          admin.toast('Store created successfully', 'success');
-        }
-        closeModal();
-        loadStores();
-        loadStats();
-      } catch (err) {
-        document.getElementById('form-error').textContent = err.message || 'Failed to save store';
-      }
-    }
-
-    async function verifyStore(id) {
-      if (!await admin.confirm('Verify this store location?')) return;
-      try {
-        await storesApi.verify(id);
-        admin.toast('Store verified successfully', 'success');
-        loadStores();
-        loadStats();
-      } catch (err) {
-        admin.toast('Failed to verify store: ' + err.message, 'error');
-      }
-    }
-
-    async function deleteStore(id) {
-      if (!await admin.confirm('Delete this store? This will also remove all associated prices.')) return;
-      try {
-        await storesApi.delete(id);
-        admin.toast('Store deleted successfully', 'success');
-        loadStores();
-        loadStats();
-      } catch (err) {
-        admin.toast('Failed to delete store: ' + err.message, 'error');
-      }
     }
   </script>
 </body>

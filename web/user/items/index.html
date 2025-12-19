@@ -8,6 +8,312 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/user.css">
   <script src="/js/theme.js"></script>
+  <style>
+    /* View Toggle */
+    .view-toggle {
+      display: inline-flex;
+      background: var(--color-gray-100);
+      border-radius: var(--radius-lg);
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .view-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: var(--color-gray-500);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .view-toggle-btn:hover {
+      color: var(--foreground);
+    }
+
+    .view-toggle-btn.active {
+      background: var(--card);
+      color: var(--foreground);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .view-toggle-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: flex;
+      gap: var(--space-6);
+      padding: var(--space-4);
+      background: var(--color-gray-100);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-6);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--foreground);
+    }
+
+    .stat-label {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+    }
+
+    .toolbar-search {
+      flex: 1;
+      min-width: 200px;
+      max-width: 300px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-left: auto;
+    }
+
+    /* Card View Styles */
+    .items-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .item-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+
+    .item-card:hover {
+      border-color: var(--color-gray-400);
+      box-shadow: var(--shadow-md);
+    }
+
+    .item-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-3);
+    }
+
+    .item-card-title {
+      font-size: var(--text-lg);
+      font-weight: var(--font-semibold);
+      color: var(--foreground);
+      margin-bottom: 2px;
+    }
+
+    .item-card-brand {
+      font-size: var(--text-sm);
+      color: var(--color-gray-500);
+    }
+
+    .item-card-badge {
+      background: var(--color-primary-100);
+      color: var(--color-primary-600);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      white-space: nowrap;
+    }
+
+    .item-card-meta {
+      display: flex;
+      gap: var(--space-4);
+      font-size: var(--text-sm);
+      color: var(--color-gray-500);
+      margin-bottom: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .item-card-meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .item-card-meta-item svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .item-card-actions {
+      display: flex;
+      gap: var(--space-2);
+      margin-top: auto;
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border);
+    }
+
+    .item-card-btn {
+      flex: 1;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .item-card-btn:hover {
+      background: var(--color-gray-100);
+      border-color: var(--color-gray-400);
+    }
+
+    .item-card-btn.danger {
+      color: var(--destructive);
+    }
+
+    .item-card-btn.danger:hover {
+      background: var(--color-gray-100);
+      border-color: var(--destructive);
+    }
+
+    /* Table View Styles */
+    .items-table-wrapper {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .items-table th,
+    .items-table td {
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .items-table th {
+      background: var(--color-gray-100);
+      font-weight: var(--font-semibold);
+      font-size: var(--text-sm);
+      color: var(--foreground);
+      white-space: nowrap;
+    }
+
+    .items-table tbody tr:hover {
+      background: var(--color-gray-100);
+    }
+
+    .items-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .items-table .item-name {
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+    }
+
+    .items-table .item-brand {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+    }
+
+    .items-table .category-badge {
+      background: var(--color-primary-100);
+      color: var(--color-primary-600);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+    }
+
+    .items-table .price-count {
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+    }
+
+    .items-table .table-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .items-table .table-btn {
+      padding: var(--space-1) var(--space-2);
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: var(--radius-md);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .items-table .table-btn:hover {
+      background: var(--color-gray-100);
+    }
+
+    .items-table .table-btn.danger {
+      color: var(--destructive);
+    }
+
+    .items-table .table-btn.danger:hover {
+      background: var(--color-gray-100);
+      border-color: var(--destructive);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-12);
+      color: var(--color-gray-500);
+    }
+
+    .empty-state-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto var(--space-4);
+      color: var(--color-gray-400);
+    }
+
+    .empty-state-title {
+      font-size: var(--text-lg);
+      font-weight: var(--font-semibold);
+      color: var(--foreground);
+      margin-bottom: var(--space-2);
+    }
+  </style>
 </head>
 <body>
   <div class="user-layout">
@@ -31,19 +337,60 @@
           </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="user-search-bar">
-          <input type="text" class="user-search-input" id="search-input" placeholder="Search items by name, brand, or UPC...">
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <input type="text" class="user-search-input toolbar-search" id="search-input" placeholder="Search items by name, brand, or UPC...">
           <select class="user-form-select" id="category-filter" style="width: auto;">
             <option value="">All Categories</option>
           </select>
+
+          <div class="toolbar-actions">
+            <div class="view-toggle">
+              <button class="view-toggle-btn active" data-view="cards" onclick="setView('cards')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Cards
+              </button>
+              <button class="view-toggle-btn" data-view="table" onclick="setView('table')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+                Table
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Items Grid -->
-        <div id="items-grid" class="user-item-grid">
-          <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        <!-- Stats Bar -->
+        <div class="stats-bar" id="stats-bar" style="display: none;">
+          <div class="stat-item">
+            <div class="stat-value" id="stat-items">0</div>
+            <div class="stat-label">Items</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="stat-categories">0</div>
+            <div class="stat-label">Categories</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="stat-prices">0</div>
+            <div class="stat-label">Total Prices</div>
+          </div>
         </div>
 
+        <!-- Content Area -->
+        <div id="content-area">
+          <div class="empty-state">
+            <div class="empty-state-title">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
         <div id="items-pagination" class="user-pagination" style="display: none;">
           <div class="user-pagination-info" id="items-pagination-info"></div>
           <div class="user-pagination-buttons">
@@ -133,9 +480,11 @@
     let currentPage = 1;
     let totalItems = 0;
     let allTags = [];
+    let allItems = [];
     let searchTimeout = null;
+    let currentView = 'cards';
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', async function() {
       if (!await user.init()) return;
 
       initUserSidebar('items');
@@ -146,40 +495,60 @@
 
       userModal.setupBackdropClose();
 
-      // Load tags for filter and dropdown
+      currentView = localStorage.getItem('itemsView') || 'cards';
+      updateViewToggle();
+
       await loadTags();
 
-      // Setup search
-      const searchInput = document.getElementById('search-input');
-      searchInput.addEventListener('input', () => {
+      var searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => loadItems(1), 300);
+        searchTimeout = setTimeout(function() { loadItems(1); }, 300);
       });
 
-      document.getElementById('category-filter').addEventListener('change', () => loadItems(1));
+      document.getElementById('category-filter').addEventListener('change', function() { loadItems(1); });
 
       await loadItems(1);
     });
 
+    function setView(view) {
+      currentView = view;
+      localStorage.setItem('itemsView', view);
+      updateViewToggle();
+      render();
+    }
+
+    function updateViewToggle() {
+      document.querySelectorAll('.view-toggle-btn').forEach(function(btn) {
+        if (btn.dataset.view === currentView) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
     async function loadTags() {
       try {
-        const response = await tagsApi.list();
-        // Handle wrapped response: {success: true, data: [...]}
-        const tagsData = response?.data || response || [];
+        var response = await tagsApi.list();
+        var tagsData = response && response.data ? response.data : (response || []);
         allTags = Array.isArray(tagsData) ? tagsData : [];
 
-        const filterSelect = document.getElementById('category-filter');
-        const categoryDatalist = document.getElementById('category-suggestions');
+        var filterSelect = document.getElementById('category-filter');
+        var categoryDatalist = document.getElementById('category-suggestions');
 
-        // Populate filter dropdown
-        allTags.forEach(tag => {
-          filterSelect.innerHTML += `<option value="${user.escapeHtml(tag.name)}">${user.escapeHtml(tag.name)}</option>`;
-        });
+        filterSelect.innerHTML = '<option value="">All Categories</option>';
+        for (var i = 0; i < allTags.length; i++) {
+          filterSelect.innerHTML += '<option value="' + user.escapeHtml(allTags[i].name) + '">' + user.escapeHtml(allTags[i].name) + '</option>';
+        }
 
-        // Populate category suggestions datalist
-        categoryDatalist.innerHTML = allTags.map(tag =>
-          `<option value="${user.escapeHtml(tag.name)}">`
-        ).join('');
+        var datalistHtml = '';
+        for (var j = 0; j < allTags.length; j++) {
+          datalistHtml += '<option value="' + user.escapeHtml(allTags[j].name) + '">';
+        }
+        categoryDatalist.innerHTML = datalistHtml;
+
+        document.getElementById('stat-categories').textContent = allTags.length;
       } catch (err) {
         console.error('Failed to load tags:', err);
         allTags = [];
@@ -187,81 +556,157 @@
     }
 
     async function loadItems(page) {
-      const grid = document.getElementById('items-grid');
-      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+      var content = document.getElementById('content-area');
+      content.innerHTML = '<div class="empty-state"><div class="empty-state-title">Loading...</div></div>';
 
       try {
-        const params = {
+        var params = {
           limit: PAGE_SIZE,
           offset: (page - 1) * PAGE_SIZE,
           search: document.getElementById('search-input').value,
-          tag: document.getElementById('category-filter').value,
+          tag: document.getElementById('category-filter').value
         };
 
-        const response = await itemsApi.list(params);
-        const items = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
-        totalItems = response?.meta?.total || response?.total || items.length;
+        var response = await itemsApi.list(params);
+        allItems = Array.isArray(response && response.data) ? response.data : (Array.isArray(response) ? response : []);
+        totalItems = (response && response.meta && response.meta.total) || (response && response.total) || allItems.length;
         currentPage = page;
 
-        if (items.length === 0) {
-          grid.innerHTML = `
-            <div style="grid-column: 1 / -1;" class="user-empty-state">
-              <div class="user-empty-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <path d="M16 10a4 4 0 0 1-8 0"></path>
-                </svg>
-              </div>
-              <div class="user-empty-title">No items yet</div>
-              <div class="user-empty-text">Add items you want to track prices for</div>
-              <button class="btn btn-primary" onclick="openAddItemModal()">Add Your First Item</button>
-            </div>
-          `;
-          document.getElementById('items-pagination').style.display = 'none';
-          return;
+        document.getElementById('stat-items').textContent = totalItems;
+        var totalPrices = 0;
+        for (var i = 0; i < allItems.length; i++) {
+          totalPrices += allItems[i].price_count || 0;
         }
+        document.getElementById('stat-prices').textContent = totalPrices;
+        document.getElementById('stats-bar').style.display = 'flex';
 
-        grid.innerHTML = items.map(item => renderItemCard(item)).join('');
+        render();
         updatePagination(page, totalItems);
       } catch (err) {
         console.error('Failed to load items:', err);
-        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load items</div>';
+        content.innerHTML = '<div class="empty-state"><div class="empty-state-title" style="color: var(--destructive);">Failed to load items</div></div>';
       }
     }
 
-    function renderItemCard(item) {
-      const tags = item.tags || [];
-      const sizeLabel = item.size ? `${item.size} ${item.unit || ''}`.trim() : '';
+    function render() {
+      var content = document.getElementById('content-area');
 
-      return `
-        <div class="user-item-card">
-          <div class="user-item-card-header">
-            <div>
-              <div class="user-item-card-title">${user.escapeHtml(item.name)}</div>
-              <div class="user-item-card-subtitle">${user.escapeHtml(item.brand || '')}</div>
-            </div>
-            ${tags.length > 0 ? `<span class="user-item-card-badge">${user.escapeHtml(tags[0])}</span>` : ''}
-          </div>
-          <div class="user-item-card-meta">
-            ${sizeLabel ? `<span>${user.escapeHtml(sizeLabel)}</span>` : ''}
-          </div>
-          <div class="user-item-card-meta">
-            <span>${item.price_count || 0} prices tracked</span>
-          </div>
-          <div class="user-item-card-actions">
-            <button class="btn btn-secondary btn-sm" onclick="editItem(${item.id})">Edit</button>
-            <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteItem(${item.id}, '${user.escapeHtml(item.name).replace(/'/g, "\\'")}')">Delete</button>
-          </div>
-        </div>
-      `;
+      if (allItems.length === 0) {
+        content.innerHTML = '<div class="empty-state">' +
+          '<div class="empty-state-icon">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+              '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>' +
+              '<line x1="3" y1="6" x2="21" y2="6"></line>' +
+              '<path d="M16 10a4 4 0 0 1-8 0"></path>' +
+            '</svg>' +
+          '</div>' +
+          '<div class="empty-state-title">No items yet</div>' +
+          '<p>Add items you want to track prices for</p>' +
+          '<button class="btn btn-primary" onclick="openAddItemModal()" style="margin-top: var(--space-4);">Add Your First Item</button>' +
+        '</div>';
+        return;
+      }
+
+      if (currentView === 'cards') {
+        renderCards();
+      } else {
+        renderTable();
+      }
+    }
+
+    function renderCards() {
+      var content = document.getElementById('content-area');
+      var html = '<div class="items-cards">';
+
+      for (var i = 0; i < allItems.length; i++) {
+        var item = allItems[i];
+        var tags = item.tags || [];
+        var sizeLabel = item.size ? (item.size + ' ' + (item.unit || '')).trim() : '';
+
+        html += '<div class="item-card">';
+        html += '<div class="item-card-header">';
+        html += '<div>';
+        html += '<div class="item-card-title">' + user.escapeHtml(item.name) + '</div>';
+        html += '<div class="item-card-brand">' + user.escapeHtml(item.brand || '') + '</div>';
+        html += '</div>';
+        if (tags.length > 0) {
+          html += '<span class="item-card-badge">' + user.escapeHtml(tags[0]) + '</span>';
+        }
+        html += '</div>';
+        html += '<div class="item-card-meta">';
+        if (sizeLabel) {
+          html += '<span class="item-card-meta-item">';
+          html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+          html += '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>';
+          html += '</svg>';
+          html += user.escapeHtml(sizeLabel);
+          html += '</span>';
+        }
+        html += '<span class="item-card-meta-item">';
+        html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+        html += '<line x1="12" y1="1" x2="12" y2="23"></line>';
+        html += '<path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>';
+        html += '</svg>';
+        html += (item.price_count || 0) + ' prices';
+        html += '</span>';
+        html += '</div>';
+        html += '<div class="item-card-actions">';
+        html += '<button class="item-card-btn" onclick="editItem(' + item.id + ')">Edit</button>';
+        html += '<button class="item-card-btn danger" onclick="deleteItem(' + item.id + ', \'' + user.escapeHtml(item.name).replace(/'/g, "\\'") + '\')">Delete</button>';
+        html += '</div></div>';
+      }
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function renderTable() {
+      var content = document.getElementById('content-area');
+      var html = '<div class="items-table-wrapper">';
+      html += '<table class="items-table">';
+      html += '<thead><tr>';
+      html += '<th>Item</th>';
+      html += '<th>Category</th>';
+      html += '<th>Size</th>';
+      html += '<th>Prices</th>';
+      html += '<th>Actions</th>';
+      html += '</tr></thead><tbody>';
+
+      for (var i = 0; i < allItems.length; i++) {
+        var item = allItems[i];
+        var tags = item.tags || [];
+        var sizeLabel = item.size ? (item.size + ' ' + (item.unit || '')).trim() : '—';
+
+        html += '<tr>';
+        html += '<td>';
+        html += '<div class="item-name">' + user.escapeHtml(item.name) + '</div>';
+        html += '<div class="item-brand">' + user.escapeHtml(item.brand || '') + '</div>';
+        html += '</td>';
+        html += '<td>';
+        if (tags.length > 0) {
+          html += '<span class="category-badge">' + user.escapeHtml(tags[0]) + '</span>';
+        } else {
+          html += '—';
+        }
+        html += '</td>';
+        html += '<td>' + user.escapeHtml(sizeLabel) + '</td>';
+        html += '<td><span class="price-count">' + (item.price_count || 0) + '</span></td>';
+        html += '<td>';
+        html += '<div class="table-actions">';
+        html += '<button class="table-btn" onclick="editItem(' + item.id + ')">Edit</button>';
+        html += '<button class="table-btn danger" onclick="deleteItem(' + item.id + ', \'' + user.escapeHtml(item.name).replace(/'/g, "\\'") + '\')">Delete</button>';
+        html += '</div></td></tr>';
+      }
+
+      html += '</tbody></table></div>';
+      content.innerHTML = html;
     }
 
     function updatePagination(page, total) {
-      const pagination = document.getElementById('items-pagination');
-      const info = document.getElementById('items-pagination-info');
-      const prevBtn = document.getElementById('items-prev-btn');
-      const nextBtn = document.getElementById('items-next-btn');
+      var pagination = document.getElementById('items-pagination');
+      var info = document.getElementById('items-pagination-info');
+      var prevBtn = document.getElementById('items-prev-btn');
+      var nextBtn = document.getElementById('items-next-btn');
 
       if (total <= PAGE_SIZE) {
         pagination.style.display = 'none';
@@ -269,9 +714,9 @@
       }
 
       pagination.style.display = 'flex';
-      const start = (page - 1) * PAGE_SIZE + 1;
-      const end = Math.min(page * PAGE_SIZE, total);
-      info.textContent = `Showing ${start}-${end} of ${total}`;
+      var start = (page - 1) * PAGE_SIZE + 1;
+      var end = Math.min(page * PAGE_SIZE, total);
+      info.textContent = 'Showing ' + start + '-' + end + ' of ' + total;
 
       prevBtn.disabled = page <= 1;
       nextBtn.disabled = end >= total;
@@ -287,8 +732,8 @@
 
     async function editItem(itemId) {
       try {
-        const response = await itemsApi.getById(itemId);
-        const item = response?.data || response;
+        var response = await itemsApi.getById(itemId);
+        var item = response && response.data ? response.data : response;
 
         document.getElementById('item-modal-title').textContent = 'Edit Item';
         document.getElementById('item-id').value = item.id;
@@ -307,18 +752,18 @@
     }
 
     async function saveItem() {
-      const itemId = document.getElementById('item-id').value;
-      const errorEl = document.getElementById('item-error');
+      var itemId = document.getElementById('item-id').value;
+      var errorEl = document.getElementById('item-error');
 
-      const category = document.getElementById('item-category').value.trim();
-      const sizeValue = document.getElementById('item-size').value.trim();
-      const data = {
+      var category = document.getElementById('item-category').value.trim();
+      var sizeValue = document.getElementById('item-size').value.trim();
+      var data = {
         name: document.getElementById('item-name').value.trim(),
         brand: document.getElementById('item-brand').value.trim() || null,
         size: sizeValue ? parseFloat(sizeValue) : null,
         unit: document.getElementById('item-unit').value || null,
         description: document.getElementById('item-description').value.trim() || null,
-        tags: category ? [category] : [],
+        tags: category ? [category] : []
       };
 
       if (!data.name) {
@@ -338,7 +783,6 @@
 
         userModal.close('item-modal');
         loadItems(currentPage);
-        // Refresh tags to include any newly created categories
         refreshTagSuggestions();
       } catch (err) {
         errorEl.textContent = err.message || 'Failed to save item';
@@ -348,30 +792,32 @@
 
     async function refreshTagSuggestions() {
       try {
-        const response = await tagsApi.list();
-        const tagsData = response?.data || response || [];
+        var response = await tagsApi.list();
+        var tagsData = response && response.data ? response.data : (response || []);
         allTags = Array.isArray(tagsData) ? tagsData : [];
 
-        const filterSelect = document.getElementById('category-filter');
-        const categoryDatalist = document.getElementById('category-suggestions');
+        var filterSelect = document.getElementById('category-filter');
+        var categoryDatalist = document.getElementById('category-suggestions');
 
-        // Reset filter dropdown (keeping first option)
         filterSelect.innerHTML = '<option value="">All Categories</option>';
-        allTags.forEach(tag => {
-          filterSelect.innerHTML += `<option value="${user.escapeHtml(tag.name)}">${user.escapeHtml(tag.name)}</option>`;
-        });
+        for (var i = 0; i < allTags.length; i++) {
+          filterSelect.innerHTML += '<option value="' + user.escapeHtml(allTags[i].name) + '">' + user.escapeHtml(allTags[i].name) + '</option>';
+        }
 
-        // Update category suggestions
-        categoryDatalist.innerHTML = allTags.map(tag =>
-          `<option value="${user.escapeHtml(tag.name)}">`
-        ).join('');
+        var datalistHtml = '';
+        for (var j = 0; j < allTags.length; j++) {
+          datalistHtml += '<option value="' + user.escapeHtml(allTags[j].name) + '">';
+        }
+        categoryDatalist.innerHTML = datalistHtml;
+
+        document.getElementById('stat-categories').textContent = allTags.length;
       } catch (err) {
         console.error('Failed to refresh tags:', err);
       }
     }
 
     async function deleteItem(itemId, itemName) {
-      if (!await user.confirm(`Are you sure you want to delete "${itemName}"? This will also delete all prices for this item.`)) {
+      if (!await user.confirm('Are you sure you want to delete "' + itemName + '"? This will also delete all prices for this item.')) {
         return;
       }
 

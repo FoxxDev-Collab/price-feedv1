@@ -8,6 +8,615 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/user.css">
   <script src="/js/theme.js"></script>
+  <style>
+    /* Stores Page Styles - Theme Aware */
+    .stores-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+    }
+
+    .stores-search {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      background: var(--card);
+      color: var(--foreground);
+      font-size: 0.875rem;
+    }
+
+    .stores-search:focus {
+      outline: none;
+      border-color: var(--color-primary-500);
+    }
+
+    .stores-filter {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      background: var(--card);
+      color: var(--foreground);
+      font-size: 0.875rem;
+      min-width: 120px;
+    }
+
+    .stores-view-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      overflow: hidden;
+    }
+
+    .stores-view-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: var(--card);
+      color: var(--foreground);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.875rem;
+      transition: background-color 0.2s;
+    }
+
+    .stores-view-btn:not(:last-child) {
+      border-right: 1px solid var(--border);
+    }
+
+    .stores-view-btn:hover {
+      background: var(--color-gray-100);
+    }
+
+    .dark .stores-view-btn:hover {
+      background: var(--color-gray-700);
+    }
+
+    .stores-view-btn.active {
+      background: var(--color-primary-500);
+      color: white;
+    }
+
+    /* Stats Bar */
+    .stores-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stores-stat-card {
+      padding: 1rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      text-align: center;
+    }
+
+    .stores-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-primary-600);
+    }
+
+    .stores-stat-label {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.25rem;
+    }
+
+    /* Cards View */
+    .stores-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+
+    .store-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .store-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .store-card-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .store-card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--foreground);
+      margin: 0;
+    }
+
+    .store-card-subtitle {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      margin-top: 0.25rem;
+    }
+
+    .store-card-badge {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      border-radius: 9999px;
+      background: var(--color-primary-100);
+      color: var(--color-primary-700);
+    }
+
+    .store-card-body {
+      padding: 1rem;
+    }
+
+    .store-card-address {
+      font-size: 0.875rem;
+      color: var(--foreground);
+      margin-bottom: 0.5rem;
+    }
+
+    .store-card-location {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .store-card-meta {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .store-card-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .store-card-meta-item svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .store-card-footer {
+      padding: 0.75rem 1rem;
+      background: var(--muted);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .store-card-btn {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      background: var(--card);
+      color: var(--foreground);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .store-card-btn:hover {
+      background: var(--color-gray-100);
+    }
+
+    .dark .store-card-btn:hover {
+      background: var(--color-gray-700);
+    }
+
+    .store-card-btn.danger {
+      color: var(--destructive);
+      border-color: var(--destructive);
+    }
+
+    .store-card-btn.danger:hover {
+      background: var(--destructive);
+      color: white;
+    }
+
+    /* Table View */
+    .stores-table-wrapper {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+
+    .stores-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .stores-table th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-gray-500);
+      background: var(--color-gray-50);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dark .stores-table th {
+      background: var(--color-gray-800);
+    }
+
+    .stores-table td {
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      color: var(--foreground);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stores-table tbody tr:hover {
+      background: var(--color-gray-50);
+    }
+
+    .dark .stores-table tbody tr:hover {
+      background: var(--color-gray-800);
+    }
+
+    .stores-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .store-table-name {
+      font-weight: 500;
+    }
+
+    .store-table-chain {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .store-table-prices {
+      font-weight: 600;
+      color: var(--color-primary-600);
+    }
+
+    .store-table-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .store-table-btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      background: var(--card);
+      color: var(--foreground);
+      cursor: pointer;
+    }
+
+    .store-table-btn:hover {
+      background: var(--color-gray-100);
+    }
+
+    .dark .store-table-btn:hover {
+      background: var(--color-gray-700);
+    }
+
+    .store-table-btn.danger {
+      color: var(--destructive);
+    }
+
+    /* Empty State */
+    .stores-empty {
+      text-align: center;
+      padding: 3rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+    }
+
+    .stores-empty-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 1rem;
+      color: var(--color-gray-400);
+    }
+
+    .stores-empty-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 0.5rem;
+    }
+
+    .stores-empty-text {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+      margin-bottom: 1rem;
+    }
+
+    /* Pagination */
+    .stores-pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+    }
+
+    .stores-pagination-info {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+    }
+
+    .stores-pagination-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .stores-pagination-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      background: var(--card);
+      color: var(--foreground);
+      cursor: pointer;
+    }
+
+    .stores-pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .stores-pagination-btn:not(:disabled):hover {
+      background: var(--color-gray-100);
+    }
+
+    .dark .stores-pagination-btn:not(:disabled):hover {
+      background: var(--color-gray-700);
+    }
+
+    /* Discover Modal Styles */
+    .discover-prompt {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .discover-prompt-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      color: var(--color-primary-500);
+    }
+
+    .discover-prompt h4 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--foreground);
+    }
+
+    .discover-prompt p {
+      color: var(--color-gray-500);
+      margin-bottom: 1.5rem;
+    }
+
+    .discover-prompt-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .discover-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      min-height: 400px;
+    }
+
+    @media (max-width: 768px) {
+      .discover-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .discover-map-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .discover-map {
+      flex: 1;
+      min-height: 300px;
+      border-radius: 0.5rem;
+      background: var(--color-gray-100);
+    }
+
+    .discover-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .discover-results-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .discover-results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.75rem;
+    }
+
+    .discover-results-header h4 {
+      margin: 0;
+      color: var(--foreground);
+    }
+
+    .discover-results-count {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+    }
+
+    .discover-results-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 350px;
+    }
+
+    .discover-store-card {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .discover-store-card:hover,
+    .discover-store-card.active {
+      background: var(--color-gray-50);
+    }
+
+    .dark .discover-store-card:hover,
+    .dark .discover-store-card.active {
+      background: var(--color-gray-800);
+    }
+
+    .discover-store-card.existing {
+      opacity: 0.6;
+    }
+
+    .discover-store-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--color-primary-500);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .discover-store-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .discover-store-name {
+      font-weight: 500;
+      color: var(--foreground);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .discover-store-address {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .discover-store-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      margin-top: 0.25rem;
+    }
+
+    .discover-store-rating svg {
+      color: #fbbf24;
+    }
+
+    .discover-store-actions {
+      flex-shrink: 0;
+    }
+
+    .discover-badge {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.625rem;
+      font-weight: 600;
+      border-radius: 9999px;
+    }
+
+    .discover-badge-exists {
+      background: var(--color-gray-200);
+      color: var(--color-gray-600);
+    }
+
+    .dark .discover-badge-exists {
+      background: var(--color-gray-700);
+      color: var(--color-gray-400);
+    }
+
+    .discover-loading,
+    .discover-empty,
+    .discover-error {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-gray-500);
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--color-primary-500);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 0.5rem;
+    }
+
+    .spinner-sm {
+      width: 16px;
+      height: 16px;
+      border-width: 2px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
   <div class="user-layout">
@@ -38,24 +647,67 @@
           </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="user-search-bar">
-          <input type="text" class="user-search-input" id="search-input" placeholder="Search stores by name, address, or chain...">
-          <select class="user-form-select" id="state-filter" style="width: auto;">
+        <!-- Toolbar -->
+        <div class="stores-toolbar">
+          <input type="text" class="stores-search" id="search-input" placeholder="Search stores by name, address, or chain...">
+          <select class="stores-filter" id="state-filter">
             <option value="">All States</option>
           </select>
+          <div class="stores-view-toggle">
+            <button class="stores-view-btn active" id="view-cards-btn" onclick="setView('cards')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+              </svg>
+              Cards
+            </button>
+            <button class="stores-view-btn" id="view-table-btn" onclick="setView('table')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+              Table
+            </button>
+          </div>
         </div>
 
-        <!-- Stores Grid -->
-        <div id="stores-grid" class="user-item-grid">
-          <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        <!-- Stats Bar -->
+        <div class="stores-stats" id="stores-stats">
+          <div class="stores-stat-card">
+            <div class="stores-stat-value" id="stat-total">0</div>
+            <div class="stores-stat-label">Total Stores</div>
+          </div>
+          <div class="stores-stat-card">
+            <div class="stores-stat-value" id="stat-chains">0</div>
+            <div class="stores-stat-label">Chains</div>
+          </div>
+          <div class="stores-stat-card">
+            <div class="stores-stat-value" id="stat-prices">0</div>
+            <div class="stores-stat-label">Total Prices</div>
+          </div>
+          <div class="stores-stat-card">
+            <div class="stores-stat-value" id="stat-states">0</div>
+            <div class="stores-stat-label">States</div>
+          </div>
         </div>
 
-        <div id="stores-pagination" class="user-pagination" style="display: none;">
-          <div class="user-pagination-info" id="stores-pagination-info"></div>
-          <div class="user-pagination-buttons">
-            <button class="user-pagination-btn" id="stores-prev-btn" onclick="loadStores(currentPage - 1)">Previous</button>
-            <button class="user-pagination-btn" id="stores-next-btn" onclick="loadStores(currentPage + 1)">Next</button>
+        <!-- Content Area -->
+        <div id="stores-content">
+          <div class="stores-empty">
+            <div class="spinner"></div>
+            <div class="stores-empty-text">Loading stores...</div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div id="stores-pagination" class="stores-pagination" style="display: none;">
+          <div class="stores-pagination-info" id="stores-pagination-info"></div>
+          <div class="stores-pagination-buttons">
+            <button class="stores-pagination-btn" id="stores-prev-btn" onclick="loadStores(currentPage - 1)">Previous</button>
+            <button class="stores-pagination-btn" id="stores-next-btn" onclick="loadStores(currentPage + 1)">Next</button>
           </div>
         </div>
       </div>
@@ -153,7 +805,7 @@
       </div>
 
       <div class="user-modal-body">
-        <!-- Location Prompt (shown if no location set) -->
+        <!-- Location Prompt -->
         <div id="discover-location-prompt" class="discover-prompt">
           <div class="discover-prompt-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -181,13 +833,13 @@
           </div>
         </div>
 
-        <!-- Discovery Content (shown when location is available) -->
+        <!-- Discovery Content -->
         <div id="discover-content" class="discover-layout hidden">
           <!-- Left: Map Panel -->
           <div class="discover-map-panel">
             <div id="discover-map" class="discover-map"></div>
             <div class="discover-controls">
-              <select id="discover-radius" class="user-form-select" onchange="refreshDiscoverSearch()">
+              <select id="discover-radius" class="stores-filter" onchange="refreshDiscoverSearch()">
                 <option value="1000">Within 1 km</option>
                 <option value="2000">Within 2 km</option>
                 <option value="5000" selected>Within 5 km</option>
@@ -212,16 +864,13 @@
               <span class="discover-results-count" id="discover-count">0 stores</span>
             </div>
             <div class="discover-results-list" id="discover-results">
-              <!-- Store cards rendered here -->
             </div>
           </div>
         </div>
       </div>
 
       <div class="user-modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeDiscoverModal()">
-          Close
-        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeDiscoverModal()">Close</button>
       </div>
     </div>
   </div>
@@ -232,20 +881,22 @@
   <script src="/js/user-common.js"></script>
   <script src="/js/user-sidebar.js"></script>
   <script>
-    const PAGE_SIZE = 12;
-    let currentPage = 1;
-    let totalStores = 0;
-    let searchTimeout = null;
+    var PAGE_SIZE = 12;
+    var currentPage = 1;
+    var totalStores = 0;
+    var searchTimeout = null;
+    var currentView = 'cards';
+    var allStores = [];
 
     // Discovery state
-    let discoverMap = null;
-    let discoverMarkers = [];
-    let userLocationMarker = null;
-    let discoveredStores = [];
-    let currentDiscoverLocation = null;
-    let existingStoreIds = new Set();
+    var discoverMap = null;
+    var discoverMarkers = [];
+    var userLocationMarker = null;
+    var discoveredStores = [];
+    var currentDiscoverLocation = null;
+    var existingStoreIds = new Set();
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', async function() {
       if (!await user.init()) return;
 
       initUserSidebar('stores');
@@ -256,112 +907,223 @@
 
       userModal.setupBackdropClose();
 
+      // Restore view preference
+      var savedView = localStorage.getItem('stores-view');
+      if (savedView === 'cards' || savedView === 'table') {
+        currentView = savedView;
+        updateViewButtons();
+      }
+
       // Load states for filter
       await loadStates();
 
       // Setup search
-      const searchInput = document.getElementById('search-input');
-      searchInput.addEventListener('input', () => {
+      var searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => loadStores(1), 300);
+        searchTimeout = setTimeout(function() { loadStores(1); }, 300);
       });
 
-      document.getElementById('state-filter').addEventListener('change', () => loadStores(1));
+      document.getElementById('state-filter').addEventListener('change', function() { loadStores(1); });
 
       await loadStores(1);
     });
 
+    function setView(view) {
+      currentView = view;
+      localStorage.setItem('stores-view', view);
+      updateViewButtons();
+      renderStores();
+    }
+
+    function updateViewButtons() {
+      var cardsBtn = document.getElementById('view-cards-btn');
+      var tableBtn = document.getElementById('view-table-btn');
+      cardsBtn.classList.toggle('active', currentView === 'cards');
+      tableBtn.classList.toggle('active', currentView === 'table');
+    }
+
     async function loadStates() {
       try {
-        const response = await regionsApi.getStates();
-        const states = response?.data || response || [];
-        const select = document.getElementById('state-filter');
-        states.forEach(state => {
-          select.innerHTML += `<option value="${state}">${state}</option>`;
-        });
+        var response = await regionsApi.getStates();
+        var states = response && response.data ? response.data : (response || []);
+        var select = document.getElementById('state-filter');
+        for (var i = 0; i < states.length; i++) {
+          var option = document.createElement('option');
+          option.value = states[i];
+          option.textContent = states[i];
+          select.appendChild(option);
+        }
       } catch (err) {
         console.error('Failed to load states:', err);
       }
     }
 
     async function loadStores(page) {
-      const grid = document.getElementById('stores-grid');
-      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+      var content = document.getElementById('stores-content');
+      content.innerHTML = '<div class="stores-empty"><div class="spinner"></div><div class="stores-empty-text">Loading stores...</div></div>';
 
       try {
-        const params = {
+        var params = {
           limit: PAGE_SIZE,
           offset: (page - 1) * PAGE_SIZE,
           search: document.getElementById('search-input').value,
-          state: document.getElementById('state-filter').value,
+          state: document.getElementById('state-filter').value
         };
 
-        const response = await storesApi.list(params);
-        const stores = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
-        totalStores = response?.meta?.total || response?.total || stores.length;
+        var response = await storesApi.list(params);
+        allStores = Array.isArray(response && response.data) ? response.data : (Array.isArray(response) ? response : []);
+        totalStores = (response && response.meta && response.meta.total) ? response.meta.total : ((response && response.total) ? response.total : allStores.length);
         currentPage = page;
 
-        if (stores.length === 0) {
-          grid.innerHTML = `
-            <div style="grid-column: 1 / -1;" class="user-empty-state">
-              <div class="user-empty-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-              </div>
-              <div class="user-empty-title">No stores found</div>
-              <div class="user-empty-text">Add a store or discover nearby stores</div>
-              <button class="btn btn-primary" onclick="openDiscoverModal()">Discover Nearby</button>
-            </div>
-          `;
-          document.getElementById('stores-pagination').style.display = 'none';
-          return;
-        }
-
-        grid.innerHTML = stores.map(store => renderStoreCard(store)).join('');
+        updateStats();
+        renderStores();
         updatePagination(page, totalStores);
       } catch (err) {
         console.error('Failed to load stores:', err);
-        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load stores</div>';
+        content.innerHTML = '<div class="stores-empty"><div class="stores-empty-title">Failed to load stores</div><div class="stores-empty-text">Please try again later.</div></div>';
       }
     }
 
-    function renderStoreCard(store) {
-      const canEdit = store.created_by === user.getUserId();
+    function updateStats() {
+      document.getElementById('stat-total').textContent = totalStores;
 
-      return `
-        <div class="user-item-card">
-          <div class="user-item-card-header">
-            <div>
-              <div class="user-item-card-title">${user.escapeHtml(store.name)}</div>
-              <div class="user-item-card-subtitle">${user.escapeHtml(store.chain || store.store_type || '')}</div>
-            </div>
-            ${store.verified ? '<span class="user-item-card-badge" style="background: var(--color-primary-100); color: var(--color-primary-700);">Verified</span>' : ''}
-          </div>
-          <div class="user-item-card-meta">
-            <span>${user.escapeHtml(store.street_address)}</span>
-            <span>${user.escapeHtml(store.city)}, ${store.state} ${store.zip_code}</span>
-          </div>
-          <div class="user-item-card-meta">
-            <span>${store.price_count || 0} prices</span>
-          </div>
-          <div class="user-item-card-actions">
-            <button class="btn btn-secondary btn-sm" onclick="viewStorePrices(${store.id}, '${user.escapeHtml(store.name).replace(/'/g, "\\'")}')">View Prices</button>
-            ${canEdit ? `
-              <button class="btn btn-secondary btn-sm" onclick="editStore(${store.id})">Edit</button>
-              <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteStore(${store.id}, '${user.escapeHtml(store.name).replace(/'/g, "\\'")}')">Delete</button>
-            ` : ''}
-          </div>
-        </div>
-      `;
+      // Count unique chains
+      var chains = {};
+      var states = {};
+      var totalPrices = 0;
+
+      for (var i = 0; i < allStores.length; i++) {
+        var store = allStores[i];
+        if (store.chain) chains[store.chain] = true;
+        if (store.state) states[store.state] = true;
+        totalPrices += store.price_count || 0;
+      }
+
+      document.getElementById('stat-chains').textContent = Object.keys(chains).length;
+      document.getElementById('stat-prices').textContent = totalPrices;
+      document.getElementById('stat-states').textContent = Object.keys(states).length;
+    }
+
+    function renderStores() {
+      var content = document.getElementById('stores-content');
+
+      if (allStores.length === 0) {
+        content.innerHTML = '<div class="stores-empty">' +
+          '<svg class="stores-empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+            '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>' +
+            '<polyline points="9 22 9 12 15 12 15 22"></polyline>' +
+          '</svg>' +
+          '<div class="stores-empty-title">No stores found</div>' +
+          '<div class="stores-empty-text">Add a store or discover nearby stores</div>' +
+          '<button class="btn btn-primary" onclick="openDiscoverModal()">Discover Nearby</button>' +
+        '</div>';
+        return;
+      }
+
+      if (currentView === 'cards') {
+        renderCards();
+      } else {
+        renderTable();
+      }
+    }
+
+    function renderCards() {
+      var content = document.getElementById('stores-content');
+      var html = '<div class="stores-grid">';
+
+      for (var i = 0; i < allStores.length; i++) {
+        var store = allStores[i];
+        var canEdit = store.created_by === user.getUserId();
+        var escapedName = user.escapeHtml(store.name);
+
+        html += '<div class="store-card">';
+        html += '<div class="store-card-header">';
+        html += '<div>';
+        html += '<div class="store-card-title">' + escapedName + '</div>';
+        html += '<div class="store-card-subtitle">' + user.escapeHtml(store.chain || store.store_type || '') + '</div>';
+        html += '</div>';
+        if (store.verified) {
+          html += '<span class="store-card-badge">Verified</span>';
+        }
+        html += '</div>';
+
+        html += '<div class="store-card-body">';
+        html += '<div class="store-card-address">' + user.escapeHtml(store.street_address) + '</div>';
+        html += '<div class="store-card-location">' + user.escapeHtml(store.city) + ', ' + store.state + ' ' + store.zip_code + '</div>';
+        html += '<div class="store-card-meta">';
+        html += '<div class="store-card-meta-item">';
+        html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>';
+        html += (store.price_count || 0) + ' prices';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '<div class="store-card-footer">';
+        html += '<button class="store-card-btn" onclick="viewStorePrices(' + store.id + ', \'' + escapedName.replace(/'/g, "\\'") + '\')">View Prices</button>';
+        if (canEdit) {
+          html += '<button class="store-card-btn" onclick="editStore(' + store.id + ')">Edit</button>';
+          html += '<button class="store-card-btn danger" onclick="deleteStore(' + store.id + ', \'' + escapedName.replace(/'/g, "\\'") + '\')">Delete</button>';
+        }
+        html += '</div>';
+        html += '</div>';
+      }
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function renderTable() {
+      var content = document.getElementById('stores-content');
+      var html = '<div class="stores-table-wrapper">';
+      html += '<table class="stores-table">';
+      html += '<thead><tr>';
+      html += '<th>Store</th>';
+      html += '<th>Address</th>';
+      html += '<th>City</th>';
+      html += '<th>State</th>';
+      html += '<th>Prices</th>';
+      html += '<th>Actions</th>';
+      html += '</tr></thead>';
+      html += '<tbody>';
+
+      for (var i = 0; i < allStores.length; i++) {
+        var store = allStores[i];
+        var canEdit = store.created_by === user.getUserId();
+        var escapedName = user.escapeHtml(store.name);
+
+        html += '<tr>';
+        html += '<td>';
+        html += '<div class="store-table-name">' + escapedName + '</div>';
+        if (store.chain) {
+          html += '<div class="store-table-chain">' + user.escapeHtml(store.chain) + '</div>';
+        }
+        html += '</td>';
+        html += '<td>' + user.escapeHtml(store.street_address) + '</td>';
+        html += '<td>' + user.escapeHtml(store.city) + '</td>';
+        html += '<td>' + store.state + '</td>';
+        html += '<td class="store-table-prices">' + (store.price_count || 0) + '</td>';
+        html += '<td>';
+        html += '<div class="store-table-actions">';
+        html += '<button class="store-table-btn" onclick="viewStorePrices(' + store.id + ', \'' + escapedName.replace(/'/g, "\\'") + '\')">Prices</button>';
+        if (canEdit) {
+          html += '<button class="store-table-btn" onclick="editStore(' + store.id + ')">Edit</button>';
+          html += '<button class="store-table-btn danger" onclick="deleteStore(' + store.id + ', \'' + escapedName.replace(/'/g, "\\'") + '\')">Delete</button>';
+        }
+        html += '</div>';
+        html += '</td>';
+        html += '</tr>';
+      }
+
+      html += '</tbody></table></div>';
+      content.innerHTML = html;
     }
 
     function updatePagination(page, total) {
-      const pagination = document.getElementById('stores-pagination');
-      const info = document.getElementById('stores-pagination-info');
-      const prevBtn = document.getElementById('stores-prev-btn');
-      const nextBtn = document.getElementById('stores-next-btn');
+      var pagination = document.getElementById('stores-pagination');
+      var info = document.getElementById('stores-pagination-info');
+      var prevBtn = document.getElementById('stores-prev-btn');
+      var nextBtn = document.getElementById('stores-next-btn');
 
       if (total <= PAGE_SIZE) {
         pagination.style.display = 'none';
@@ -369,9 +1131,9 @@
       }
 
       pagination.style.display = 'flex';
-      const start = (page - 1) * PAGE_SIZE + 1;
-      const end = Math.min(page * PAGE_SIZE, total);
-      info.textContent = `Showing ${start}-${end} of ${total}`;
+      var start = (page - 1) * PAGE_SIZE + 1;
+      var end = Math.min(page * PAGE_SIZE, total);
+      info.textContent = 'Showing ' + start + '-' + end + ' of ' + total;
 
       prevBtn.disabled = page <= 1;
       nextBtn.disabled = end >= total;
@@ -387,8 +1149,8 @@
 
     async function editStore(storeId) {
       try {
-        const store = await storesApi.getById(storeId);
-        const data = store?.data || store;
+        var store = await storesApi.getById(storeId);
+        var data = store && store.data ? store.data : store;
 
         document.getElementById('store-modal-title').textContent = 'Edit Store';
         document.getElementById('store-id').value = data.id;
@@ -408,17 +1170,17 @@
     }
 
     async function saveStore() {
-      const storeId = document.getElementById('store-id').value;
-      const errorEl = document.getElementById('store-error');
+      var storeId = document.getElementById('store-id').value;
+      var errorEl = document.getElementById('store-error');
 
-      const data = {
+      var data = {
         name: document.getElementById('store-name').value.trim(),
         chain: document.getElementById('store-chain').value.trim() || null,
         store_type: document.getElementById('store-type').value,
         street_address: document.getElementById('store-address').value.trim(),
         city: document.getElementById('store-city').value.trim(),
         state: document.getElementById('store-state').value.trim().toUpperCase(),
-        zip_code: document.getElementById('store-zip').value.trim(),
+        zip_code: document.getElementById('store-zip').value.trim()
       };
 
       if (!data.name || !data.street_address || !data.city || !data.state || !data.zip_code) {
@@ -445,7 +1207,7 @@
     }
 
     async function deleteStore(storeId, storeName) {
-      if (!await user.confirm(`Are you sure you want to delete "${storeName}"? This will also delete all prices for this store.`)) {
+      if (!await user.confirm('Are you sure you want to delete "' + storeName + '"? This will also delete all prices for this store.')) {
         return;
       }
 
@@ -459,50 +1221,45 @@
     }
 
     async function viewStorePrices(storeId, storeName) {
-      document.getElementById('store-prices-title').textContent = `Prices at ${storeName}`;
-      const content = document.getElementById('store-prices-content');
+      document.getElementById('store-prices-title').textContent = 'Prices at ' + storeName;
+      var content = document.getElementById('store-prices-content');
       content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
       userModal.open('store-prices-modal');
 
       try {
-        const response = await pricesApi.getByStore(storeId);
-        const prices = response?.data || response || [];
+        var response = await pricesApi.getByStore(storeId);
+        var prices = response && response.data ? response.data : (response || []);
 
         if (prices.length === 0) {
-          content.innerHTML = `
-            <div class="user-empty-state">
-              <div class="user-empty-title">No prices yet</div>
-              <div class="user-empty-text">Be the first to add prices at this store!</div>
-            </div>
-          `;
+          content.innerHTML = '<div class="user-empty-state">' +
+            '<div class="user-empty-title">No prices yet</div>' +
+            '<div class="user-empty-text">Be the first to add prices at this store!</div>' +
+          '</div>';
           return;
         }
 
-        content.innerHTML = `
-          <table class="user-table">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Price</th>
-                <th>Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${prices.map(p => `
-                <tr>
-                  <td>
-                    <div style="font-weight: var(--font-medium);">${user.escapeHtml(p.item_name)}</div>
-                    <div style="font-size: var(--text-xs); color: var(--color-gray-500);">${user.escapeHtml(p.item_brand || '')}</div>
-                  </td>
-                  <td style="font-weight: var(--font-bold); color: var(--color-primary-600);">${user.formatCurrency(p.price)}</td>
-                  <td>${user.formatDate(p.updated_at)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
+        var html = '<table class="stores-table">';
+        html += '<thead><tr><th>Item</th><th>Price</th><th>Updated</th></tr></thead>';
+        html += '<tbody>';
+
+        for (var i = 0; i < prices.length; i++) {
+          var p = prices[i];
+          html += '<tr>';
+          html += '<td>';
+          html += '<div style="font-weight: 500;">' + user.escapeHtml(p.item_name) + '</div>';
+          if (p.item_brand) {
+            html += '<div style="font-size: 0.75rem; color: var(--color-gray-500);">' + user.escapeHtml(p.item_brand) + '</div>';
+          }
+          html += '</td>';
+          html += '<td style="font-weight: 600; color: var(--color-primary-600);">' + user.formatCurrency(p.price) + '</td>';
+          html += '<td>' + user.formatDate(p.updated_at) + '</td>';
+          html += '</tr>';
+        }
+
+        html += '</tbody></table>';
+        content.innerHTML = html;
       } catch (err) {
-        content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load prices</div>';
+        content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--destructive);">Failed to load prices</div>';
       }
     }
 
@@ -513,7 +1270,6 @@
     async function openDiscoverModal() {
       document.getElementById('discover-modal').classList.remove('hidden');
 
-      // Check if user has location set
       if (user.currentUser && user.currentUser.latitude && user.currentUser.longitude) {
         currentDiscoverLocation = {
           lat: user.currentUser.latitude,
@@ -524,7 +1280,6 @@
         await initDiscoverMap();
         await searchNearbyStores();
       } else {
-        // Show location prompt
         document.getElementById('discover-location-prompt').classList.remove('hidden');
         document.getElementById('discover-content').classList.add('hidden');
       }
@@ -536,8 +1291,8 @@
     }
 
     async function detectLocationForDiscover() {
-      const btn = event.target.closest('button');
-      const originalContent = btn.innerHTML;
+      var btn = event.target.closest('button');
+      var originalContent = btn.innerHTML;
 
       try {
         btn.disabled = true;
@@ -585,61 +1340,70 @@
 
     async function loadExistingStoreIds() {
       try {
-        const response = await storesApi.list({ limit: 100 });
+        var response = await storesApi.list({ limit: 100 });
         existingStoreIds.clear();
-        const stores = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
-        stores.forEach(store => {
+        var stores = Array.isArray(response && response.data) ? response.data : (Array.isArray(response) ? response : []);
+        for (var i = 0; i < stores.length; i++) {
+          var store = stores[i];
           if (store.google_place_id) {
             existingStoreIds.add(store.google_place_id);
           }
           if (store.name && store.zip_code) {
-            existingStoreIds.add(`${store.name.toLowerCase()}_${store.zip_code}`);
+            existingStoreIds.add(store.name.toLowerCase() + '_' + store.zip_code);
           }
-        });
+        }
       } catch (err) {
         console.error('Failed to load existing stores:', err);
       }
     }
 
     async function searchNearbyStores() {
-      const resultsContainer = document.getElementById('discover-results');
-      resultsContainer.innerHTML = '<div class="discover-loading"><span class="spinner"></span> Searching for stores...</div>';
+      var resultsContainer = document.getElementById('discover-results');
+      resultsContainer.innerHTML = '<div class="discover-loading"><div class="spinner"></div> Searching for stores...</div>';
 
-      const radius = parseInt(document.getElementById('discover-radius').value);
+      var radius = parseInt(document.getElementById('discover-radius').value);
 
       try {
-        const response = await mapsApi.findNearbyStores(
+        var response = await mapsApi.findNearbyStores(
           currentDiscoverLocation.lat,
           currentDiscoverLocation.lng,
           radius
         );
 
-        discoveredStores = Array.isArray(response?.data) ? response.data : (response?.stores || response?.results || []);
+        discoveredStores = Array.isArray(response && response.data) ? response.data : (response && response.stores ? response.stores : (response && response.results ? response.results : []));
         clearDiscoverMarkers();
 
-        discoveredStores.forEach((store, index) => {
-          const lat = store.latitude || store.geometry?.location?.lat;
-          const lng = store.longitude || store.geometry?.location?.lng;
+        for (var i = 0; i < discoveredStores.length; i++) {
+          var store = discoveredStores[i];
+          var lat = store.latitude || (store.geometry && store.geometry.location && store.geometry.location.lat);
+          var lng = store.longitude || (store.geometry && store.geometry.location && store.geometry.location.lng);
 
           if (lat && lng) {
-            const marker = mapsApi.addMarker(discoverMap,
-              { lat, lng },
+            var marker = mapsApi.addMarker(discoverMap,
+              { lat: lat, lng: lng },
               {
                 icon: mapsApi.createIcon(checkIfStoreExists(store) ? 'store-selected' : 'store'),
                 title: store.name
               }
             );
 
-            marker.addListener('click', () => highlightStore(index));
+            (function(index) {
+              marker.addListener('click', function() { highlightStore(index); });
+            })(i);
             discoverMarkers.push(marker);
           }
-        });
+        }
 
         if (discoveredStores.length > 0) {
-          const positions = [currentDiscoverLocation, ...discoveredStores.map(s => ({
-            lat: s.latitude || s.geometry?.location?.lat,
-            lng: s.longitude || s.geometry?.location?.lng
-          })).filter(p => p.lat && p.lng)];
+          var positions = [currentDiscoverLocation];
+          for (var j = 0; j < discoveredStores.length; j++) {
+            var s = discoveredStores[j];
+            var sLat = s.latitude || (s.geometry && s.geometry.location && s.geometry.location.lat);
+            var sLng = s.longitude || (s.geometry && s.geometry.location && s.geometry.location.lng);
+            if (sLat && sLng) {
+              positions.push({ lat: sLat, lng: sLng });
+            }
+          }
           mapsApi.fitBounds(discoverMap, positions);
         }
 
@@ -647,77 +1411,74 @@
 
       } catch (err) {
         console.error('Store search failed:', err);
-        resultsContainer.innerHTML = `
-          <div class="discover-error">
-            <p>Failed to search for stores.</p>
-            <button class="btn btn-secondary btn-sm" onclick="searchNearbyStores()">Try Again</button>
-          </div>
-        `;
+        resultsContainer.innerHTML = '<div class="discover-error">' +
+          '<p>Failed to search for stores.</p>' +
+          '<button class="btn btn-secondary btn-sm" onclick="searchNearbyStores()">Try Again</button>' +
+        '</div>';
       }
     }
 
     function renderDiscoverResults() {
-      const container = document.getElementById('discover-results');
-      document.getElementById('discover-count').textContent = `${discoveredStores.length} stores found`;
+      var container = document.getElementById('discover-results');
+      document.getElementById('discover-count').textContent = discoveredStores.length + ' stores found';
 
       if (discoveredStores.length === 0) {
-        container.innerHTML = `
-          <div class="discover-empty">
-            <p>No grocery stores found in this area.</p>
-            <p>Try increasing the search radius.</p>
-          </div>
-        `;
+        container.innerHTML = '<div class="discover-empty">' +
+          '<p>No grocery stores found in this area.</p>' +
+          '<p>Try increasing the search radius.</p>' +
+        '</div>';
         return;
       }
 
-      container.innerHTML = discoveredStores.map((store, index) => {
-        const isExisting = checkIfStoreExists(store);
+      var html = '';
+      for (var i = 0; i < discoveredStores.length; i++) {
+        var store = discoveredStores[i];
+        var isExisting = checkIfStoreExists(store);
 
-        return `
-          <div class="discover-store-card ${isExisting ? 'existing' : ''}" data-index="${index}" onclick="highlightStore(${index})">
-            <div class="discover-store-number">${index + 1}</div>
-            <div class="discover-store-info">
-              <div class="discover-store-name">${escapeHtml(store.name)}</div>
-              <div class="discover-store-address">${escapeHtml(store.formatted_address || store.address || store.vicinity || '')}</div>
-              ${store.rating ? `
-                <div class="discover-store-rating">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                  ${store.rating.toFixed(1)}
-                </div>
-              ` : ''}
-            </div>
-            <div class="discover-store-actions">
-              ${isExisting ? `
-                <span class="discover-badge discover-badge-exists">Already Added</span>
-              ` : `
-                <button class="btn btn-primary btn-sm" onclick="addDiscoveredStore(${index}, event)">
-                  Add Store
-                </button>
-              `}
-            </div>
-          </div>
-        `;
-      }).join('');
+        html += '<div class="discover-store-card' + (isExisting ? ' existing' : '') + '" data-index="' + i + '" onclick="highlightStore(' + i + ')">';
+        html += '<div class="discover-store-number">' + (i + 1) + '</div>';
+        html += '<div class="discover-store-info">';
+        html += '<div class="discover-store-name">' + escapeHtml(store.name) + '</div>';
+        html += '<div class="discover-store-address">' + escapeHtml(store.formatted_address || store.address || store.vicinity || '') + '</div>';
+        if (store.rating) {
+          html += '<div class="discover-store-rating">';
+          html += '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+          html += store.rating.toFixed(1);
+          html += '</div>';
+        }
+        html += '</div>';
+        html += '<div class="discover-store-actions">';
+        if (isExisting) {
+          html += '<span class="discover-badge discover-badge-exists">Already Added</span>';
+        } else {
+          html += '<button class="btn btn-primary btn-sm" onclick="addDiscoveredStore(' + i + ', event)">Add Store</button>';
+        }
+        html += '</div>';
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
     }
 
     function highlightStore(index) {
       if (discoverMarkers[index]) {
         discoverMarkers[index].setAnimation(google.maps.Animation.BOUNCE);
-        setTimeout(() => discoverMarkers[index].setAnimation(null), 1500);
+        setTimeout(function() { discoverMarkers[index].setAnimation(null); }, 1500);
       }
 
-      document.querySelectorAll('.discover-store-card').forEach((card, i) => {
-        card.classList.toggle('active', i === index);
-      });
+      var cards = document.querySelectorAll('.discover-store-card');
+      for (var i = 0; i < cards.length; i++) {
+        cards[i].classList.toggle('active', i === index);
+      }
 
-      const store = discoveredStores[index];
-      const lat = store.latitude || store.geometry?.location?.lat;
-      const lng = store.longitude || store.geometry?.location?.lng;
+      var store = discoveredStores[index];
+      var lat = store.latitude || (store.geometry && store.geometry.location && store.geometry.location.lat);
+      var lng = store.longitude || (store.geometry && store.geometry.location && store.geometry.location.lng);
       if (lat && lng) {
-        discoverMap.panTo({ lat, lng });
+        discoverMap.panTo({ lat: lat, lng: lng });
       }
 
-      const activeCard = document.querySelector('.discover-store-card.active');
+      var activeCard = document.querySelector('.discover-store-card.active');
       if (activeCard) {
         activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
@@ -726,19 +1487,19 @@
     async function addDiscoveredStore(index, event) {
       event.stopPropagation();
 
-      const store = discoveredStores[index];
-      const btn = event.target;
-      const originalText = btn.textContent;
+      var store = discoveredStores[index];
+      var btn = event.target;
+      var originalText = btn.textContent;
 
       try {
         btn.disabled = true;
         btn.textContent = 'Adding...';
 
-        let details = store;
+        var details = store;
         if (store.place_id) {
           try {
-            const response = await mapsApi.getPlaceDetails(store.place_id);
-            details = response?.data || response || store;
+            var response = await mapsApi.getPlaceDetails(store.place_id);
+            details = response && response.data ? response.data : (response || store);
           } catch (err) {
             console.warn('Could not fetch place details, using basic info');
           }
@@ -750,14 +1511,14 @@
           city: details.city || '',
           state: details.state || '',
           zip_code: details.zip_code || '',
-          latitude: details.latitude || store.latitude || store.geometry?.location?.lat,
-          longitude: details.longitude || store.longitude || store.geometry?.location?.lng,
+          latitude: details.latitude || store.latitude || (store.geometry && store.geometry.location && store.geometry.location.lat),
+          longitude: details.longitude || store.longitude || (store.geometry && store.geometry.location && store.geometry.location.lng),
           store_type: determineStoreType(store.types || []),
           chain: extractChainName(store.name),
           google_place_id: store.place_id || null
         });
 
-        user.toast(`${store.name} added successfully!`, 'success');
+        user.toast(store.name + ' added successfully!', 'success');
 
         btn.textContent = 'Added!';
         btn.classList.remove('btn-primary');
@@ -766,7 +1527,7 @@
 
         if (store.place_id) existingStoreIds.add(store.place_id);
 
-        const card = btn.closest('.discover-store-card');
+        var card = btn.closest('.discover-store-card');
         if (card) card.classList.add('existing');
 
         if (discoverMarkers[index]) {
@@ -787,9 +1548,9 @@
       if (googleStore.place_id && existingStoreIds.has(googleStore.place_id)) {
         return true;
       }
-      const name = googleStore.name?.toLowerCase();
-      const zip = googleStore.zip_code;
-      if (name && zip && existingStoreIds.has(`${name}_${zip}`)) {
+      var name = googleStore.name ? googleStore.name.toLowerCase() : null;
+      var zip = googleStore.zip_code;
+      if (name && zip && existingStoreIds.has(name + '_' + zip)) {
         return true;
       }
       return false;
@@ -797,33 +1558,35 @@
 
     function determineStoreType(types) {
       if (!types || !Array.isArray(types)) return 'grocery';
-      if (types.includes('supermarket')) return 'supermarket';
-      if (types.includes('grocery_or_supermarket')) return 'grocery';
-      if (types.includes('convenience_store')) return 'convenience';
-      if (types.includes('department_store')) return 'department';
+      if (types.indexOf('supermarket') >= 0) return 'supermarket';
+      if (types.indexOf('grocery_or_supermarket') >= 0) return 'grocery';
+      if (types.indexOf('convenience_store') >= 0) return 'convenience';
+      if (types.indexOf('department_store') >= 0) return 'department';
       return 'grocery';
     }
 
     function extractChainName(storeName) {
       if (!storeName) return null;
-      const chains = [
+      var chains = [
         'Walmart', 'Target', 'Kroger', 'Safeway', 'Albertsons',
         'King Soopers', 'Publix', 'H-E-B', 'Whole Foods', "Trader Joe's",
         'Costco', "Sam's Club", 'Aldi', 'Lidl', 'Sprouts', 'Natural Grocers',
         'Save-A-Lot', 'Food Lion', 'Giant', 'Stop & Shop', 'Wegmans', 'WinCo'
       ];
 
-      const lowerName = storeName.toLowerCase();
-      for (const chain of chains) {
-        if (lowerName.includes(chain.toLowerCase())) {
-          return chain;
+      var lowerName = storeName.toLowerCase();
+      for (var i = 0; i < chains.length; i++) {
+        if (lowerName.indexOf(chains[i].toLowerCase()) >= 0) {
+          return chains[i];
         }
       }
       return null;
     }
 
     function clearDiscoverMarkers() {
-      discoverMarkers.forEach(m => m.setMap(null));
+      for (var i = 0; i < discoverMarkers.length; i++) {
+        discoverMarkers[i].setMap(null);
+      }
       discoverMarkers = [];
     }
 
@@ -833,7 +1596,7 @@
 
     function escapeHtml(text) {
       if (!text) return '';
-      const div = document.createElement('div');
+      var div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }

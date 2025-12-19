@@ -311,6 +311,17 @@
       document.getElementById('price-form').reset();
       document.getElementById('price-id').value = '';
       document.getElementById('price-error').style.display = 'none';
+
+      // Enable item and store selects for new prices
+      const itemSelect = document.getElementById('price-item');
+      const storeSelect = document.getElementById('price-store');
+      itemSelect.disabled = false;
+      storeSelect.disabled = false;
+
+      // Clear any edit data attributes
+      delete itemSelect.dataset.editId;
+      delete storeSelect.dataset.editId;
+
       userModal.open('price-modal');
     }
 
@@ -321,13 +332,34 @@
 
         document.getElementById('price-modal-title').textContent = 'Edit Price';
         document.getElementById('price-id').value = price.id;
-        document.getElementById('price-item').value = price.item_id;
-        document.getElementById('price-store').value = price.store_id;
+
+        // Store the item_id and store_id as data attributes since selects will be disabled
+        const itemSelect = document.getElementById('price-item');
+        const storeSelect = document.getElementById('price-store');
+
+        itemSelect.value = price.item_id;
+        storeSelect.value = price.store_id;
+
+        // Store the IDs as data attributes in case the select doesn't work when disabled
+        itemSelect.dataset.editId = price.item_id;
+        storeSelect.dataset.editId = price.store_id;
+
         document.getElementById('price-value').value = price.price;
         document.getElementById('price-error').style.display = 'none';
 
+        // Disable item and store for editing - only allow price change
+        itemSelect.disabled = true;
+        storeSelect.disabled = true;
+
         userModal.open('price-modal');
+
+        // Focus on the price input so user can start typing immediately
+        setTimeout(() => {
+          document.getElementById('price-value').focus();
+          document.getElementById('price-value').select();
+        }, 100);
       } catch (err) {
+        console.error('Failed to load price:', err);
         user.toast('Failed to load price details', 'error');
       }
     }
@@ -336,8 +368,21 @@
       const priceId = document.getElementById('price-id').value;
       const errorEl = document.getElementById('price-error');
 
-      const itemId = parseInt(document.getElementById('price-item').value);
-      const storeId = parseInt(document.getElementById('price-store').value);
+      const itemSelect = document.getElementById('price-item');
+      const storeSelect = document.getElementById('price-store');
+
+      // When editing, use data attributes as fallback since selects are disabled
+      let itemId, storeId;
+      if (priceId) {
+        // Editing mode - use stored data attributes
+        itemId = parseInt(itemSelect.dataset.editId || itemSelect.value);
+        storeId = parseInt(storeSelect.dataset.editId || storeSelect.value);
+      } else {
+        // Adding mode - use select values
+        itemId = parseInt(itemSelect.value);
+        storeId = parseInt(storeSelect.value);
+      }
+
       const price = parseFloat(document.getElementById('price-value').value);
 
       if (!itemId || !storeId || isNaN(price) || price <= 0) {
@@ -346,18 +391,18 @@
         return;
       }
 
-      const data = {
-        item_id: itemId,
-        store_id: storeId,
-        price: price,
-      };
-
       try {
         if (priceId) {
+          // Only update the price value, not item/store
           await pricesApi.userUpdate(parseInt(priceId), { price: price });
           user.toast('Price updated successfully', 'success');
         } else {
-          await pricesApi.create(data);
+          // Create new price
+          await pricesApi.create({
+            item_id: itemId,
+            store_id: storeId,
+            price: price,
+          });
           user.toast('Price added successfully', 'success');
         }
 
