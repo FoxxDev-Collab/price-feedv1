@@ -293,6 +293,510 @@
       border-color: var(--destructive);
     }
 
+    /* Category Badges with Colors */
+    .category-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: var(--font-semibold);
+      letter-spacing: 0.02em;
+      text-transform: capitalize;
+    }
+
+    .category-badge.dairy { background: #dbeafe; color: #1e40af; }
+    .category-badge.produce { background: #dcfce7; color: #166534; }
+    .category-badge.meat { background: #fee2e2; color: #991b1b; }
+    .category-badge.bakery { background: #fef3c7; color: #92400e; }
+    .category-badge.frozen { background: #e0e7ff; color: #3730a3; }
+    .category-badge.beverages { background: #cffafe; color: #0e7490; }
+    .category-badge.snacks { background: #fce7f3; color: #9d174d; }
+    .category-badge.household { background: #f3e8ff; color: #6b21a8; }
+    .category-badge.personal { background: #ffe4e6; color: #be123c; }
+    .category-badge.deli { background: #fed7aa; color: #c2410c; }
+    .category-badge.seafood { background: #a5f3fc; color: #0891b2; }
+    .category-badge.pantry { background: #fde68a; color: #b45309; }
+    .category-badge.condiments { background: #bbf7d0; color: #15803d; }
+    .category-badge.default { background: var(--color-gray-100); color: var(--color-gray-700); }
+
+    /* Size/Unit Display */
+    .item-size-display {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: var(--color-gray-100);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      color: var(--foreground);
+    }
+
+    .item-size-display .size-value {
+      font-weight: var(--font-semibold);
+    }
+
+    .item-size-display .size-unit {
+      color: var(--color-gray-500);
+    }
+
+    /* Multi-Badge Container */
+    .badge-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Enhanced Card Styles */
+    .item-card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: var(--space-2);
+    }
+
+    .item-card-price-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-2);
+      padding: var(--space-3);
+      background: var(--color-gray-100);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-3);
+    }
+
+    .price-stat {
+      text-align: center;
+    }
+
+    .price-stat-value {
+      font-size: var(--text-base);
+      font-weight: var(--font-bold);
+      color: var(--foreground);
+    }
+
+    .price-stat-value.low { color: var(--color-primary-600); }
+    .price-stat-value.high { color: var(--destructive); }
+    .price-stat-value.avg { color: var(--color-secondary-600); }
+
+    .price-stat-label {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+      text-transform: uppercase;
+    }
+
+    /* View Details Button */
+    .item-card-btn.view-details {
+      background: var(--color-primary-50);
+      border-color: var(--color-primary-200);
+      color: var(--color-primary-700);
+    }
+
+    .item-card-btn.view-details:hover {
+      background: var(--color-primary-100);
+      border-color: var(--color-primary-300);
+    }
+
+    /* ========================================
+       ITEM DETAIL MODAL STYLES
+       ======================================== */
+    .item-detail-modal {
+      max-width: 800px;
+    }
+
+    .item-detail-header {
+      display: flex;
+      gap: var(--space-4);
+      align-items: flex-start;
+      margin-bottom: var(--space-4);
+    }
+
+    .item-detail-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200));
+      border-radius: var(--radius-xl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .item-detail-icon svg {
+      width: 32px;
+      height: 32px;
+      color: var(--color-primary-600);
+    }
+
+    .item-detail-title-section {
+      flex: 1;
+    }
+
+    .item-detail-name {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--foreground);
+      margin-bottom: 4px;
+    }
+
+    .item-detail-brand {
+      font-size: var(--text-base);
+      color: var(--color-gray-500);
+      margin-bottom: var(--space-2);
+    }
+
+    .item-detail-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    .item-detail-description {
+      padding: var(--space-3);
+      background: var(--color-gray-100);
+      border-radius: var(--radius-md);
+      border-left: 3px solid var(--color-primary-400);
+      margin-bottom: var(--space-4);
+      font-size: var(--text-sm);
+      color: var(--muted-foreground);
+      line-height: 1.6;
+    }
+
+    /* Product Info Grid */
+    .item-detail-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+
+    .info-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+    }
+
+    .info-card-label {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-1);
+    }
+
+    .info-card-value {
+      font-size: var(--text-lg);
+      font-weight: var(--font-semibold);
+      color: var(--foreground);
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .info-card-value .unit-suffix {
+      font-size: var(--text-sm);
+      color: var(--color-gray-500);
+      font-weight: var(--font-normal);
+    }
+
+    /* Price Statistics Section */
+    .price-stats-section {
+      background: var(--color-gray-100);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-5);
+      margin-bottom: var(--space-5);
+    }
+
+    .price-stats-title {
+      font-size: var(--text-base);
+      font-weight: var(--font-semibold);
+      color: var(--foreground);
+      margin-bottom: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .price-stats-title svg {
+      width: 18px;
+      height: 18px;
+      color: var(--color-primary-600);
+    }
+
+    .price-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-3);
+    }
+
+    @media (max-width: 600px) {
+      .price-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .price-stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .price-stat-card .stat-icon {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto var(--space-2);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .price-stat-card .stat-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .price-stat-card .stat-icon.low {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .price-stat-card .stat-icon.high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .price-stat-card .stat-icon.avg {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .price-stat-card .stat-icon.count {
+      background: #f3e8ff;
+      color: #6b21a8;
+    }
+
+    .price-stat-card .stat-amount {
+      font-size: var(--text-xl);
+      font-weight: var(--font-bold);
+      color: var(--foreground);
+    }
+
+    .price-stat-card .stat-label {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+      margin-top: 2px;
+    }
+
+    /* Price History Section */
+    .price-history-section {
+      margin-bottom: var(--space-5);
+    }
+
+    .section-title {
+      font-size: var(--text-base);
+      font-weight: var(--font-semibold);
+      color: var(--foreground);
+      margin-bottom: var(--space-3);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .section-title svg {
+      width: 18px;
+      height: 18px;
+      color: var(--color-primary-600);
+    }
+
+    .price-history-chart {
+      height: 180px;
+      background: var(--color-gray-100);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      height: 140px;
+      gap: 4px;
+      padding: 0 var(--space-2);
+    }
+
+    .chart-bar-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 60px;
+    }
+
+    .chart-bar {
+      width: 100%;
+      background: linear-gradient(to top, var(--color-primary-400), var(--color-primary-500));
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      min-height: 4px;
+      transition: height 0.3s ease;
+      position: relative;
+    }
+
+    .chart-bar:hover {
+      background: linear-gradient(to top, var(--color-primary-500), var(--color-primary-600));
+    }
+
+    .chart-bar-tooltip {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-gray-900);
+      color: white;
+      padding: 4px 8px;
+      border-radius: var(--radius-md);
+      font-size: var(--text-xs);
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      margin-bottom: 4px;
+    }
+
+    .chart-bar:hover .chart-bar-tooltip {
+      opacity: 1;
+    }
+
+    .chart-bar-label {
+      font-size: 10px;
+      color: var(--muted-foreground);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    .chart-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--color-gray-400);
+    }
+
+    .chart-empty svg {
+      width: 40px;
+      height: 40px;
+      margin-bottom: var(--space-2);
+    }
+
+    /* Recent Prices Table */
+    .recent-prices-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+
+    .recent-prices-table th,
+    .recent-prices-table td {
+      padding: var(--space-3);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .recent-prices-table th {
+      background: var(--color-gray-100);
+      font-weight: var(--font-semibold);
+      color: var(--muted-foreground);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .recent-prices-table tbody tr:hover {
+      background: var(--color-gray-100);
+    }
+
+    .recent-prices-table .store-name {
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+    }
+
+    .recent-prices-table .store-location {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+    }
+
+    .recent-prices-table .price-value {
+      font-weight: var(--font-bold);
+      color: var(--color-primary-600);
+    }
+
+    .recent-prices-table .price-date {
+      color: var(--color-gray-500);
+      font-size: var(--text-xs);
+    }
+
+    .no-prices-message {
+      text-align: center;
+      padding: var(--space-6);
+      color: var(--color-gray-500);
+    }
+
+    /* Tabs */
+    .detail-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--space-4);
+    }
+
+    .detail-tab {
+      padding: var(--space-3) var(--space-4);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      color: var(--color-gray-500);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.15s;
+    }
+
+    .detail-tab:hover {
+      color: var(--foreground);
+    }
+
+    .detail-tab.active {
+      color: var(--color-primary-600);
+    }
+
+    .detail-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-primary-600);
+      border-radius: 2px 2px 0 0;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
     /* Empty State */
     .empty-state {
       text-align: center;
@@ -440,18 +944,26 @@
               <label class="user-form-label">Unit</label>
               <select class="user-form-select" id="item-unit">
                 <option value="">No unit</option>
-                <option value="oz">oz</option>
-                <option value="lb">lb</option>
-                <option value="gal">gal</option>
-                <option value="qt">qt</option>
-                <option value="pt">pt</option>
-                <option value="ct">ct</option>
-                <option value="pk">pk</option>
-                <option value="kg">kg</option>
-                <option value="g">g</option>
-                <option value="L">L</option>
-                <option value="mL">mL</option>
-                <option value="fl oz">fl oz</option>
+                <optgroup label="Count">
+                  <option value="ct">count (ct)</option>
+                  <option value="dz">dozen (dz)</option>
+                  <option value="pk">pack (pk)</option>
+                  <option value="each">each</option>
+                </optgroup>
+                <optgroup label="Weight">
+                  <option value="oz">ounces (oz)</option>
+                  <option value="lb">pounds (lb)</option>
+                  <option value="g">grams (g)</option>
+                  <option value="kg">kilograms (kg)</option>
+                </optgroup>
+                <optgroup label="Volume">
+                  <option value="fl oz">fluid ounces (fl oz)</option>
+                  <option value="pt">pints (pt)</option>
+                  <option value="qt">quarts (qt)</option>
+                  <option value="gal">gallons (gal)</option>
+                  <option value="mL">milliliters (mL)</option>
+                  <option value="L">liters (L)</option>
+                </optgroup>
               </select>
             </div>
           </div>
@@ -471,6 +983,36 @@
     </div>
   </div>
 
+  <!-- Item Detail Modal -->
+  <div class="user-modal-backdrop hidden" id="item-detail-modal">
+    <div class="user-modal item-detail-modal">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Item Details</h3>
+        <button class="user-modal-close" onclick="userModal.close('item-detail-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body" id="item-detail-content">
+        <!-- Dynamic content will be loaded here -->
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('item-detail-modal')">Close</button>
+        <button type="button" class="btn btn-outline" onclick="editItemFromDetail()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit Item
+        </button>
+        <button type="button" class="btn btn-primary" onclick="addPriceFromDetail()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          Add Price
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/user-common.js"></script>
@@ -483,6 +1025,128 @@
     let allItems = [];
     let searchTimeout = null;
     let currentView = 'cards';
+    let currentDetailItem = null;
+
+    // Unit display mappings for human-readable formatting
+    const UNIT_LABELS = {
+      'oz': { singular: 'oz', plural: 'oz', name: 'Ounce' },
+      'lb': { singular: 'lb', plural: 'lbs', name: 'Pound' },
+      'gal': { singular: 'gallon', plural: 'gallons', name: 'Gallon' },
+      'qt': { singular: 'quart', plural: 'quarts', name: 'Quart' },
+      'pt': { singular: 'pint', plural: 'pints', name: 'Pint' },
+      'ct': { singular: 'count', plural: 'count', name: 'Count' },
+      'pk': { singular: 'pack', plural: 'packs', name: 'Pack' },
+      'kg': { singular: 'kg', plural: 'kg', name: 'Kilogram' },
+      'g': { singular: 'g', plural: 'g', name: 'Gram' },
+      'L': { singular: 'liter', plural: 'liters', name: 'Liter' },
+      'mL': { singular: 'mL', plural: 'mL', name: 'Milliliter' },
+      'fl oz': { singular: 'fl oz', plural: 'fl oz', name: 'Fluid Ounce' },
+      'dz': { singular: 'dozen', plural: 'dozen', name: 'Dozen' },
+      'each': { singular: 'each', plural: 'each', name: 'Each' }
+    };
+
+    // Category color mappings
+    const CATEGORY_COLORS = {
+      'dairy': 'dairy',
+      'milk': 'dairy',
+      'cheese': 'dairy',
+      'eggs': 'dairy',
+      'produce': 'produce',
+      'vegetables': 'produce',
+      'fruits': 'produce',
+      'meat': 'meat',
+      'poultry': 'meat',
+      'beef': 'meat',
+      'pork': 'meat',
+      'bakery': 'bakery',
+      'bread': 'bakery',
+      'frozen': 'frozen',
+      'beverages': 'beverages',
+      'drinks': 'beverages',
+      'soda': 'beverages',
+      'snacks': 'snacks',
+      'chips': 'snacks',
+      'household': 'household',
+      'cleaning': 'household',
+      'personal': 'personal',
+      'health': 'personal',
+      'beauty': 'personal',
+      'deli': 'deli',
+      'seafood': 'seafood',
+      'fish': 'seafood',
+      'pantry': 'pantry',
+      'canned': 'pantry',
+      'condiments': 'condiments',
+      'sauces': 'condiments'
+    };
+
+    function getCategoryClass(categoryName) {
+      if (!categoryName) return 'default';
+      var lowerName = categoryName.toLowerCase();
+      
+      // Check for exact match first
+      if (CATEGORY_COLORS[lowerName]) {
+        return CATEGORY_COLORS[lowerName];
+      }
+      
+      // Check for partial matches
+      for (var key in CATEGORY_COLORS) {
+        if (lowerName.includes(key) || key.includes(lowerName)) {
+          return CATEGORY_COLORS[key];
+        }
+      }
+      
+      return 'default';
+    }
+
+    function formatSize(size, unit) {
+      if (!size) return null;
+      
+      var unitInfo = UNIT_LABELS[unit] || { singular: unit || '', plural: unit || '' };
+      var displayUnit = size === 1 ? unitInfo.singular : unitInfo.plural;
+      
+      // Special formatting for common items
+      if (unit === 'ct' || unit === 'pk') {
+        if (size === 12) return { display: '1 Dozen', size: size, unit: displayUnit };
+        if (size === 6) return { display: 'Half Dozen', size: size, unit: displayUnit };
+        if (size === 18) return { display: '1.5 Dozen', size: size, unit: displayUnit };
+        if (size === 24) return { display: '2 Dozen', size: size, unit: displayUnit };
+      }
+      
+      // Format decimal nicely
+      var formattedSize = size % 1 === 0 ? size.toString() : size.toFixed(2).replace(/\.?0+$/, '');
+      
+      return {
+        display: formattedSize + ' ' + displayUnit,
+        size: formattedSize,
+        unit: displayUnit
+      };
+    }
+
+    function formatPrice(price) {
+      if (price === null || price === undefined) return '—';
+      return '$' + parseFloat(price).toFixed(2);
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      var date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function formatRelativeDate(dateStr) {
+      if (!dateStr) return '—';
+      var date = new Date(dateStr);
+      var now = new Date();
+      var diffMs = now - date;
+      var diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return diffDays + ' days ago';
+      if (diffDays < 30) return Math.floor(diffDays / 7) + ' weeks ago';
+      return formatDate(dateStr);
+    }
 
     document.addEventListener('DOMContentLoaded', async function() {
       if (!await user.init()) return;
@@ -621,36 +1285,64 @@
       for (var i = 0; i < allItems.length; i++) {
         var item = allItems[i];
         var tags = item.tags || [];
-        var sizeLabel = item.size ? (item.size + ' ' + (item.unit || '')).trim() : '';
+        var sizeInfo = formatSize(item.size, item.unit);
 
         html += '<div class="item-card">';
         html += '<div class="item-card-header">';
         html += '<div>';
         html += '<div class="item-card-title">' + user.escapeHtml(item.name) + '</div>';
-        html += '<div class="item-card-brand">' + user.escapeHtml(item.brand || '') + '</div>';
+        if (item.brand) {
+          html += '<div class="item-card-brand">' + user.escapeHtml(item.brand) + '</div>';
+        }
         html += '</div>';
+        html += '</div>';
+        
+        // Category badges
         if (tags.length > 0) {
-          html += '<span class="item-card-badge">' + user.escapeHtml(tags[0]) + '</span>';
+          html += '<div class="item-card-badges">';
+          for (var t = 0; t < tags.length && t < 3; t++) {
+            var catClass = getCategoryClass(tags[t]);
+            html += '<span class="category-badge ' + catClass + '">' + user.escapeHtml(tags[t]) + '</span>';
+          }
+          if (tags.length > 3) {
+            html += '<span class="category-badge default">+' + (tags.length - 3) + '</span>';
+          }
+          html += '</div>';
         }
-        html += '</div>';
-        html += '<div class="item-card-meta">';
-        if (sizeLabel) {
-          html += '<span class="item-card-meta-item">';
-          html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
-          html += '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>';
-          html += '</svg>';
-          html += user.escapeHtml(sizeLabel);
+        
+        // Size/Unit display
+        if (sizeInfo) {
+          html += '<div class="item-card-meta">';
+          html += '<span class="item-size-display">';
+          html += '<span class="size-value">' + user.escapeHtml(sizeInfo.display) + '</span>';
           html += '</span>';
+          html += '</div>';
         }
-        html += '<span class="item-card-meta-item">';
-        html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
-        html += '<line x1="12" y1="1" x2="12" y2="23"></line>';
-        html += '<path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>';
-        html += '</svg>';
-        html += (item.price_count || 0) + ' prices';
-        html += '</span>';
-        html += '</div>';
+        
+        // Price statistics
+        if (item.price_count > 0) {
+          html += '<div class="item-card-price-stats">';
+          html += '<div class="price-stat">';
+          html += '<div class="price-stat-value low">' + formatPrice(item.min_price) + '</div>';
+          html += '<div class="price-stat-label">Lowest</div>';
+          html += '</div>';
+          html += '<div class="price-stat">';
+          html += '<div class="price-stat-value avg">' + formatPrice(item.avg_price) + '</div>';
+          html += '<div class="price-stat-label">Average</div>';
+          html += '</div>';
+          html += '<div class="price-stat">';
+          html += '<div class="price-stat-value high">' + formatPrice(item.max_price) + '</div>';
+          html += '<div class="price-stat-label">Highest</div>';
+          html += '</div>';
+          html += '</div>';
+        } else {
+          html += '<div class="item-card-meta">';
+          html += '<span style="color: var(--color-gray-400); font-size: var(--text-sm);">No price data yet</span>';
+          html += '</div>';
+        }
+        
         html += '<div class="item-card-actions">';
+        html += '<button class="item-card-btn view-details" onclick="viewItemDetail(' + item.id + ')">View Details</button>';
         html += '<button class="item-card-btn" onclick="editItem(' + item.id + ')">Edit</button>';
         html += '<button class="item-card-btn danger" onclick="deleteItem(' + item.id + ', \'' + user.escapeHtml(item.name).replace(/'/g, "\\'") + '\')">Delete</button>';
         html += '</div></div>';
@@ -666,33 +1358,59 @@
       html += '<table class="items-table">';
       html += '<thead><tr>';
       html += '<th>Item</th>';
-      html += '<th>Category</th>';
+      html += '<th>Categories</th>';
       html += '<th>Size</th>';
-      html += '<th>Prices</th>';
+      html += '<th>Price Range</th>';
       html += '<th>Actions</th>';
       html += '</tr></thead><tbody>';
 
       for (var i = 0; i < allItems.length; i++) {
         var item = allItems[i];
         var tags = item.tags || [];
-        var sizeLabel = item.size ? (item.size + ' ' + (item.unit || '')).trim() : '—';
+        var sizeInfo = formatSize(item.size, item.unit);
 
         html += '<tr>';
         html += '<td>';
         html += '<div class="item-name">' + user.escapeHtml(item.name) + '</div>';
-        html += '<div class="item-brand">' + user.escapeHtml(item.brand || '') + '</div>';
+        if (item.brand) {
+          html += '<div class="item-brand">' + user.escapeHtml(item.brand) + '</div>';
+        }
         html += '</td>';
         html += '<td>';
         if (tags.length > 0) {
-          html += '<span class="category-badge">' + user.escapeHtml(tags[0]) + '</span>';
+          html += '<div class="badge-container">';
+          for (var t = 0; t < tags.length && t < 2; t++) {
+            var catClass = getCategoryClass(tags[t]);
+            html += '<span class="category-badge ' + catClass + '">' + user.escapeHtml(tags[t]) + '</span>';
+          }
+          if (tags.length > 2) {
+            html += '<span class="category-badge default">+' + (tags.length - 2) + '</span>';
+          }
+          html += '</div>';
         } else {
           html += '—';
         }
         html += '</td>';
-        html += '<td>' + user.escapeHtml(sizeLabel) + '</td>';
-        html += '<td><span class="price-count">' + (item.price_count || 0) + '</span></td>';
+        html += '<td>';
+        if (sizeInfo) {
+          html += '<span class="item-size-display"><span class="size-value">' + user.escapeHtml(sizeInfo.display) + '</span></span>';
+        } else {
+          html += '—';
+        }
+        html += '</td>';
+        html += '<td>';
+        if (item.price_count > 0) {
+          html += '<span style="color: var(--color-primary-600); font-weight: var(--font-semibold);">' + formatPrice(item.min_price) + '</span>';
+          html += '<span style="color: var(--color-gray-400);"> - </span>';
+          html += '<span style="color: var(--destructive); font-weight: var(--font-semibold);">' + formatPrice(item.max_price) + '</span>';
+          html += '<span style="font-size: var(--text-xs); color: var(--color-gray-500); display: block;">' + item.price_count + ' prices</span>';
+        } else {
+          html += '<span style="color: var(--color-gray-400);">No data</span>';
+        }
+        html += '</td>';
         html += '<td>';
         html += '<div class="table-actions">';
+        html += '<button class="table-btn" onclick="viewItemDetail(' + item.id + ')" style="background: var(--color-primary-50); border-color: var(--color-primary-200); color: var(--color-primary-700);">Details</button>';
         html += '<button class="table-btn" onclick="editItem(' + item.id + ')">Edit</button>';
         html += '<button class="table-btn danger" onclick="deleteItem(' + item.id + ', \'' + user.escapeHtml(item.name).replace(/'/g, "\\'") + '\')">Delete</button>';
         html += '</div></td></tr>';
@@ -827,6 +1545,308 @@
         loadItems(currentPage);
       } catch (err) {
         user.toast('Failed to delete item: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    // ========================================
+    // ITEM DETAIL MODAL FUNCTIONS
+    // ========================================
+
+    async function viewItemDetail(itemId) {
+      var content = document.getElementById('item-detail-content');
+      content.innerHTML = '<div style="text-align: center; padding: var(--space-8);"><div class="empty-state-title">Loading...</div></div>';
+      userModal.open('item-detail-modal');
+
+      try {
+        // Fetch item details and prices in parallel
+        var itemResponse = await itemsApi.getById(itemId);
+        var item = itemResponse && itemResponse.data ? itemResponse.data : itemResponse;
+        currentDetailItem = item;
+
+        var pricesResponse = await pricesApi.list({ item_id: itemId, limit: 50 });
+        var prices = Array.isArray(pricesResponse && pricesResponse.data) ? pricesResponse.data : (Array.isArray(pricesResponse) ? pricesResponse : []);
+
+        renderItemDetail(item, prices);
+      } catch (err) {
+        console.error('Failed to load item details:', err);
+        content.innerHTML = '<div style="text-align: center; padding: var(--space-8); color: var(--destructive);">Failed to load item details</div>';
+      }
+    }
+
+    function renderItemDetail(item, prices) {
+      var content = document.getElementById('item-detail-content');
+      var tags = item.tags || [];
+      var sizeInfo = formatSize(item.size, item.unit);
+
+      var html = '';
+
+      // Header section with icon, name, brand, and badges
+      html += '<div class="item-detail-header">';
+      html += '<div class="item-detail-icon">';
+      html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">';
+      html += '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>';
+      html += '<line x1="3" y1="6" x2="21" y2="6"></line>';
+      html += '<path d="M16 10a4 4 0 0 1-8 0"></path>';
+      html += '</svg>';
+      html += '</div>';
+      html += '<div class="item-detail-title-section">';
+      html += '<div class="item-detail-name">' + user.escapeHtml(item.name) + '</div>';
+      if (item.brand) {
+        html += '<div class="item-detail-brand">by ' + user.escapeHtml(item.brand) + '</div>';
+      }
+      if (tags.length > 0) {
+        html += '<div class="item-detail-badges">';
+        for (var t = 0; t < tags.length; t++) {
+          var catClass = getCategoryClass(tags[t]);
+          html += '<span class="category-badge ' + catClass + '">' + user.escapeHtml(tags[t]) + '</span>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+      html += '</div>';
+
+      // Description if exists
+      if (item.description) {
+        html += '<div class="item-detail-description">' + user.escapeHtml(item.description) + '</div>';
+      }
+
+      // Product info grid
+      html += '<div class="item-detail-info-grid">';
+      
+      // Size info
+      html += '<div class="info-card">';
+      html += '<div class="info-card-label">Size / Quantity</div>';
+      html += '<div class="info-card-value">';
+      if (sizeInfo) {
+        html += '<span>' + user.escapeHtml(sizeInfo.size) + '</span>';
+        html += '<span class="unit-suffix">' + user.escapeHtml(sizeInfo.unit) + '</span>';
+      } else {
+        html += '<span style="color: var(--color-gray-400);">Not specified</span>';
+      }
+      html += '</div>';
+      html += '</div>';
+
+      // Verification status
+      html += '<div class="info-card">';
+      html += '<div class="info-card-label">Verification</div>';
+      html += '<div class="info-card-value">';
+      if (item.verified) {
+        html += '<span style="color: var(--color-primary-600);">✓ Verified</span>';
+      } else {
+        html += '<span style="color: var(--color-gray-400);">Unverified</span>';
+      }
+      html += '</div>';
+      html += '</div>';
+
+      // Created date
+      html += '<div class="info-card">';
+      html += '<div class="info-card-label">Added</div>';
+      html += '<div class="info-card-value">' + formatDate(item.created_at) + '</div>';
+      html += '</div>';
+
+      html += '</div>';
+
+      // Price statistics section
+      html += '<div class="price-stats-section">';
+      html += '<div class="price-stats-title">';
+      html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+      html += '<line x1="12" y1="1" x2="12" y2="23"></line>';
+      html += '<path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>';
+      html += '</svg>';
+      html += 'Price Statistics';
+      html += '</div>';
+      html += '<div class="price-stats-grid">';
+
+      // Lowest price
+      html += '<div class="price-stat-card">';
+      html += '<div class="stat-icon low">';
+      html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+      html += '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>';
+      html += '<polyline points="17 18 23 18 23 12"></polyline>';
+      html += '</svg>';
+      html += '</div>';
+      html += '<div class="stat-amount">' + formatPrice(item.min_price) + '</div>';
+      html += '<div class="stat-label">Lowest Price</div>';
+      html += '</div>';
+
+      // Average price
+      html += '<div class="price-stat-card">';
+      html += '<div class="stat-icon avg">';
+      html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+      html += '<line x1="18" y1="20" x2="18" y2="10"></line>';
+      html += '<line x1="12" y1="20" x2="12" y2="4"></line>';
+      html += '<line x1="6" y1="20" x2="6" y2="14"></line>';
+      html += '</svg>';
+      html += '</div>';
+      html += '<div class="stat-amount">' + formatPrice(item.avg_price) + '</div>';
+      html += '<div class="stat-label">Average Price</div>';
+      html += '</div>';
+
+      // Highest price
+      html += '<div class="price-stat-card">';
+      html += '<div class="stat-icon high">';
+      html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+      html += '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>';
+      html += '<polyline points="17 6 23 6 23 12"></polyline>';
+      html += '</svg>';
+      html += '</div>';
+      html += '<div class="stat-amount">' + formatPrice(item.max_price) + '</div>';
+      html += '<div class="stat-label">Highest Price</div>';
+      html += '</div>';
+
+      // Price count
+      html += '<div class="price-stat-card">';
+      html += '<div class="stat-icon count">';
+      html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+      html += '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>';
+      html += '<polyline points="14 2 14 8 20 8"></polyline>';
+      html += '<line x1="16" y1="13" x2="8" y2="13"></line>';
+      html += '<line x1="16" y1="17" x2="8" y2="17"></line>';
+      html += '</svg>';
+      html += '</div>';
+      html += '<div class="stat-amount">' + (item.price_count || 0) + '</div>';
+      html += '<div class="stat-label">Total Reports</div>';
+      html += '</div>';
+
+      html += '</div>';
+      html += '</div>';
+
+      // Price history chart
+      html += '<div class="price-history-section">';
+      html += '<div class="section-title">';
+      html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+      html += '<line x1="18" y1="20" x2="18" y2="10"></line>';
+      html += '<line x1="12" y1="20" x2="12" y2="4"></line>';
+      html += '<line x1="6" y1="20" x2="6" y2="14"></line>';
+      html += '</svg>';
+      html += 'Price History';
+      html += '</div>';
+      html += renderPriceChart(prices, item);
+      html += '</div>';
+
+      // Recent prices table
+      html += '<div class="section-title">';
+      html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+      html += '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>';
+      html += '<line x1="3" y1="9" x2="21" y2="9"></line>';
+      html += '<line x1="9" y1="21" x2="9" y2="9"></line>';
+      html += '</svg>';
+      html += 'Recent Prices by Store';
+      html += '</div>';
+      html += renderRecentPricesTable(prices);
+
+      content.innerHTML = html;
+    }
+
+    function renderPriceChart(prices, item) {
+      if (!prices || prices.length === 0) {
+        return '<div class="price-history-chart">' +
+          '<div class="chart-empty">' +
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+          '<line x1="18" y1="20" x2="18" y2="10"></line>' +
+          '<line x1="12" y1="20" x2="12" y2="4"></line>' +
+          '<line x1="6" y1="20" x2="6" y2="14"></line>' +
+          '</svg>' +
+          '<span>No price history available</span>' +
+          '</div></div>';
+      }
+
+      // Group prices by store and take the most recent
+      var storeLatestPrices = {};
+      for (var i = 0; i < prices.length; i++) {
+        var p = prices[i];
+        var storeKey = p.store_name || ('Store ' + p.store_id);
+        if (!storeLatestPrices[storeKey] || new Date(p.updated_at) > new Date(storeLatestPrices[storeKey].updated_at)) {
+          storeLatestPrices[storeKey] = p;
+        }
+      }
+
+      var storeNames = Object.keys(storeLatestPrices);
+      if (storeNames.length === 0) return '';
+
+      // Calculate min/max for scaling
+      var minPrice = Infinity, maxPrice = 0;
+      for (var j = 0; j < storeNames.length; j++) {
+        var price = storeLatestPrices[storeNames[j]].price;
+        if (price < minPrice) minPrice = price;
+        if (price > maxPrice) maxPrice = price;
+      }
+      
+      var range = maxPrice - minPrice;
+      if (range === 0) range = 1; // Avoid division by zero
+
+      var html = '<div class="price-history-chart"><div class="chart-bars">';
+      
+      // Limit to 10 stores for readability
+      var displayStores = storeNames.slice(0, 10);
+      
+      for (var k = 0; k < displayStores.length; k++) {
+        var storeName = displayStores[k];
+        var priceData = storeLatestPrices[storeName];
+        var heightPercent = ((priceData.price - minPrice) / range) * 80 + 20; // Min 20% height
+        
+        html += '<div class="chart-bar-wrapper">';
+        html += '<div class="chart-bar" style="height: ' + heightPercent + '%;">';
+        html += '<div class="chart-bar-tooltip">' + formatPrice(priceData.price) + '</div>';
+        html += '</div>';
+        html += '<div class="chart-bar-label">' + user.escapeHtml(storeName.substring(0, 10)) + '</div>';
+        html += '</div>';
+      }
+
+      html += '</div></div>';
+      return html;
+    }
+
+    function renderRecentPricesTable(prices) {
+      if (!prices || prices.length === 0) {
+        return '<div class="no-prices-message">' +
+          '<p>No price data has been reported for this item yet.</p>' +
+          '<p style="font-size: var(--text-sm); margin-top: var(--space-2);">Be the first to add a price!</p>' +
+          '</div>';
+      }
+
+      var html = '<div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-lg);">';
+      html += '<table class="recent-prices-table">';
+      html += '<thead><tr>';
+      html += '<th>Store</th>';
+      html += '<th>Price</th>';
+      html += '<th>Updated</th>';
+      html += '</tr></thead><tbody>';
+
+      // Sort by updated date, most recent first
+      var sortedPrices = prices.slice().sort(function(a, b) {
+        return new Date(b.updated_at) - new Date(a.updated_at);
+      });
+
+      for (var i = 0; i < sortedPrices.length && i < 15; i++) {
+        var p = sortedPrices[i];
+        html += '<tr>';
+        html += '<td>';
+        html += '<div class="store-name">' + user.escapeHtml(p.store_name || 'Unknown Store') + '</div>';
+        if (p.store_city && p.store_state) {
+          html += '<div class="store-location">' + user.escapeHtml(p.store_city + ', ' + p.store_state) + '</div>';
+        }
+        html += '</td>';
+        html += '<td><span class="price-value">' + formatPrice(p.price) + '</span></td>';
+        html += '<td><span class="price-date">' + formatRelativeDate(p.updated_at) + '</span></td>';
+        html += '</tr>';
+      }
+
+      html += '</tbody></table></div>';
+      return html;
+    }
+
+    function editItemFromDetail() {
+      if (currentDetailItem) {
+        userModal.close('item-detail-modal');
+        editItem(currentDetailItem.id);
+      }
+    }
+
+    function addPriceFromDetail() {
+      if (currentDetailItem) {
+        // Redirect to prices page with item pre-selected
+        window.location.href = '/user/prices/?add_price=1&item_id=' + currentDetailItem.id;
       }
     }
   </script>
