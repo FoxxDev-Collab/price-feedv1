@@ -717,3 +717,18 @@ ul, ol {
 .opacity-30 {
   opacity: 0.3;
 }
+
+/* ============================================
+   NUMBER INPUT SPINNERS
+   Hide the ugly browser spinners on number inputs
+   ============================================ */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
