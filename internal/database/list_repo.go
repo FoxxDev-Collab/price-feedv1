@@ -678,7 +678,7 @@ func (db *DB) CompleteShoppingList(ctx context.Context, listID int, userID int, 
 				err := db.Pool.QueryRow(ctx, `
 					SELECT id FROM store_prices WHERE store_id = $1 AND item_id = $2 LIMIT 1
 				`, confirmation.StoreID, confirmation.ItemID).Scan(&existingID)
-				
+
 				if err == nil {
 					// Update existing price
 					_, err = db.Pool.Exec(ctx, `

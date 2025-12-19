@@ -139,14 +139,14 @@ type PriceComparisonCell struct {
 
 // PriceComparisonRow represents a row (item) in the comparison grid
 type PriceComparisonRow struct {
-	ItemID    int                        `json:"item_id"`
-	ItemName  string                     `json:"item_name"`
-	ItemBrand *string                    `json:"item_brand,omitempty"`
-	ItemSize  *float64                   `json:"item_size,omitempty"`
-	ItemUnit  *string                    `json:"item_unit,omitempty"`
+	ItemID    int                         `json:"item_id"`
+	ItemName  string                      `json:"item_name"`
+	ItemBrand *string                     `json:"item_brand,omitempty"`
+	ItemSize  *float64                    `json:"item_size,omitempty"`
+	ItemUnit  *string                     `json:"item_unit,omitempty"`
 	Prices    map[int]PriceComparisonCell `json:"prices"` // Key is store_id
-	BestPrice *float64                   `json:"best_price,omitempty"`
-	BestStore *int                       `json:"best_store,omitempty"`
+	BestPrice *float64                    `json:"best_price,omitempty"`
+	BestStore *int                        `json:"best_store,omitempty"`
 }
 
 // PriceComparisonResult is the full comparison grid
