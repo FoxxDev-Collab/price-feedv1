@@ -77,9 +77,15 @@
 
     /* Card View Styles */
     .compare-cards {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: var(--space-4);
+    }
+
+    @media (max-width: 768px) {
+      .compare-cards {
+        grid-template-columns: 1fr;
+      }
     }
 
     .compare-card {
@@ -87,6 +93,8 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     .compare-card-header {
@@ -109,22 +117,19 @@
       color: var(--color-gray-500);
     }
 
-    .compare-card-badge {
-      background: var(--color-primary-100);
-      color: var(--color-primary-600);
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      font-size: var(--text-xs);
-      font-weight: var(--font-medium);
-    }
+    /* Use shared category-badge from components.css */
 
     .compare-card-body {
       padding: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .compare-prices-list {
       display: flex;
       flex-direction: column;
+      flex: 1;
     }
 
     .compare-price-row {
@@ -472,6 +477,7 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
+  <script src="/js/components.js"></script>
   <script src="/js/user-common.js"></script>
   <script src="/js/user-sidebar.js"></script>
   <script>
@@ -643,8 +649,8 @@
         html += '<div class="compare-card-title">' + user.escapeHtml(item.name) + '</div>';
         html += '<div class="compare-card-meta">' + user.escapeHtml(itemMeta.join(' • ')) + '</div>';
         html += '</div>';
-        if (item.tags && item.tags[0]) {
-          html += '<span class="compare-card-badge">' + user.escapeHtml(item.tags[0]) + '</span>';
+        if (item.tags && item.tags.length > 0) {
+          html += CategoryBadge.render(item.tags[0], user.escapeHtml);
         }
         html += '</div>';
         html += '<div class="compare-card-body">';

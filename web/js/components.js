@@ -17,6 +17,157 @@
  */
 
 // ============================================
+// CATEGORY BADGE UTILITIES
+// Shared component for category/tag badges
+// ============================================
+
+/**
+ * Category to color class mappings
+ * Maps category names (and variations) to CSS class names
+ */
+const CATEGORY_COLORS = {
+  'dairy': 'dairy',
+  'milk': 'dairy',
+  'cheese': 'dairy',
+  'eggs': 'dairy',
+  'yogurt': 'dairy',
+  'butter': 'dairy',
+  'produce': 'produce',
+  'vegetables': 'produce',
+  'fruits': 'produce',
+  'fruit': 'produce',
+  'vegetable': 'produce',
+  'meat': 'meat',
+  'poultry': 'meat',
+  'beef': 'meat',
+  'pork': 'meat',
+  'chicken': 'meat',
+  'turkey': 'meat',
+  'bakery': 'bakery',
+  'bread': 'bakery',
+  'pastry': 'bakery',
+  'baked': 'bakery',
+  'frozen': 'frozen',
+  'ice cream': 'frozen',
+  'beverages': 'beverages',
+  'drinks': 'beverages',
+  'soda': 'beverages',
+  'juice': 'beverages',
+  'water': 'beverages',
+  'coffee': 'beverages',
+  'tea': 'beverages',
+  'snacks': 'snacks',
+  'chips': 'snacks',
+  'candy': 'snacks',
+  'cookies': 'snacks',
+  'household': 'household',
+  'cleaning': 'household',
+  'laundry': 'household',
+  'paper': 'household',
+  'personal': 'personal',
+  'health': 'personal',
+  'beauty': 'personal',
+  'hygiene': 'personal',
+  'deli': 'deli',
+  'seafood': 'seafood',
+  'fish': 'seafood',
+  'shrimp': 'seafood',
+  'pantry': 'pantry',
+  'canned': 'pantry',
+  'pasta': 'pantry',
+  'rice': 'pantry',
+  'cereal': 'pantry',
+  'condiments': 'condiments',
+  'sauces': 'condiments',
+  'spices': 'condiments',
+  'seasonings': 'condiments'
+};
+
+/**
+ * Get the CSS class for a category name
+ * @param {string} categoryName - The category/tag name
+ * @returns {string} CSS class name (e.g., 'dairy', 'produce', 'default')
+ */
+function getCategoryClass(categoryName) {
+  if (!categoryName) return 'default';
+  var lowerName = categoryName.toLowerCase().trim();
+  
+  // Check for exact match first
+  if (CATEGORY_COLORS[lowerName]) {
+    return CATEGORY_COLORS[lowerName];
+  }
+  
+  // Check for partial matches
+  for (var key in CATEGORY_COLORS) {
+    if (lowerName.includes(key) || key.includes(lowerName)) {
+      return CATEGORY_COLORS[key];
+    }
+  }
+  
+  return 'default';
+}
+
+/**
+ * Render a single category badge HTML
+ * @param {string} categoryName - The category/tag name to display
+ * @param {function} escapeHtml - HTML escape function (optional, defaults to basic escape)
+ * @returns {string} HTML string for the badge
+ */
+function renderCategoryBadge(categoryName, escapeHtml) {
+  if (!escapeHtml) {
+    escapeHtml = function(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    };
+  }
+  var catClass = getCategoryClass(categoryName);
+  return '<span class="category-badge ' + catClass + '">' + escapeHtml(categoryName) + '</span>';
+}
+
+/**
+ * Render multiple category badges
+ * @param {string[]} categories - Array of category/tag names
+ * @param {number} maxDisplay - Maximum badges to display before showing +N (default: 3)
+ * @param {function} escapeHtml - HTML escape function
+ * @returns {string} HTML string for all badges
+ */
+function renderCategoryBadges(categories, maxDisplay, escapeHtml) {
+  if (!categories || categories.length === 0) return '';
+  maxDisplay = maxDisplay || 3;
+  
+  if (!escapeHtml) {
+    escapeHtml = function(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    };
+  }
+  
+  var html = '<div class="category-badges">';
+  var displayCount = Math.min(categories.length, maxDisplay);
+  
+  for (var i = 0; i < displayCount; i++) {
+    html += renderCategoryBadge(categories[i], escapeHtml);
+  }
+  
+  if (categories.length > maxDisplay) {
+    html += '<span class="category-badge default">+' + (categories.length - maxDisplay) + '</span>';
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+// Export for global use
+window.CategoryBadge = {
+  CATEGORY_COLORS: CATEGORY_COLORS,
+  getCategoryClass: getCategoryClass,
+  render: renderCategoryBadge,
+  renderMultiple: renderCategoryBadges
+};
+
+// ============================================
 // COMPONENT CATALOG
 // Lists all available components with their props
 // ============================================

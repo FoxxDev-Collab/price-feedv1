@@ -293,32 +293,7 @@
       border-color: var(--destructive);
     }
 
-    /* Category Badges with Colors */
-    .category-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 10px;
-      border-radius: var(--radius-full);
-      font-size: var(--text-xs);
-      font-weight: var(--font-semibold);
-      letter-spacing: 0.02em;
-      text-transform: capitalize;
-    }
-
-    .category-badge.dairy { background: #dbeafe; color: #1e40af; }
-    .category-badge.produce { background: #dcfce7; color: #166534; }
-    .category-badge.meat { background: #fee2e2; color: #991b1b; }
-    .category-badge.bakery { background: #fef3c7; color: #92400e; }
-    .category-badge.frozen { background: #e0e7ff; color: #3730a3; }
-    .category-badge.beverages { background: #cffafe; color: #0e7490; }
-    .category-badge.snacks { background: #fce7f3; color: #9d174d; }
-    .category-badge.household { background: #f3e8ff; color: #6b21a8; }
-    .category-badge.personal { background: #ffe4e6; color: #be123c; }
-    .category-badge.deli { background: #fed7aa; color: #c2410c; }
-    .category-badge.seafood { background: #a5f3fc; color: #0891b2; }
-    .category-badge.pantry { background: #fde68a; color: #b45309; }
-    .category-badge.condiments { background: #bbf7d0; color: #15803d; }
-    .category-badge.default { background: var(--color-gray-100); color: var(--color-gray-700); }
+    /* Category badges use shared styles from components.css */
 
     /* Size/Unit Display */
     .item-size-display {
@@ -340,18 +315,8 @@
       color: var(--color-gray-500);
     }
 
-    /* Multi-Badge Container */
-    .badge-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    /* Enhanced Card Styles */
+    /* Badge container enhancements for items page */
     .item-card-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
       margin-bottom: var(--space-2);
     }
 
@@ -1015,6 +980,7 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
+  <script src="/js/components.js"></script>
   <script src="/js/user-common.js"></script>
   <script src="/js/user-sidebar.js"></script>
   <script>
@@ -1045,58 +1011,13 @@
       'each': { singular: 'each', plural: 'each', name: 'Each' }
     };
 
-    // Category color mappings
-    const CATEGORY_COLORS = {
-      'dairy': 'dairy',
-      'milk': 'dairy',
-      'cheese': 'dairy',
-      'eggs': 'dairy',
-      'produce': 'produce',
-      'vegetables': 'produce',
-      'fruits': 'produce',
-      'meat': 'meat',
-      'poultry': 'meat',
-      'beef': 'meat',
-      'pork': 'meat',
-      'bakery': 'bakery',
-      'bread': 'bakery',
-      'frozen': 'frozen',
-      'beverages': 'beverages',
-      'drinks': 'beverages',
-      'soda': 'beverages',
-      'snacks': 'snacks',
-      'chips': 'snacks',
-      'household': 'household',
-      'cleaning': 'household',
-      'personal': 'personal',
-      'health': 'personal',
-      'beauty': 'personal',
-      'deli': 'deli',
-      'seafood': 'seafood',
-      'fish': 'seafood',
-      'pantry': 'pantry',
-      'canned': 'pantry',
-      'condiments': 'condiments',
-      'sauces': 'condiments'
-    };
+    // Use shared CategoryBadge utilities from components.js
+    // CategoryBadge.getCategoryClass(name) - get CSS class for a category
+    // CategoryBadge.render(name, escapeHtml) - render a single badge
+    // CategoryBadge.renderMultiple(names, maxDisplay, escapeHtml) - render multiple badges
 
     function getCategoryClass(categoryName) {
-      if (!categoryName) return 'default';
-      var lowerName = categoryName.toLowerCase();
-      
-      // Check for exact match first
-      if (CATEGORY_COLORS[lowerName]) {
-        return CATEGORY_COLORS[lowerName];
-      }
-      
-      // Check for partial matches
-      for (var key in CATEGORY_COLORS) {
-        if (lowerName.includes(key) || key.includes(lowerName)) {
-          return CATEGORY_COLORS[key];
-        }
-      }
-      
-      return 'default';
+      return CategoryBadge.getCategoryClass(categoryName);
     }
 
     function formatSize(size, unit) {
@@ -1297,16 +1218,10 @@
         html += '</div>';
         html += '</div>';
         
-        // Category badges
+        // Category badges using shared component
         if (tags.length > 0) {
           html += '<div class="item-card-badges">';
-          for (var t = 0; t < tags.length && t < 3; t++) {
-            var catClass = getCategoryClass(tags[t]);
-            html += '<span class="category-badge ' + catClass + '">' + user.escapeHtml(tags[t]) + '</span>';
-          }
-          if (tags.length > 3) {
-            html += '<span class="category-badge default">+' + (tags.length - 3) + '</span>';
-          }
+          html += CategoryBadge.renderMultiple(tags, 3, user.escapeHtml).replace('<div class="category-badges">', '').replace('</div>', '');
           html += '</div>';
         }
         
@@ -1378,15 +1293,7 @@
         html += '</td>';
         html += '<td>';
         if (tags.length > 0) {
-          html += '<div class="badge-container">';
-          for (var t = 0; t < tags.length && t < 2; t++) {
-            var catClass = getCategoryClass(tags[t]);
-            html += '<span class="category-badge ' + catClass + '">' + user.escapeHtml(tags[t]) + '</span>';
-          }
-          if (tags.length > 2) {
-            html += '<span class="category-badge default">+' + (tags.length - 2) + '</span>';
-          }
-          html += '</div>';
+          html += CategoryBadge.renderMultiple(tags, 2, user.escapeHtml);
         } else {
           html += '—';
         }
@@ -1596,10 +1503,7 @@
       }
       if (tags.length > 0) {
         html += '<div class="item-detail-badges">';
-        for (var t = 0; t < tags.length; t++) {
-          var catClass = getCategoryClass(tags[t]);
-          html += '<span class="category-badge ' + catClass + '">' + user.escapeHtml(tags[t]) + '</span>';
-        }
+        html += CategoryBadge.renderMultiple(tags, 10, user.escapeHtml).replace('<div class="category-badges">', '').replace('</div>', '');
         html += '</div>';
       }
       html += '</div>';
