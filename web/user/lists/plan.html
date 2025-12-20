@@ -880,15 +880,15 @@
 
       try {
         user.toast('Sending email...', 'info');
-        const response = await api.post(`/lists/${listId}/email`);
-        
+        const response = await api.post(`/lists/${listId}/email`, {});
+
         if (response.success) {
           user.toast('Shopping list emailed! Check your inbox.', 'success');
         } else {
           throw new Error(response.error || 'Failed to send email');
         }
       } catch (err) {
-        if (err.message.includes('not configured')) {
+        if (err.message && err.message.includes('not configured')) {
           user.toast('Email service is not configured. Contact admin.', 'error');
         } else {
           user.toast(err.message || 'Failed to email list', 'error');

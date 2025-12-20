@@ -334,10 +334,16 @@ userToastStyles.textContent = `
     gap: 1rem;
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
-    background: white;
+    background: var(--card, white);
+    color: var(--foreground, #1f2937);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     min-width: 280px;
     animation: slideIn 0.3s ease;
+    border: 1px solid var(--border, #e5e7eb);
+  }
+
+  .dark .user-toast {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   }
 
   .user-toast-success {
@@ -361,13 +367,13 @@ userToastStyles.textContent = `
     border: none;
     font-size: 1.25rem;
     cursor: pointer;
-    color: #9ca3af;
+    color: var(--muted-foreground, #9ca3af);
     padding: 0;
     line-height: 1;
   }
 
   .user-toast button:hover {
-    color: #374151;
+    color: var(--foreground, #374151);
   }
 
   .user-toast.fade-out {
