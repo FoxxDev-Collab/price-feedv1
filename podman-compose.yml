@@ -1,10 +1,7 @@
-# Podman Compose file for Rocky Linux 9 with SELinux
-# Run with: podman-compose up -d
-# Or: podman compose up -d (if using podman-compose plugin)
+# Podman Compose for Rocky Linux 9 VPS (no iptables required)
+# All services run in a single pod, communicating via localhost
 #
-# For rootless podman with ports 80/443, first run:
-#   sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
-# Or add to /etc/sysctl.d/podman-privileged-ports.conf for persistence
+# Run with: podman-compose up -d
 
 services:
   db:
@@ -21,8 +18,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - pricefeed-net
+    network_mode: host
 
   garage:
     image: docker.io/dxflrs/garage:v1.0.1
@@ -34,13 +30,15 @@ services:
       - garage-data:/var/lib/garage/data:Z
       - garage-meta:/var/lib/garage/meta:Z
       - ./garage.toml:/etc/garage.toml:ro,Z
-    networks:
-      - pricefeed-net
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3902/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3902/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    network_mode: host
+    depends_on:
+      db:
+        condition: service_healthy
 
   app:
     build:
@@ -53,31 +51,25 @@ services:
       PORT: "8080"
       ENVIRONMENT: production
       ALLOWED_ORIGINS: "*"
-      DATABASE_URL: postgres://pricefeed:pricefeed_dev@db:5432/pricefeed?sslmode=disable
-      S3_ENDPOINT: garage:3900
+      DATABASE_URL: postgres://pricefeed:pricefeed_dev@127.0.0.1:5432/pricefeed?sslmode=disable
+      S3_ENDPOINT: 127.0.0.1:3900
     depends_on:
       db:
         condition: service_healthy
       garage:
         condition: service_started
-    networks:
-      - pricefeed-net
+    network_mode: host
 
   npm:
     image: docker.io/jc21/nginx-proxy-manager:latest
     container_name: pricefeed-npm
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "81:81"
     volumes:
       - npm-data:/data:Z
       - npm-letsencrypt:/etc/letsencrypt:Z
     depends_on:
       - app
-    networks:
-      - pricefeed-net
+    network_mode: host
 
 volumes:
   pricefeed-data:
@@ -85,7 +77,3 @@ volumes:
   npm-letsencrypt:
   garage-data:
   garage-meta:
-
-networks:
-  pricefeed-net:
-    driver: bridge
