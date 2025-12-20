@@ -2,8 +2,11 @@ package database
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"sort"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -11,9 +14,10 @@ import (
 )
 
 var (
-	ErrListNotFound     = errors.New("shopping list not found")
-	ErrListItemNotFound = errors.New("list item not found")
-	ErrNotListOwner     = errors.New("not the owner of this list")
+	ErrListNotFound      = errors.New("shopping list not found")
+	ErrListItemNotFound  = errors.New("list item not found")
+	ErrNotListOwner      = errors.New("not the owner of this list")
+	ErrShareTokenInvalid = errors.New("share token is invalid or expired")
 )
 
 // ListShoppingLists returns all shopping lists for a user
@@ -79,11 +83,12 @@ func (db *DB) GetShoppingListByID(ctx context.Context, id int, userID int) (*mod
 	// Get the list
 	list := &models.ShoppingListWithItems{}
 	err := db.Pool.QueryRow(ctx, `
-		SELECT id, user_id, name, status, target_date, completed_at, created_at, updated_at
+		SELECT id, user_id, name, status, target_date, completed_at, share_token, share_expires_at, share_created_at, created_at, updated_at
 		FROM shopping_lists
 		WHERE id = $1
 	`, id).Scan(
-		&list.ID, &list.UserID, &list.Name, &list.Status, &list.TargetDate, &list.CompletedAt, &list.CreatedAt, &list.UpdatedAt,
+		&list.ID, &list.UserID, &list.Name, &list.Status, &list.TargetDate, &list.CompletedAt,
+		&list.ShareToken, &list.ShareExpiresAt, &list.ShareCreatedAt, &list.CreatedAt, &list.UpdatedAt,
 	)
 
 	if err != nil {
@@ -101,7 +106,7 @@ func (db *DB) GetShoppingListByID(ctx context.Context, id int, userID int) (*mod
 	// Get items with details
 	rows, err := db.Pool.Query(ctx, `
 		SELECT
-			sli.id, sli.list_id, sli.item_id, sli.quantity, sli.created_at,
+			sli.id, sli.list_id, sli.item_id, sli.quantity, COALESCE(sli.is_checked, false), sli.checked_at, sli.created_at,
 			i.name, i.brand, i.size, i.unit,
 			(SELECT MIN(sp.price) FROM store_prices sp WHERE sp.item_id = sli.item_id) as best_price,
 			(SELECT s.name FROM stores s
@@ -112,7 +117,7 @@ func (db *DB) GetShoppingListByID(ctx context.Context, id int, userID int) (*mod
 		FROM shopping_list_items sli
 		JOIN items i ON sli.item_id = i.id
 		WHERE sli.list_id = $1
-		ORDER BY i.name ASC
+		ORDER BY COALESCE(sli.is_checked, false) ASC, i.name ASC
 	`, id)
 	if err != nil {
 		return nil, err
@@ -121,11 +126,12 @@ func (db *DB) GetShoppingListByID(ctx context.Context, id int, userID int) (*mod
 
 	list.Items = []models.ShoppingListItemWithDetails{}
 	var estimatedTotal float64
+	var checkedCount int
 
 	for rows.Next() {
 		item := models.ShoppingListItemWithDetails{}
 		err := rows.Scan(
-			&item.ID, &item.ListID, &item.ItemID, &item.Quantity, &item.CreatedAt,
+			&item.ID, &item.ListID, &item.ItemID, &item.Quantity, &item.IsChecked, &item.CheckedAt, &item.CreatedAt,
 			&item.ItemName, &item.ItemBrand, &item.ItemSize, &item.ItemUnit,
 			&item.BestPrice, &item.BestStore,
 		)
@@ -136,9 +142,13 @@ func (db *DB) GetShoppingListByID(ctx context.Context, id int, userID int) (*mod
 		if item.BestPrice != nil {
 			estimatedTotal += *item.BestPrice * float64(item.Quantity)
 		}
+		if item.IsChecked {
+			checkedCount++
+		}
 	}
 
 	list.ItemCount = len(list.Items)
+	list.CheckedCount = checkedCount
 	list.EstimatedTotal = estimatedTotal
 
 	return list, nil
@@ -775,4 +785,249 @@ func (db *DB) ReopenShoppingList(ctx context.Context, listID int, userID int) (*
 	}
 
 	return list, nil
+}
+
+// generateShareToken creates a secure random token for sharing
+func generateShareToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+// CreateShareToken generates a share token for a shopping list
+func (db *DB) CreateShareToken(ctx context.Context, listID int, userID int, expiresIn time.Duration) (string, error) {
+	// Verify ownership
+	var ownerID int
+	err := db.Pool.QueryRow(ctx, `SELECT user_id FROM shopping_lists WHERE id = $1`, listID).Scan(&ownerID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", ErrListNotFound
+		}
+		return "", err
+	}
+	if ownerID != userID {
+		return "", ErrNotListOwner
+	}
+
+	// Generate token
+	token, err := generateShareToken()
+	if err != nil {
+		return "", err
+	}
+
+	expiresAt := time.Now().Add(expiresIn)
+
+	// Update list with share token
+	_, err = db.Pool.Exec(ctx, `
+		UPDATE shopping_lists
+		SET share_token = $2, share_expires_at = $3, share_created_at = NOW(), updated_at = NOW()
+		WHERE id = $1
+	`, listID, token, expiresAt)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+// RevokeShareToken removes the share token from a list
+func (db *DB) RevokeShareToken(ctx context.Context, listID int, userID int) error {
+	result, err := db.Pool.Exec(ctx, `
+		UPDATE shopping_lists
+		SET share_token = NULL, share_expires_at = NULL, share_created_at = NULL, updated_at = NOW()
+		WHERE id = $1 AND user_id = $2
+	`, listID, userID)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrListNotFound
+	}
+	return nil
+}
+
+// GetShoppingListByShareToken retrieves a list by its share token (for public access)
+func (db *DB) GetShoppingListByShareToken(ctx context.Context, token string) (*models.ShoppingListWithItems, error) {
+	// Get the list
+	list := &models.ShoppingListWithItems{}
+	var shareExpiresAt *time.Time
+
+	err := db.Pool.QueryRow(ctx, `
+		SELECT id, user_id, name, status, target_date, completed_at, share_token, share_expires_at, share_created_at, created_at, updated_at
+		FROM shopping_lists
+		WHERE share_token = $1
+	`, token).Scan(
+		&list.ID, &list.UserID, &list.Name, &list.Status, &list.TargetDate, &list.CompletedAt,
+		&list.ShareToken, &shareExpiresAt, &list.ShareCreatedAt, &list.CreatedAt, &list.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrShareTokenInvalid
+		}
+		return nil, err
+	}
+
+	// Check if token has expired
+	if shareExpiresAt != nil && shareExpiresAt.Before(time.Now()) {
+		return nil, ErrShareTokenInvalid
+	}
+	list.ShareExpiresAt = shareExpiresAt
+
+	// Get items with details including checked status
+	rows, err := db.Pool.Query(ctx, `
+		SELECT
+			sli.id, sli.list_id, sli.item_id, sli.quantity, sli.is_checked, sli.checked_at, sli.created_at,
+			i.name, i.brand, i.size, i.unit,
+			(SELECT MIN(sp.price) FROM store_prices sp WHERE sp.item_id = sli.item_id) as best_price,
+			(SELECT s.name FROM stores s
+			 JOIN store_prices sp ON s.id = sp.store_id
+			 WHERE sp.item_id = sli.item_id
+			 ORDER BY sp.price ASC
+			 LIMIT 1) as best_store
+		FROM shopping_list_items sli
+		JOIN items i ON sli.item_id = i.id
+		WHERE sli.list_id = $1
+		ORDER BY sli.is_checked ASC, i.name ASC
+	`, list.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	list.Items = []models.ShoppingListItemWithDetails{}
+	var estimatedTotal float64
+	var checkedCount int
+
+	for rows.Next() {
+		item := models.ShoppingListItemWithDetails{}
+		err := rows.Scan(
+			&item.ID, &item.ListID, &item.ItemID, &item.Quantity, &item.IsChecked, &item.CheckedAt, &item.CreatedAt,
+			&item.ItemName, &item.ItemBrand, &item.ItemSize, &item.ItemUnit,
+			&item.BestPrice, &item.BestStore,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list.Items = append(list.Items, item)
+		if item.BestPrice != nil {
+			estimatedTotal += *item.BestPrice * float64(item.Quantity)
+		}
+		if item.IsChecked {
+			checkedCount++
+		}
+	}
+
+	list.ItemCount = len(list.Items)
+	list.CheckedCount = checkedCount
+	list.EstimatedTotal = estimatedTotal
+
+	return list, nil
+}
+
+// ToggleListItemChecked toggles the checked status of an item (for shared list access)
+func (db *DB) ToggleListItemChecked(ctx context.Context, token string, itemID int) (*models.ShoppingListItem, error) {
+	// Verify token is valid
+	var listID int
+	var shareExpiresAt *time.Time
+	err := db.Pool.QueryRow(ctx, `
+		SELECT id, share_expires_at FROM shopping_lists WHERE share_token = $1
+	`, token).Scan(&listID, &shareExpiresAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrShareTokenInvalid
+		}
+		return nil, err
+	}
+
+	// Check expiry
+	if shareExpiresAt != nil && shareExpiresAt.Before(time.Now()) {
+		return nil, ErrShareTokenInvalid
+	}
+
+	// Toggle the item
+	item := &models.ShoppingListItem{}
+	err = db.Pool.QueryRow(ctx, `
+		UPDATE shopping_list_items
+		SET is_checked = NOT is_checked,
+		    checked_at = CASE WHEN NOT is_checked THEN NOW() ELSE NULL END
+		WHERE id = $1 AND list_id = $2
+		RETURNING id, list_id, item_id, quantity, is_checked, checked_at, created_at
+	`, itemID, listID).Scan(
+		&item.ID, &item.ListID, &item.ItemID, &item.Quantity, &item.IsChecked, &item.CheckedAt, &item.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrListItemNotFound
+		}
+		return nil, err
+	}
+
+	return item, nil
+}
+
+// SetListItemChecked sets the checked status of an item (for shared list access)
+func (db *DB) SetListItemChecked(ctx context.Context, token string, itemID int, checked bool) (*models.ShoppingListItem, error) {
+	// Verify token is valid
+	var listID int
+	var shareExpiresAt *time.Time
+	err := db.Pool.QueryRow(ctx, `
+		SELECT id, share_expires_at FROM shopping_lists WHERE share_token = $1
+	`, token).Scan(&listID, &shareExpiresAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrShareTokenInvalid
+		}
+		return nil, err
+	}
+
+	// Check expiry
+	if shareExpiresAt != nil && shareExpiresAt.Before(time.Now()) {
+		return nil, ErrShareTokenInvalid
+	}
+
+	// Update the item
+	item := &models.ShoppingListItem{}
+	var checkedAt *time.Time
+	if checked {
+		now := time.Now()
+		checkedAt = &now
+	}
+
+	err = db.Pool.QueryRow(ctx, `
+		UPDATE shopping_list_items
+		SET is_checked = $3, checked_at = $4
+		WHERE id = $1 AND list_id = $2
+		RETURNING id, list_id, item_id, quantity, is_checked, checked_at, created_at
+	`, itemID, listID, checked, checkedAt).Scan(
+		&item.ID, &item.ListID, &item.ItemID, &item.Quantity, &item.IsChecked, &item.CheckedAt, &item.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrListItemNotFound
+		}
+		return nil, err
+	}
+
+	return item, nil
+}
+
+// GetUserEmailForList gets the email of the list owner
+func (db *DB) GetUserEmailForList(ctx context.Context, listID int) (string, error) {
+	var email string
+	err := db.Pool.QueryRow(ctx, `
+		SELECT u.email
+		FROM users u
+		JOIN shopping_lists sl ON u.id = sl.user_id
+		WHERE sl.id = $1
+	`, listID).Scan(&email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", ErrListNotFound
+		}
+		return "", err
+	}
+	return email, nil
 }

@@ -70,7 +70,9 @@ INSERT INTO system_settings (key, value, value_type, category, description, is_s
     ('api_rate_limit', '60', 'int', 'api', 'API rate limit (requests per minute)', false),
     ('cors_origins', '*', 'string', 'api', 'CORS allowed origins', false),
     ('enable_public_api', 'true', 'bool', 'api', 'Enable public API access', false),
-    ('require_api_key', 'true', 'bool', 'api', 'Require API key for external access', false)
+    ('require_api_key', 'true', 'bool', 'api', 'Require API key for external access', false),
+    ('jwt_secret', '', 'encrypted', 'api', 'JWT signing secret (auto-generated)', true),
+    ('jwt_expiry_hours', '24', 'int', 'api', 'JWT token expiry in hours', false)
 ON CONFLICT (key) DO NOTHING;
 
 -- Function to update timestamp

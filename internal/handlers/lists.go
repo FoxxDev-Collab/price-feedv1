@@ -4,11 +4,13 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/foxxcyber/price-feed/internal/database"
 	"github.com/foxxcyber/price-feed/internal/models"
+	"github.com/foxxcyber/price-feed/internal/services"
 )
 
 // getUserID extracts user ID from context using the middleware helper
@@ -468,4 +470,230 @@ func (h *Handler) ReopenShoppingList(c *fiber.Ctx) error {
 	}
 
 	return Success(c, list)
+}
+
+// GenerateShareLink creates a shareable link for a shopping list
+func (h *Handler) GenerateShareLink(c *fiber.Ctx) error {
+	userID, err := getUserID(c)
+	if err != nil {
+		return Error(c, fiber.StatusUnauthorized, err.Error())
+	}
+
+	listID, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid list id")
+	}
+
+	// Verify ownership first
+	list, err := h.db.GetShoppingListByID(c.Context(), listID, userID)
+	if err != nil {
+		if errors.Is(err, database.ErrListNotFound) {
+			return Error(c, fiber.StatusNotFound, "shopping list not found")
+		}
+		return Error(c, fiber.StatusInternalServerError, "failed to get shopping list")
+	}
+	if list.UserID != userID {
+		return Error(c, fiber.StatusForbidden, "you do not own this list")
+	}
+
+	// Default 7 day expiration
+	expiresIn := 7 * 24 * time.Hour
+
+	token, err := h.db.CreateShareToken(c.Context(), listID, userID, expiresIn)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to generate share link")
+	}
+
+	// Build full share URL
+	baseURL := c.Protocol() + "://" + c.Hostname()
+	shareURL := baseURL + "/share/" + token
+
+	return Success(c, fiber.Map{
+		"token":      token,
+		"share_url":  shareURL,
+		"expires_at": time.Now().Add(expiresIn),
+	})
+}
+
+// GetSharedList retrieves a shopping list by share token (public endpoint)
+func (h *Handler) GetSharedList(c *fiber.Ctx) error {
+	token := c.Params("token")
+	if token == "" {
+		return Error(c, fiber.StatusBadRequest, "share token required")
+	}
+
+	list, err := h.db.GetShoppingListByShareToken(c.Context(), token)
+	if err != nil {
+		if errors.Is(err, database.ErrListNotFound) {
+			return Error(c, fiber.StatusNotFound, "shared list not found or expired")
+		}
+		return Error(c, fiber.StatusInternalServerError, "failed to get shared list")
+	}
+
+	return Success(c, list)
+}
+
+// ToggleSharedListItem toggles the checked status of an item on a shared list
+func (h *Handler) ToggleSharedListItem(c *fiber.Ctx) error {
+	token := c.Params("token")
+	if token == "" {
+		return Error(c, fiber.StatusBadRequest, "share token required")
+	}
+
+	itemID, err := strconv.Atoi(c.Params("itemId"))
+	if err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid item id")
+	}
+
+	// Toggle the item - this verifies the token internally
+	item, err := h.db.ToggleListItemChecked(c.Context(), token, itemID)
+	if err != nil {
+		if errors.Is(err, database.ErrShareTokenInvalid) {
+			return Error(c, fiber.StatusNotFound, "shared list not found or expired")
+		}
+		if errors.Is(err, database.ErrListItemNotFound) {
+			return Error(c, fiber.StatusNotFound, "item not found")
+		}
+		return Error(c, fiber.StatusInternalServerError, "failed to toggle item")
+	}
+
+	return Success(c, fiber.Map{
+		"toggled":    true,
+		"is_checked": item.IsChecked,
+	})
+}
+
+// EmailShoppingList sends the shopping list share link to the user's email
+func (h *Handler) EmailShoppingList(c *fiber.Ctx) error {
+	userID, err := getUserID(c)
+	if err != nil {
+		return Error(c, fiber.StatusUnauthorized, err.Error())
+	}
+
+	listID, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid list id")
+	}
+
+	// Get the list with items
+	list, err := h.db.GetShoppingListByID(c.Context(), listID, userID)
+	if err != nil {
+		if errors.Is(err, database.ErrListNotFound) {
+			return Error(c, fiber.StatusNotFound, "shopping list not found")
+		}
+		return Error(c, fiber.StatusInternalServerError, "failed to get shopping list")
+	}
+	if list.UserID != userID {
+		return Error(c, fiber.StatusForbidden, "you do not own this list")
+	}
+
+	// Get the user's email
+	user, err := h.db.GetUserByID(c.Context(), userID)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to get user info")
+	}
+
+	// Generate or reuse share token
+	var token string
+	expiresIn := 7 * 24 * time.Hour
+	if list.ShareToken != nil && list.ShareExpiresAt != nil && list.ShareExpiresAt.After(time.Now()) {
+		token = *list.ShareToken
+	} else {
+		token, err = h.db.CreateShareToken(c.Context(), listID, userID, expiresIn)
+		if err != nil {
+			return Error(c, fiber.StatusInternalServerError, "failed to generate share link")
+		}
+	}
+
+	// Build share URL
+	baseURL := c.Protocol() + "://" + c.Hostname()
+	shareURL := baseURL + "/share/" + token
+
+	// Create email service and send
+	emailService := services.NewEmailService(h.db, h.cfg)
+	if !emailService.IsConfiguredWithContext(c.Context()) {
+		return Error(c, fiber.StatusServiceUnavailable, "email service is not configured")
+	}
+
+	subject := "Your Shopping List: " + list.Name
+	htmlBody := buildShoppingListEmail(list, shareURL)
+	textBody := buildShoppingListEmailText(list, shareURL)
+
+	err = emailService.SendEmail(user.Email, subject, htmlBody, textBody)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to send email: "+err.Error())
+	}
+
+	return Success(c, fiber.Map{
+		"message":   "Shopping list emailed successfully",
+		"share_url": shareURL,
+	})
+}
+
+// buildShoppingListEmailText creates the plain text email body for a shopping list
+func buildShoppingListEmailText(list *models.ShoppingListWithItems, shareURL string) string {
+	var items string
+	for i, item := range list.Items {
+		checked := "[ ]"
+		if item.IsChecked {
+			checked = "[x]"
+		}
+		items += checked + " " + item.ItemName
+		if item.Quantity > 1 {
+			items += " (x" + strconv.Itoa(item.Quantity) + ")"
+		}
+		if i < len(list.Items)-1 {
+			items += "\n"
+		}
+	}
+
+	return "Your Shopping List: " + list.Name + "\n\n" +
+		"Items (" + strconv.Itoa(len(list.Items)) + "):\n" + items + "\n\n" +
+		"Open Interactive List: " + shareURL + "\n\n" +
+		"This link expires in 7 days. You can mark items as checked directly from your phone!"
+}
+
+// buildShoppingListEmail creates the HTML email body for a shopping list
+func buildShoppingListEmail(list *models.ShoppingListWithItems, shareURL string) string {
+	var itemsList string
+	for _, item := range list.Items {
+		checked := ""
+		if item.IsChecked {
+			checked = "✓ "
+		}
+		itemsList += "<li>" + checked + item.ItemName
+		if item.Quantity > 1 {
+			itemsList += " (x" + strconv.Itoa(item.Quantity) + ")"
+		}
+		itemsList += "</li>"
+	}
+
+	return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Shopping List</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+    <div style="background-color: white; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h1 style="color: #333; margin-bottom: 20px;">` + list.Name + `</h1>
+        
+        <p style="color: #666; margin-bottom: 20px;">Here's your shopping list. Click the button below to view and interact with your list on your phone!</p>
+        
+        <div style="background-color: #f8f9fa; border-radius: 6px; padding: 20px; margin-bottom: 20px;">
+            <h3 style="color: #333; margin-top: 0;">Items (` + strconv.Itoa(len(list.Items)) + `):</h3>
+            <ul style="color: #666; padding-left: 20px;">
+                ` + itemsList + `
+            </ul>
+        </div>
+        
+        <a href="` + shareURL + `" style="display: inline-block; background-color: #007bff; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500;">Open Interactive List</a>
+        
+        <p style="color: #999; font-size: 12px; margin-top: 30px;">This link expires in 7 days. You can mark items as checked directly from your phone!</p>
+    </div>
+</body>
+</html>
+`
 }

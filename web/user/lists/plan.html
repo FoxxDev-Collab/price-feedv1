@@ -460,6 +460,13 @@
                     </svg>
                     Copy
                   </button>
+                  <button class="btn btn-secondary" onclick="emailList()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                      <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    Email Me
+                  </button>
                 </div>
                 <button class="btn btn-primary plan-action-btn" onclick="completeShopping()">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
@@ -862,6 +869,30 @@
         user.toast('Plan copied to clipboard', 'success');
       } catch (err) {
         user.toast('Failed to copy', 'error');
+      }
+    }
+
+    async function emailList() {
+      if (!listId) {
+        user.toast('No list to email', 'error');
+        return;
+      }
+
+      try {
+        user.toast('Sending email...', 'info');
+        const response = await api.post(`/lists/${listId}/email`);
+        
+        if (response.success) {
+          user.toast('Shopping list emailed! Check your inbox.', 'success');
+        } else {
+          throw new Error(response.error || 'Failed to send email');
+        }
+      } catch (err) {
+        if (err.message.includes('not configured')) {
+          user.toast('Email service is not configured. Contact admin.', 'error');
+        } else {
+          user.toast(err.message || 'Failed to email list', 'error');
+        }
       }
     }
 

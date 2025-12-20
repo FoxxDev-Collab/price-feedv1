@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"strconv"
 
@@ -200,5 +202,31 @@ func (h *SettingsHandler) UpdateEmailSettings(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "Email settings updated successfully",
+	})
+}
+
+// RegenerateJWTSecret generates a new JWT secret and stores it in the database
+func (h *SettingsHandler) RegenerateJWTSecret(c *fiber.Ctx) error {
+	// Generate a cryptographically secure random secret (32 bytes = 256 bits)
+	secretBytes := make([]byte, 32)
+	if _, err := rand.Read(secretBytes); err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to generate random secret: "+err.Error())
+	}
+
+	// Encode as base64 for storage
+	newSecret := base64.StdEncoding.EncodeToString(secretBytes)
+
+	// Store the new secret in the database (encrypted)
+	settings := map[string]string{
+		"jwt_secret": newSecret,
+	}
+
+	if err := h.db.SetSettings(c.Context(), settings, h.encryptionKey); err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to save JWT secret: "+err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "JWT secret regenerated successfully. All existing sessions have been invalidated.",
 	})
 }

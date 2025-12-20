@@ -43,27 +43,19 @@
             <div class="admin-card-body">
               <div class="admin-form-group">
                 <label class="admin-form-label">Site Name</label>
-                <input type="text" class="admin-form-input" value="PriceFeed" id="site-name">
+                <input type="text" class="admin-form-input" id="site-name" placeholder="Loading...">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Site Description</label>
-                <textarea class="admin-form-input" rows="2" id="site-description">Community-driven grocery price comparison</textarea>
+                <textarea class="admin-form-input" rows="2" id="site-description" placeholder="Loading..."></textarea>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Contact Email</label>
-                <input type="email" class="admin-form-input" value="support@pricefeed.app" id="contact-email">
-              </div>
-              <div class="admin-form-group">
-                <label class="admin-form-label">Default Region</label>
-                <select class="admin-form-select" id="default-region">
-                  <option value="1">Colorado Springs</option>
-                  <option value="2">Denver Metro</option>
-                  <option value="3">Boulder</option>
-                </select>
+                <input type="email" class="admin-form-input" id="contact-email" placeholder="Loading...">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-checkbox">
-                  <input type="checkbox" checked id="maintenance-mode">
+                  <input type="checkbox" id="maintenance-mode">
                   Maintenance Mode (show maintenance page to non-admins)
                 </label>
               </div>
@@ -83,31 +75,31 @@
             <div class="admin-card-body">
               <div class="admin-form-group">
                 <label class="admin-form-checkbox">
-                  <input type="checkbox" checked id="allow-registration">
+                  <input type="checkbox" id="allow-registration">
                   Allow new user registrations
                 </label>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-checkbox">
-                  <input type="checkbox" checked id="require-email-verify">
+                  <input type="checkbox" id="require-email-verify">
                   Require email verification
                 </label>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Minimum Password Length</label>
-                <input type="number" class="admin-form-input" value="8" min="6" max="32" id="min-password" style="max-width: 100px;">
+                <input type="number" class="admin-form-input" min="6" max="32" id="min-password" style="max-width: 100px;">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Session Timeout (hours)</label>
-                <input type="number" class="admin-form-input" value="24" min="1" max="720" id="session-timeout" style="max-width: 100px;">
+                <input type="number" class="admin-form-input" min="1" max="720" id="session-timeout" style="max-width: 100px;">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Max Login Attempts</label>
-                <input type="number" class="admin-form-input" value="5" min="3" max="10" id="max-login-attempts" style="max-width: 100px;">
+                <input type="number" class="admin-form-input" min="3" max="10" id="max-login-attempts" style="max-width: 100px;">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Account Lockout Duration (minutes)</label>
-                <input type="number" class="admin-form-input" value="15" min="5" max="60" id="lockout-duration" style="max-width: 100px;">
+                <input type="number" class="admin-form-input" min="5" max="60" id="lockout-duration" style="max-width: 100px;">
               </div>
             </div>
             <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
@@ -126,16 +118,16 @@
               <div class="admin-form-group">
                 <label class="admin-form-label">Price Expiry (days)</label>
                 <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">Prices older than this will be considered stale</p>
-                <input type="number" class="admin-form-input" value="7" min="1" max="30" id="price-expiry" style="max-width: 100px;">
+                <input type="number" class="admin-form-input" min="1" max="30" id="price-expiry" style="max-width: 100px;">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Verification Threshold</label>
                 <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">Number of verifications needed to mark price as verified</p>
-                <input type="number" class="admin-form-input" value="3" min="1" max="10" id="verify-threshold" style="max-width: 100px;">
+                <input type="number" class="admin-form-input" min="1" max="10" id="verify-threshold" style="max-width: 100px;">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-checkbox">
-                  <input type="checkbox" checked id="allow-anonymous-prices">
+                  <input type="checkbox" id="allow-anonymous-prices">
                   Allow price viewing without login
                 </label>
               </div>
@@ -148,7 +140,7 @@
               <div class="admin-form-group">
                 <label class="admin-form-label">Maximum Price Deviation (%)</label>
                 <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">Flag prices that deviate more than this from average</p>
-                <input type="number" class="admin-form-input" value="50" min="10" max="200" id="price-deviation" style="max-width: 100px;">
+                <input type="number" class="admin-form-input" min="10" max="200" id="price-deviation" style="max-width: 100px;">
               </div>
             </div>
             <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
@@ -168,38 +160,38 @@
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
                 <div class="admin-form-group">
                   <label class="admin-form-label">Price Submission</label>
-                  <input type="number" class="admin-form-input" value="5" min="0" id="points-price">
+                  <input type="number" class="admin-form-input" min="0" id="points-price">
                 </div>
                 <div class="admin-form-group">
                   <label class="admin-form-label">Price Verification</label>
-                  <input type="number" class="admin-form-input" value="2" min="0" id="points-verify">
+                  <input type="number" class="admin-form-input" min="0" id="points-verify">
                 </div>
                 <div class="admin-form-group">
                   <label class="admin-form-label">Store Added</label>
-                  <input type="number" class="admin-form-input" value="10" min="0" id="points-store">
+                  <input type="number" class="admin-form-input" min="0" id="points-store">
                 </div>
                 <div class="admin-form-group">
                   <label class="admin-form-label">Item Added</label>
-                  <input type="number" class="admin-form-input" value="3" min="0" id="points-item">
+                  <input type="number" class="admin-form-input" min="0" id="points-item">
                 </div>
               </div>
               <h4 style="font-weight: var(--font-semibold); margin: var(--space-6) 0 var(--space-3);">Reputation Levels</h4>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
                 <div class="admin-form-group">
                   <label class="admin-form-label">Bronze Threshold</label>
-                  <input type="number" class="admin-form-input" value="100" min="0" id="level-bronze">
+                  <input type="number" class="admin-form-input" min="0" id="level-bronze">
                 </div>
                 <div class="admin-form-group">
                   <label class="admin-form-label">Silver Threshold</label>
-                  <input type="number" class="admin-form-input" value="500" min="0" id="level-silver">
+                  <input type="number" class="admin-form-input" min="0" id="level-silver">
                 </div>
                 <div class="admin-form-group">
                   <label class="admin-form-label">Gold Threshold</label>
-                  <input type="number" class="admin-form-input" value="1000" min="0" id="level-gold">
+                  <input type="number" class="admin-form-input" min="0" id="level-gold">
                 </div>
                 <div class="admin-form-group">
                   <label class="admin-form-label">Platinum Threshold</label>
-                  <input type="number" class="admin-form-input" value="5000" min="0" id="level-platinum">
+                  <input type="number" class="admin-form-input" min="0" id="level-platinum">
                 </div>
               </div>
             </div>
@@ -276,21 +268,22 @@
             <div class="admin-card-body">
               <div class="admin-form-group">
                 <label class="admin-form-label">API Rate Limit (requests/minute)</label>
-                <input type="number" class="admin-form-input" value="60" min="10" max="1000" id="rate-limit" style="max-width: 150px;">
+                <input type="number" class="admin-form-input" min="10" max="1000" id="rate-limit" style="max-width: 150px;">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">CORS Allowed Origins</label>
-                <textarea class="admin-form-input" rows="2" id="cors-origins" placeholder="https://example.com, https://api.example.com">*</textarea>
+                <textarea class="admin-form-input" rows="2" id="cors-origins" placeholder="https://example.com, https://api.example.com"></textarea>
+                <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Use * for all origins, or comma-separated list of domains</p>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-checkbox">
-                  <input type="checkbox" checked id="enable-api">
+                  <input type="checkbox" id="enable-api">
                   Enable Public API
                 </label>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-checkbox">
-                  <input type="checkbox" checked id="require-api-key">
+                  <input type="checkbox" id="require-api-key">
                   Require API Key for external access
                 </label>
               </div>
@@ -301,10 +294,11 @@
                   <input type="password" class="admin-form-input" value="••••••••••••••••" id="jwt-secret" readonly>
                   <button class="btn btn-secondary" onclick="regenerateSecret()">Regenerate</button>
                 </div>
+                <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Regenerating will invalidate all existing sessions</p>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">JWT Expiry (hours)</label>
-                <input type="number" class="admin-form-input" value="24" min="1" max="168" id="jwt-expiry" style="max-width: 100px;">
+                <input type="number" class="admin-form-input" min="1" max="168" id="jwt-expiry" style="max-width: 100px;">
               </div>
             </div>
             <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
@@ -368,6 +362,53 @@
   <script>
     let emailConfig = {};
 
+    // Field mappings: HTML element ID -> database key
+    const fieldMappings = {
+      general: {
+        'site-name': 'site_name',
+        'site-description': 'site_description',
+        'contact-email': 'contact_email',
+        'maintenance-mode': 'maintenance_mode'
+      },
+      users: {
+        'allow-registration': 'allow_registration',
+        'require-email-verify': 'require_email_verify',
+        'min-password': 'min_password_length',
+        'session-timeout': 'session_timeout_hours',
+        'max-login-attempts': 'max_login_attempts',
+        'lockout-duration': 'lockout_duration_minutes'
+      },
+      prices: {
+        'price-expiry': 'price_expiry_days',
+        'verify-threshold': 'verification_threshold',
+        'allow-anonymous-prices': 'allow_anonymous_prices',
+        'require-receipt': 'require_receipt',
+        'price-deviation': 'max_price_deviation'
+      },
+      reputation: {
+        'points-price': 'points_price_submission',
+        'points-verify': 'points_verification',
+        'points-store': 'points_store_added',
+        'points-item': 'points_item_added',
+        'level-bronze': 'level_bronze',
+        'level-silver': 'level_silver',
+        'level-gold': 'level_gold',
+        'level-platinum': 'level_platinum'
+      },
+      api: {
+        'rate-limit': 'api_rate_limit',
+        'cors-origins': 'cors_origins',
+        'enable-api': 'enable_public_api',
+        'require-api-key': 'require_api_key',
+        'jwt-expiry': 'jwt_expiry_hours'
+      }
+    };
+
+    // Map frontend tab names to backend category names
+    const categoryMap = {
+      users: 'auth'  // UI says "users" but backend stores under "auth"
+    };
+
     document.addEventListener('DOMContentLoaded', async () => {
       if (!await admin.init()) return;
 
@@ -381,9 +422,54 @@
       await loadAllSettings();
     });
 
+    // Get the backend category name for a frontend section
+    function getBackendCategory(section) {
+      return categoryMap[section] || section;
+    }
+
     async function loadAllSettings() {
-      await loadEmailSettings();
-      // Add more setting loaders as we migrate them
+      // Load all settings in parallel
+      await Promise.all([
+        loadSettingsCategory('general'),
+        loadSettingsCategory('users'),  // loads from 'auth' category
+        loadSettingsCategory('prices'),
+        loadSettingsCategory('reputation'),
+        loadSettingsCategory('api'),
+        loadEmailSettings()
+      ]);
+    }
+
+    async function loadSettingsCategory(section) {
+      const backendCategory = getBackendCategory(section);
+      try {
+        const response = await api.get(`/admin/settings/${backendCategory}`);
+        if (response.success && response.data) {
+          populateSettingsForm(section, response.data);
+        }
+      } catch (err) {
+        console.error(`Failed to load ${section} settings:`, err);
+      }
+    }
+
+    function populateSettingsForm(category, data) {
+      const mapping = fieldMappings[category];
+      if (!mapping) return;
+
+      for (const [elementId, dbKey] of Object.entries(mapping)) {
+        const element = document.getElementById(elementId);
+        if (!element) continue;
+
+        const value = data[dbKey];
+        if (value === undefined || value === null) continue;
+
+        if (element.type === 'checkbox') {
+          element.checked = value === true || value === 'true';
+        } else if (element.type === 'number') {
+          element.value = parseInt(value) || 0;
+        } else {
+          element.value = value;
+        }
+      }
     }
 
     async function loadEmailSettings() {
@@ -415,13 +501,13 @@
       const statusEl = document.getElementById('email-status');
       if (!config.enabled) {
         statusEl.className = 'status-badge disabled';
-        statusEl.textContent = '● Disabled';
+        statusEl.textContent = 'Disabled';
       } else if (config.configured) {
         statusEl.className = 'status-badge configured';
-        statusEl.textContent = '● Configured';
+        statusEl.textContent = 'Configured';
       } else {
         statusEl.className = 'status-badge not-configured';
-        statusEl.textContent = '● Not Configured';
+        statusEl.textContent = 'Not Configured';
       }
     }
 
@@ -500,12 +586,78 @@
     }
 
     async function saveSettings(section) {
-      admin.toast(`${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully`, 'success');
+      const mapping = fieldMappings[section];
+      if (!mapping) {
+        admin.toast('Unknown settings section', 'error');
+        return;
+      }
+
+      const backendCategory = getBackendCategory(section);
+
+      // Find the save button in this section
+      const tabEl = document.getElementById('tab-' + section);
+      const btn = tabEl ? tabEl.querySelector('.btn-primary') : null;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+      }
+
+      try {
+        // Collect form values
+        const settings = {};
+        for (const [elementId, dbKey] of Object.entries(mapping)) {
+          const element = document.getElementById(elementId);
+          if (!element) continue;
+
+          if (element.type === 'checkbox') {
+            settings[dbKey] = element.checked;
+          } else if (element.type === 'number') {
+            settings[dbKey] = parseInt(element.value) || 0;
+          } else {
+            settings[dbKey] = element.value.trim();
+          }
+        }
+
+        const response = await api.put(`/admin/settings/${backendCategory}`, { settings });
+        if (response.success) {
+          admin.toast(`${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully`, 'success');
+        } else {
+          admin.toast(response.error || `Failed to save ${section} settings`, 'error');
+        }
+      } catch (err) {
+        console.error(`Failed to save ${section} settings:`, err);
+        admin.toast(`Failed to save ${section} settings: ` + err.message, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Save Changes';
+        }
+      }
     }
 
     async function regenerateSecret() {
-      if (!await admin.confirm('Regenerating the JWT secret will invalidate all existing sessions. Continue?')) return;
-      admin.toast('JWT secret regenerated. All users will need to login again.', 'warning');
+      if (!await admin.confirm('Regenerating the JWT secret will invalidate all existing sessions. All users will need to login again. Continue?')) return;
+
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+
+      try {
+        const response = await api.post('/admin/settings/regenerate-jwt-secret');
+        if (response.success) {
+          admin.toast('JWT secret regenerated successfully. All users will need to login again.', 'success');
+          // Update the display to show new masked secret
+          document.getElementById('jwt-secret').value = '••••••••••••••••';
+        } else {
+          admin.toast(response.error || 'Failed to regenerate JWT secret', 'error');
+        }
+      } catch (err) {
+        console.error('Failed to regenerate JWT secret:', err);
+        admin.toast('Failed to regenerate JWT secret: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Regenerate';
+      }
     }
   </script>
 </body>

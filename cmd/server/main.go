@@ -124,6 +124,9 @@ func main() {
 	admin.Put("/email/config", settingsHandler.UpdateEmailSettings)
 	admin.Get("/email/status", settingsHandler.GetEmailStatus)
 
+	// Admin security routes
+	admin.Post("/settings/regenerate-jwt-secret", settingsHandler.RegenerateJWTSecret)
+
 	// Store routes (public read, authenticated write)
 	stores := api.Group("/stores")
 	stores.Get("/", h.ListStores)
@@ -189,6 +192,13 @@ func main() {
 	lists.Post("/:id/complete", h.CompleteShoppingList)
 	lists.Post("/:id/reopen", h.ReopenShoppingList)
 	lists.Post("/:id/duplicate", h.DuplicateShoppingList)
+	lists.Post("/:id/share", h.GenerateShareLink)
+	lists.Post("/:id/email", h.EmailShoppingList)
+
+	// Public share routes (no auth required)
+	share := api.Group("/share")
+	share.Get("/:token", h.GetSharedList)
+	share.Post("/:token/items/:itemId/toggle", h.ToggleSharedListItem)
 
 	// Price comparison route (authenticated)
 	api.Get("/compare", middleware.AuthRequired(cfg), h.GetPriceComparison)
@@ -202,6 +212,11 @@ func main() {
 	maps.Post("/reverse-geocode", mapsHandler.ReverseGeocode)
 	maps.Post("/nearby-stores", mapsHandler.NearbyStores)
 	maps.Get("/place/:place_id", mapsHandler.GetPlaceDetails)
+
+	// Shared list page route (serves the HTML page for shared lists)
+	app.Get("/share/:token", func(c *fiber.Ctx) error {
+		return c.SendFile("./web/share/index.html")
+	})
 
 	// Static files - serve the web/ directory
 	app.Static("/", "./web", fiber.Static{

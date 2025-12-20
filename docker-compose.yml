@@ -38,8 +38,26 @@ services:
     networks:
       - pricefeed-net
 
+  npm:
+    image: docker.io/jc21/nginx-proxy-manager:latest
+    container_name: pricefeed-npm
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    volumes:
+      - npm-data:/data
+      - npm-letsencrypt:/etc/letsencrypt
+    depends_on:
+      - app
+    networks:
+      - pricefeed-net
+
 volumes:
   pricefeed-data:
+  npm-data:
+  npm-letsencrypt:
 
 networks:
   pricefeed-net:

@@ -156,6 +156,8 @@ var migrations = map[int]string{
 	4: migration004,
 	5: migration005,
 	6: migration006,
+	7: migration007,
+	8: migration008,
 }
 
 const migration001 = `
@@ -523,4 +525,72 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS longitude DECIMAL(11, 8);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_place_id VARCHAR(255);
 
 CREATE INDEX IF NOT EXISTS idx_users_location ON users(latitude, longitude) WHERE latitude IS NOT NULL;
+`
+
+const migration007 = `
+-- Migration 007: System settings table for storing application configuration
+
+CREATE TABLE IF NOT EXISTS system_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT,
+    value_type VARCHAR(20) DEFAULT 'string',
+    category VARCHAR(50) NOT NULL DEFAULT 'general',
+    description TEXT,
+    is_sensitive BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_system_settings_category ON system_settings(category);
+
+-- Insert default SMTP settings
+INSERT INTO system_settings (key, value, value_type, category, description, is_sensitive) VALUES
+    ('smtp_enabled', 'false', 'bool', 'email', 'Enable SMTP email functionality', false),
+    ('smtp_host', '', 'string', 'email', 'SMTP server hostname', false),
+    ('smtp_port', '587', 'int', 'email', 'SMTP server port (587 for TLS, 465 for SSL)', false),
+    ('smtp_user', '', 'string', 'email', 'SMTP authentication username', false),
+    ('smtp_password', '', 'encrypted', 'email', 'SMTP authentication password', true),
+    ('smtp_from_addr', 'noreply@pricefeed.app', 'string', 'email', 'From email address', false),
+    ('smtp_from_name', 'PriceFeed', 'string', 'email', 'From display name', false)
+ON CONFLICT (key) DO NOTHING;
+
+-- Insert default general settings
+INSERT INTO system_settings (key, value, value_type, category, description, is_sensitive) VALUES
+    ('site_name', 'PriceFeed', 'string', 'general', 'Application name', false),
+    ('site_description', 'Community-driven grocery price comparison', 'string', 'general', 'Application description', false),
+    ('contact_email', 'support@pricefeed.app', 'string', 'general', 'Contact email address', false),
+    ('maintenance_mode', 'false', 'bool', 'general', 'Enable maintenance mode', false)
+ON CONFLICT (key) DO NOTHING;
+
+-- Function to update timestamp
+CREATE OR REPLACE FUNCTION update_system_settings_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-update timestamp
+DROP TRIGGER IF EXISTS trigger_system_settings_updated ON system_settings;
+CREATE TRIGGER trigger_system_settings_updated
+    BEFORE UPDATE ON system_settings
+    FOR EACH ROW
+    EXECUTE FUNCTION update_system_settings_timestamp();
+`
+
+const migration008 = `
+-- Migration 008: Add share functionality to shopping lists
+
+-- Add share token and expiry to shopping lists
+ALTER TABLE shopping_lists ADD COLUMN IF NOT EXISTS share_token VARCHAR(64) UNIQUE;
+ALTER TABLE shopping_lists ADD COLUMN IF NOT EXISTS share_expires_at TIMESTAMP;
+ALTER TABLE shopping_lists ADD COLUMN IF NOT EXISTS share_created_at TIMESTAMP;
+
+-- Add checked status to shopping list items for tracking progress
+ALTER TABLE shopping_list_items ADD COLUMN IF NOT EXISTS is_checked BOOLEAN DEFAULT FALSE;
+ALTER TABLE shopping_list_items ADD COLUMN IF NOT EXISTS checked_at TIMESTAMP;
+
+-- Index for fast token lookups
+CREATE INDEX IF NOT EXISTS idx_shopping_lists_share_token ON shopping_lists(share_token) WHERE share_token IS NOT NULL;
 `

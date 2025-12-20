@@ -14,23 +14,28 @@ const (
 
 // ShoppingList represents a user's shopping list
 type ShoppingList struct {
-	ID          int        `json:"id"`
-	UserID      int        `json:"user_id"`
-	Name        string     `json:"name"`
-	Status      ListStatus `json:"status"`
-	TargetDate  *time.Time `json:"target_date,omitempty"`
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID             int        `json:"id"`
+	UserID         int        `json:"user_id"`
+	Name           string     `json:"name"`
+	Status         ListStatus `json:"status"`
+	TargetDate     *time.Time `json:"target_date,omitempty"`
+	CompletedAt    *time.Time `json:"completed_at,omitempty"`
+	ShareToken     *string    `json:"share_token,omitempty"`
+	ShareExpiresAt *time.Time `json:"share_expires_at,omitempty"`
+	ShareCreatedAt *time.Time `json:"share_created_at,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 // ShoppingListItem represents an item in a shopping list
 type ShoppingListItem struct {
-	ID        int       `json:"id"`
-	ListID    int       `json:"list_id"`
-	ItemID    int       `json:"item_id"`
-	Quantity  int       `json:"quantity"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        int        `json:"id"`
+	ListID    int        `json:"list_id"`
+	ItemID    int        `json:"item_id"`
+	Quantity  int        `json:"quantity"`
+	IsChecked bool       `json:"is_checked"`
+	CheckedAt *time.Time `json:"checked_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 // ShoppingListItemWithDetails includes item info
@@ -49,6 +54,7 @@ type ShoppingListWithItems struct {
 	ShoppingList
 	Items          []ShoppingListItemWithDetails `json:"items"`
 	ItemCount      int                           `json:"item_count"`
+	CheckedCount   int                           `json:"checked_count"`   // Number of checked items
 	EstimatedTotal float64                       `json:"estimated_total"` // Sum of best prices * quantities
 }
 
