@@ -134,3 +134,38 @@ func GetUserEmail(c *fiber.Ctx) string {
 	}
 	return ""
 }
+
+// EmailVerifiedRequired creates a middleware that requires email verification
+// db must implement GetSettingBool and GetUserByID methods
+type EmailVerificationChecker interface {
+	GetSettingBool(ctx interface{}, key string, defaultVal bool, encryptionKey []byte) bool
+	GetUserByID(ctx interface{}, id int) (interface{ IsEmailVerified() bool; GetRole() models.Role }, error)
+}
+
+// EmailVerifiedRequiredFunc returns a middleware that requires email verification
+// It takes a function that checks if verification is required and if the user is verified
+func EmailVerifiedRequiredFunc(checkFunc func(c *fiber.Ctx) (required bool, verified bool, isAdmin bool, err error)) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		required, verified, isAdmin, err := checkFunc(c)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to check verification status",
+			})
+		}
+
+		// Admins are always exempt
+		if isAdmin {
+			return c.Next()
+		}
+
+		// If verification is required and user is not verified, block access
+		if required && !verified {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error":              "email verification required",
+				"verification_required": true,
+			})
+		}
+
+		return c.Next()
+	}
+}

@@ -17,6 +17,21 @@
       <header class="user-header" id="user-header"></header>
 
       <div class="user-content">
+        <!-- Email Verification Banner (hidden by default) -->
+        <div id="email-verify-banner" class="email-verify-banner" style="display: none;">
+          <div class="email-verify-content">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <div class="email-verify-text">
+              <strong>Please verify your email</strong>
+              <span>Check your inbox for a verification link to unlock all features.</span>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="resendVerification()">Resend Email</button>
+        </div>
+
         <div class="user-page-header">
           <h1 class="user-page-title">Dashboard</h1>
           <p class="user-page-subtitle">Welcome back! Here's an overview of your price tracking.</p>
@@ -177,6 +192,9 @@
         { label: 'Dashboard', href: '/user/' }
       ]);
 
+      // Check email verification status
+      await checkEmailVerification();
+
       await Promise.all([
         loadStats(),
         loadRecentLists(),
@@ -292,6 +310,51 @@
 
     function quickCreateList(event) {
       // Allow default navigation - could be enhanced with inline modal later
+    }
+
+    async function checkEmailVerification() {
+      try {
+        const response = await api.get('/auth/verification-status');
+        if (response.success && response.data) {
+          const { email_verified, verification_required } = response.data;
+
+          // Show banner if verification is required and not verified
+          if (verification_required && !email_verified) {
+            document.getElementById('email-verify-banner').style.display = 'flex';
+          }
+
+          // Also check URL params for pending verification message
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('verify') === 'pending') {
+            user.toast('Please check your email for a verification link', 'info');
+            // Remove the query param from URL
+            window.history.replaceState({}, '', '/user/');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check verification status:', err);
+      }
+    }
+
+    async function resendVerification() {
+      try {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+
+        const response = await api.post('/auth/resend-verification', {});
+        if (response.success) {
+          user.toast('Verification email sent! Check your inbox.', 'success');
+        } else {
+          throw new Error(response.error || 'Failed to send email');
+        }
+      } catch (err) {
+        user.toast(err.message || 'Failed to send verification email', 'error');
+      } finally {
+        const btn = event.target;
+        btn.disabled = false;
+        btn.textContent = 'Resend Email';
+      }
     }
   </script>
 </body>

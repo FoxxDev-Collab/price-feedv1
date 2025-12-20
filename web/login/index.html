@@ -29,6 +29,12 @@
 
           <div class="error-message"></div>
 
+          <!-- Cloudflare Turnstile CAPTCHA -->
+          <div id="captcha-container" class="captcha-container" style="display: none; margin-bottom: var(--space-4);">
+            <div id="cf-turnstile"></div>
+          </div>
+          <input type="hidden" id="captcha-token" name="captcha_token">
+
           <button type="submit" class="btn btn-primary btn-full">Login</button>
         </form>
 
@@ -45,20 +51,126 @@
   <script src="/js/auth.js"></script>
   <script src="/js/components.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    let captchaConfig = null;
+    let turnstileWidgetId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
       // If already logged in, redirect to dashboard
       if (authApi.isLoggedIn()) {
         window.location.href = '/dashboard/';
         return;
       }
 
+      // Load captcha config
+      await initCaptcha();
+
       // Handle form submission
       const form = document.getElementById('login-form');
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        await auth.handleLoginForm(form);
+        await handleLogin(form);
       });
     });
+
+    async function initCaptcha() {
+      try {
+        const response = await api.get('/auth/captcha-config');
+        if (response.success && response.data && response.data.enabled) {
+          captchaConfig = response.data;
+          document.getElementById('captcha-container').style.display = 'block';
+
+          // Load Turnstile script
+          const script = document.createElement('script');
+          script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
+        }
+      } catch (err) {
+        console.error('Failed to load captcha config:', err);
+      }
+    }
+
+    window.onTurnstileLoad = function() {
+      if (captchaConfig && captchaConfig.site_key) {
+        turnstileWidgetId = turnstile.render('#cf-turnstile', {
+          sitekey: captchaConfig.site_key,
+          callback: function(token) {
+            document.getElementById('captcha-token').value = token;
+          },
+          'expired-callback': function() {
+            document.getElementById('captcha-token').value = '';
+          },
+          'error-callback': function() {
+            document.getElementById('captcha-token').value = '';
+          }
+        });
+      }
+    };
+
+    async function handleLogin(form) {
+      const email = form.querySelector('[name="email"]').value;
+      const password = form.querySelector('[name="password"]').value;
+      const errorEl = form.querySelector('.error-message');
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      // Clear previous errors
+      if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+      }
+
+      // Validate captcha if enabled
+      if (captchaConfig && captchaConfig.enabled) {
+        const token = document.getElementById('captcha-token').value;
+        if (!token) {
+          showError('Please complete the CAPTCHA verification');
+          return;
+        }
+      }
+
+      // Disable submit button
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Signing in...';
+      }
+
+      try {
+        const response = await api.post('/auth/login', {
+          email: email.trim(),
+          password: password,
+          captcha_token: document.getElementById('captcha-token').value || null
+        });
+
+        if (response.token) {
+          authApi.setToken(response.token);
+          auth.user = response.user;
+          auth.updateUI();
+          window.location.href = '/user/';
+        } else {
+          throw new Error(response.error || 'Login failed');
+        }
+      } catch (err) {
+        showError(err.message || 'Login failed. Please try again.');
+        // Reset captcha on error
+        if (turnstileWidgetId !== null && typeof turnstile !== 'undefined') {
+          turnstile.reset(turnstileWidgetId);
+          document.getElementById('captcha-token').value = '';
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Login';
+        }
+      }
+    }
+
+    function showError(message) {
+      const errorDiv = document.querySelector('.error-message');
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+      }
+    }
   </script>
 </body>
 </html>

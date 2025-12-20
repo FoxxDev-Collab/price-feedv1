@@ -5,19 +5,25 @@ import (
 
 	"github.com/foxxcyber/price-feed/internal/config"
 	"github.com/foxxcyber/price-feed/internal/database"
+	"github.com/foxxcyber/price-feed/internal/models"
+	"github.com/foxxcyber/price-feed/internal/services"
 )
 
 // Handler holds all handler dependencies
 type Handler struct {
-	db  *database.DB
-	cfg *config.Config
+	db             *database.DB
+	cfg            *config.Config
+	captchaService *services.CaptchaService
+	emailService   *services.EmailService
 }
 
 // New creates a new Handler instance
 func New(db *database.DB, cfg *config.Config) *Handler {
 	return &Handler{
-		db:  db,
-		cfg: cfg,
+		db:             db,
+		cfg:            cfg,
+		captchaService: services.NewCaptchaService(db, cfg),
+		emailService:   services.NewEmailService(db, cfg),
 	}
 }
 
@@ -80,4 +86,40 @@ func Error(c *fiber.Ctx, status int, message string) error {
 		Success: false,
 		Error:   message,
 	})
+}
+
+// CreateEmailVerificationChecker creates a function for checking email verification status
+// This can be used with the EmailVerifiedRequiredFunc middleware
+func (h *Handler) CreateEmailVerificationChecker() func(c *fiber.Ctx) (required bool, verified bool, isAdmin bool, err error) {
+	return func(c *fiber.Ctx) (bool, bool, bool, error) {
+		userID, ok := c.Locals("user_id").(int)
+		if !ok || userID == 0 {
+			return false, false, false, nil
+		}
+
+		role, _ := c.Locals("user_role").(models.Role)
+
+		// Admins are always exempt
+		if role == models.RoleAdmin {
+			return false, true, true, nil
+		}
+
+		// Check if verification is required from settings
+		key := make([]byte, 32)
+		copy(key, []byte(h.cfg.JWTSecret))
+		required := h.db.GetSettingBool(c.Context(), "require_email_verify", false, key)
+
+		// If not required, don't need to check further
+		if !required {
+			return false, true, false, nil
+		}
+
+		// Get user to check verification status
+		user, err := h.db.GetUserByID(c.Context(), userID)
+		if err != nil {
+			return true, false, false, err
+		}
+
+		return true, user.EmailVerified, false, nil
+	}
 }

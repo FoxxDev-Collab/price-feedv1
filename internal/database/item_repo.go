@@ -16,6 +16,7 @@ var (
 )
 
 // ListItems returns a paginated list of items with optional filtering
+// Users only see their own items + public items
 func (db *DB) ListItems(ctx context.Context, params *models.ItemListParams) ([]*models.ItemWithStats, int, error) {
 	var whereClauses []string
 	var args []interface{}
@@ -39,6 +40,20 @@ func (db *DB) ListItems(ctx context.Context, params *models.ItemListParams) ([]*
 		argIndex++
 	}
 
+	// Filter by privacy
+	if params.IsPrivate != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("i.is_private = $%d", argIndex))
+		args = append(args, *params.IsPrivate)
+		argIndex++
+	}
+
+	// Filter by user visibility - users see their own items + public items
+	if params.UserID != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("(i.is_private = false OR i.created_by = $%d)", argIndex))
+		args = append(args, *params.UserID)
+		argIndex++
+	}
+
 	whereClause := ""
 	if len(whereClauses) > 0 {
 		whereClause = "WHERE " + strings.Join(whereClauses, " AND ")
@@ -56,7 +71,7 @@ func (db *DB) ListItems(ctx context.Context, params *models.ItemListParams) ([]*
 	query := fmt.Sprintf(`
 		SELECT
 			i.id, i.name, i.brand, i.size, i.unit, i.description,
-			i.verified, i.verification_count, i.created_by, i.created_at, i.updated_at,
+			i.verified, i.verification_count, i.is_private, i.created_by, i.created_at, i.updated_at,
 			COALESCE((SELECT COUNT(*) FROM store_prices WHERE item_id = i.id), 0) as price_count,
 			(SELECT AVG(price) FROM store_prices WHERE item_id = i.id) as avg_price,
 			(SELECT MIN(price) FROM store_prices WHERE item_id = i.id) as min_price,
@@ -86,7 +101,7 @@ func (db *DB) ListItems(ctx context.Context, params *models.ItemListParams) ([]*
 		item := &models.ItemWithStats{}
 		err := rows.Scan(
 			&item.ID, &item.Name, &item.Brand, &item.Size, &item.Unit, &item.Description,
-			&item.Verified, &item.VerificationCount, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+			&item.Verified, &item.VerificationCount, &item.IsPrivate, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
 			&item.PriceCount, &item.AvgPrice, &item.MinPrice, &item.MaxPrice,
 			&item.Tags,
 		)
@@ -109,7 +124,7 @@ func (db *DB) GetItemByID(ctx context.Context, id int) (*models.ItemWithStats, e
 	err := db.Pool.QueryRow(ctx, `
 		SELECT
 			i.id, i.name, i.brand, i.size, i.unit, i.description,
-			i.verified, i.verification_count, i.created_by, i.created_at, i.updated_at,
+			i.verified, i.verification_count, i.is_private, i.created_by, i.created_at, i.updated_at,
 			COALESCE((SELECT COUNT(*) FROM store_prices WHERE item_id = i.id), 0) as price_count,
 			(SELECT AVG(price) FROM store_prices WHERE item_id = i.id) as avg_price,
 			(SELECT MIN(price) FROM store_prices WHERE item_id = i.id) as min_price,
@@ -124,7 +139,7 @@ func (db *DB) GetItemByID(ctx context.Context, id int) (*models.ItemWithStats, e
 		WHERE i.id = $1
 	`, id).Scan(
 		&item.ID, &item.Name, &item.Brand, &item.Size, &item.Unit, &item.Description,
-		&item.Verified, &item.VerificationCount, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+		&item.Verified, &item.VerificationCount, &item.IsPrivate, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
 		&item.PriceCount, &item.AvgPrice, &item.MinPrice, &item.MaxPrice,
 		&item.Tags,
 	)
@@ -147,13 +162,19 @@ func (db *DB) GetItemByID(ctx context.Context, id int) (*models.ItemWithStats, e
 func (db *DB) CreateItem(ctx context.Context, req *models.CreateItemRequest, createdBy *int) (*models.Item, error) {
 	item := &models.Item{}
 
+	// Default to private if not specified
+	isPrivate := true
+	if req.IsPrivate != nil {
+		isPrivate = *req.IsPrivate
+	}
+
 	err := db.Pool.QueryRow(ctx, `
-		INSERT INTO items (name, brand, size, unit, description, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-		RETURNING id, name, brand, size, unit, description, verified, verification_count, created_by, created_at, updated_at
-	`, req.Name, req.Brand, req.Size, req.Unit, req.Description, createdBy).Scan(
+		INSERT INTO items (name, brand, size, unit, description, is_private, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+		RETURNING id, name, brand, size, unit, description, verified, verification_count, is_private, created_by, created_at, updated_at
+	`, req.Name, req.Brand, req.Size, req.Unit, req.Description, isPrivate, createdBy).Scan(
 		&item.ID, &item.Name, &item.Brand, &item.Size, &item.Unit, &item.Description,
-		&item.Verified, &item.VerificationCount, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+		&item.Verified, &item.VerificationCount, &item.IsPrivate, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
 	)
 
 	if err != nil {
@@ -207,10 +228,10 @@ func (db *DB) UpdateItem(ctx context.Context, id int, req *models.UpdateItemRequ
 		    verified = COALESCE($7, verified),
 		    updated_at = NOW()
 		WHERE id = $1
-		RETURNING id, name, brand, size, unit, description, verified, verification_count, created_by, created_at, updated_at
+		RETURNING id, name, brand, size, unit, description, verified, verification_count, is_private, created_by, created_at, updated_at
 	`, id, req.Name, req.Brand, req.Size, req.Unit, req.Description, req.Verified).Scan(
 		&item.ID, &item.Name, &item.Brand, &item.Size, &item.Unit, &item.Description,
-		&item.Verified, &item.VerificationCount, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+		&item.Verified, &item.VerificationCount, &item.IsPrivate, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
 	)
 
 	if err != nil {
@@ -295,16 +316,37 @@ func (db *DB) GetItemStats(ctx context.Context) (*models.ItemStats, error) {
 }
 
 // SearchItems performs a fuzzy search on items
-func (db *DB) SearchItems(ctx context.Context, query string, limit int) ([]*models.Item, error) {
-	rows, err := db.Pool.Query(ctx, `
-		SELECT id, name, brand, size, unit, description, verified, verification_count, created_by, created_at, updated_at
-		FROM items
-		WHERE name ILIKE $1 OR brand ILIKE $1
-		ORDER BY
-			CASE WHEN name ILIKE $2 || '%' THEN 0 ELSE 1 END,
-			name
-		LIMIT $3
-	`, "%"+query+"%", query, limit)
+// Only returns items visible to the user (public items OR user's own private items)
+func (db *DB) SearchItems(ctx context.Context, query string, limit int, userID *int) ([]*models.Item, error) {
+	var rows pgx.Rows
+	var err error
+
+	if userID != nil {
+		// User is logged in: show public items OR their own private items
+		rows, err = db.Pool.Query(ctx, `
+			SELECT id, name, brand, size, unit, description, verified, verification_count, is_private, created_by, created_at, updated_at
+			FROM items
+			WHERE (name ILIKE $1 OR brand ILIKE $1)
+			AND (is_private = false OR created_by = $4)
+			ORDER BY
+				CASE WHEN name ILIKE $2 || '%' THEN 0 ELSE 1 END,
+				name
+			LIMIT $3
+		`, "%"+query+"%", query, limit, *userID)
+	} else {
+		// No user: show only public items
+		rows, err = db.Pool.Query(ctx, `
+			SELECT id, name, brand, size, unit, description, verified, verification_count, is_private, created_by, created_at, updated_at
+			FROM items
+			WHERE (name ILIKE $1 OR brand ILIKE $1)
+			AND is_private = false
+			ORDER BY
+				CASE WHEN name ILIKE $2 || '%' THEN 0 ELSE 1 END,
+				name
+			LIMIT $3
+		`, "%"+query+"%", query, limit)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +356,7 @@ func (db *DB) SearchItems(ctx context.Context, query string, limit int) ([]*mode
 	for rows.Next() {
 		i := &models.Item{}
 		if err := rows.Scan(&i.ID, &i.Name, &i.Brand, &i.Size, &i.Unit, &i.Description,
-			&i.Verified, &i.VerificationCount, &i.CreatedBy, &i.CreatedAt, &i.UpdatedAt); err != nil {
+			&i.Verified, &i.VerificationCount, &i.IsPrivate, &i.CreatedBy, &i.CreatedAt, &i.UpdatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

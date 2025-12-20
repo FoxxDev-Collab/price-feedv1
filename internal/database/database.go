@@ -150,14 +150,16 @@ func EnsureAdminUser(db *DB, cfg *config.Config) error {
 
 // migrations is an ordered map of migration version to SQL
 var migrations = map[int]string{
-	1: migration001,
-	2: migration002,
-	3: migration003,
-	4: migration004,
-	5: migration005,
-	6: migration006,
-	7: migration007,
-	8: migration008,
+	1:  migration001,
+	2:  migration002,
+	3:  migration003,
+	4:  migration004,
+	5:  migration005,
+	6:  migration006,
+	7:  migration007,
+	8:  migration008,
+	9:  migration009,
+	10: migration010,
 }
 
 const migration001 = `
@@ -593,4 +595,120 @@ ALTER TABLE shopping_list_items ADD COLUMN IF NOT EXISTS checked_at TIMESTAMP;
 
 -- Index for fast token lookups
 CREATE INDEX IF NOT EXISTS idx_shopping_lists_share_token ON shopping_lists(share_token) WHERE share_token IS NOT NULL;
+`
+
+const migration009 = `
+-- Migration 009: Receipt scanning functionality
+
+-- Receipts table - stores uploaded receipt images and metadata
+CREATE TABLE IF NOT EXISTS receipts (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    store_id INT REFERENCES stores(id) ON DELETE SET NULL,
+
+    -- S3 storage info
+    s3_bucket VARCHAR(100) NOT NULL DEFAULT 'receipts',
+    s3_key VARCHAR(255) NOT NULL UNIQUE,
+    original_filename VARCHAR(255),
+    content_type VARCHAR(100),
+    file_size_bytes BIGINT,
+
+    -- Processing status
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    ocr_text TEXT,
+    error_message TEXT,
+
+    -- Receipt metadata (extracted)
+    receipt_date DATE,
+    receipt_total DECIMAL(10, 2),
+
+    -- Timestamps
+    uploaded_at TIMESTAMP DEFAULT NOW(),
+    processed_at TIMESTAMP,
+    confirmed_at TIMESTAMP,
+    expires_at TIMESTAMP DEFAULT (NOW() + INTERVAL '30 days'),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Receipt items table - parsed line items from receipts
+CREATE TABLE IF NOT EXISTS receipt_items (
+    id SERIAL PRIMARY KEY,
+    receipt_id INT REFERENCES receipts(id) ON DELETE CASCADE,
+
+    -- Raw extracted data
+    raw_text VARCHAR(500) NOT NULL,
+    extracted_name VARCHAR(255),
+    extracted_price DECIMAL(10, 2),
+    extracted_quantity INT DEFAULT 1,
+
+    -- Matching
+    matched_item_id INT REFERENCES items(id) ON DELETE SET NULL,
+    match_confidence DECIMAL(5, 4),
+    match_status VARCHAR(20) DEFAULT 'pending',
+
+    -- User confirmation
+    confirmed_item_id INT REFERENCES items(id) ON DELETE SET NULL,
+    confirmed_price DECIMAL(10, 2),
+    is_confirmed BOOLEAN DEFAULT FALSE,
+
+    -- If user creates new item from this
+    created_item_id INT REFERENCES items(id) ON DELETE SET NULL,
+
+    -- Line position for ordering
+    line_number INT,
+
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for receipts
+CREATE INDEX IF NOT EXISTS idx_receipts_user ON receipts(user_id);
+CREATE INDEX IF NOT EXISTS idx_receipts_store ON receipts(store_id);
+CREATE INDEX IF NOT EXISTS idx_receipts_status ON receipts(status);
+CREATE INDEX IF NOT EXISTS idx_receipts_uploaded ON receipts(uploaded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_receipts_expires ON receipts(expires_at);
+
+-- Indexes for receipt items
+CREATE INDEX IF NOT EXISTS idx_receipt_items_receipt ON receipt_items(receipt_id);
+CREATE INDEX IF NOT EXISTS idx_receipt_items_matched ON receipt_items(matched_item_id);
+CREATE INDEX IF NOT EXISTS idx_receipt_items_status ON receipt_items(match_status);
+
+-- Full-text search index on item names for fuzzy matching (if not exists)
+CREATE INDEX IF NOT EXISTS idx_items_name_tsvector ON items USING GIN (to_tsvector('english', name));
+`
+
+const migration010 = `
+-- Migration 010: Email verification tokens and captcha settings
+
+-- Email verification tokens table
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(64) UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_user ON email_verification_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_token ON email_verification_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_expires ON email_verification_tokens(expires_at);
+
+-- Insert default captcha settings
+INSERT INTO system_settings (key, value, value_type, category, description, is_sensitive) VALUES
+    ('captcha_enabled', 'false', 'bool', 'api', 'Enable Cloudflare Turnstile CAPTCHA on forms', false),
+    ('captcha_site_key', '', 'string', 'api', 'Cloudflare Turnstile site key (public)', false),
+    ('captcha_secret_key', '', 'encrypted', 'api', 'Cloudflare Turnstile secret key (private)', true)
+ON CONFLICT (key) DO NOTHING;
+
+-- Insert default auth settings
+INSERT INTO system_settings (key, value, value_type, category, description, is_sensitive) VALUES
+    ('allow_registration', 'true', 'bool', 'auth', 'Allow new user registrations', false),
+    ('require_email_verify', 'false', 'bool', 'api', 'Require email verification for new users', false),
+    ('min_password_length', '8', 'int', 'auth', 'Minimum password length', false),
+    ('session_timeout_hours', '24', 'int', 'auth', 'Session timeout in hours', false),
+    ('max_login_attempts', '5', 'int', 'auth', 'Maximum login attempts before lockout', false),
+    ('lockout_duration_minutes', '15', 'int', 'auth', 'Account lockout duration in minutes', false)
+ON CONFLICT (key) DO NOTHING;
 `

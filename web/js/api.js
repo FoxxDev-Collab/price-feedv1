@@ -675,6 +675,102 @@ const feedApi = {
 };
 
 /**
+ * Receipts API - Receipt scanning and OCR
+ */
+const receiptsApi = {
+  /**
+   * Upload a receipt image for OCR processing
+   * @param {File} imageFile - The receipt image file
+   * @param {number} [storeId] - Optional store ID if known
+   * @returns {Promise} - Receipt with parsed items
+   */
+  async upload(imageFile, storeId = null) {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    if (storeId) {
+      formData.append('store_id', storeId.toString());
+    }
+
+    const token = api.getToken();
+    const response = await fetch(`${API_BASE}/receipts/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: formData,
+    });
+
+    if (response.status === 401) {
+      api.removeToken();
+      window.location.href = '/login/';
+      return null;
+    }
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const errorMessage = data?.error || 'Upload failed';
+      throw new Error(errorMessage);
+    }
+
+    return data;
+  },
+
+  /**
+   * List user's receipts
+   * @param {Object} params - Query parameters { limit, offset, status }
+   */
+  list(params = {}) {
+    const query = new URLSearchParams();
+    if (params.limit) query.set('limit', params.limit);
+    if (params.offset) query.set('offset', params.offset);
+    if (params.status) query.set('status', params.status);
+    const queryStr = query.toString();
+    return api.get(`/receipts${queryStr ? '?' + queryStr : ''}`);
+  },
+
+  /**
+   * Get a single receipt by ID with items
+   */
+  getById(id) {
+    return api.get(`/receipts/${id}`);
+  },
+
+  /**
+   * Update a receipt item (confirm match, change item, etc.)
+   * @param {number} receiptId - Receipt ID
+   * @param {number} itemId - Receipt item ID
+   * @param {Object} data - Update data { confirmed_item_id, confirmed_price, match_status, is_confirmed }
+   */
+  updateItem(receiptId, itemId, data) {
+    return api.put(`/receipts/${receiptId}/items/${itemId}`, data);
+  },
+
+  /**
+   * Confirm all items and create prices
+   * @param {number} id - Receipt ID
+   * @param {Object} data - { store_id, items: [{ receipt_item_id, item_id, price, skip, create_new_item, new_item_name }] }
+   */
+  confirm(id, data) {
+    return api.post(`/receipts/${id}/confirm`, data);
+  },
+
+  /**
+   * Delete a receipt
+   */
+  delete(id) {
+    return api.delete(`/receipts/${id}`);
+  },
+
+  /**
+   * Get presigned URL for receipt image
+   */
+  getImageUrl(id) {
+    return api.get(`/receipts/${id}/image`);
+  },
+};
+
+/**
  * Regions API
  */
 const regionsApi = {
@@ -755,6 +851,7 @@ if (typeof module !== 'undefined' && module.exports) {
     listsApi,
     compareApi,
     feedApi,
+    receiptsApi,
     regionsApi,
   };
 }

@@ -21,6 +21,11 @@ func (h *Handler) ListItems(c *fiber.Ctx) error {
 		Tag:    c.Query("tag"),
 	}
 
+	// Filter by user visibility - users only see their own items + public items
+	if userID := middleware.GetUserID(c); userID != 0 {
+		params.UserID = &userID
+	}
+
 	// Validate limits
 	if params.Limit < 1 || params.Limit > 100 {
 		params.Limit = 50
@@ -173,7 +178,13 @@ func (h *Handler) SearchItems(c *fiber.Ctx) error {
 		limit = 20
 	}
 
-	items, err := h.db.SearchItems(c.Context(), query, limit)
+	// Get user ID for visibility filtering
+	var userID *int
+	if uid := middleware.GetUserID(c); uid != 0 {
+		userID = &uid
+	}
+
+	items, err := h.db.SearchItems(c.Context(), query, limit, userID)
 	if err != nil {
 		return Error(c, fiber.StatusInternalServerError, "failed to search items")
 	}

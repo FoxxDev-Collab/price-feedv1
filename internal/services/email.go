@@ -222,6 +222,65 @@ Start exploring now!
 	return s.SendEmail(to, subject, htmlBody, textBody)
 }
 
+// SendEmailVerificationEmail sends an email verification email
+func (s *EmailService) SendEmailVerificationEmail(to, verifyToken string, verifyURL string) error {
+	subject := "Verify Your PriceFeed Email"
+
+	fullVerifyURL := verifyURL + "?token=" + verifyToken
+
+	htmlBody := `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+        .btn { display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        .info { background: #e0f2fe; border: 1px solid #0ea5e9; color: #0c4a6e; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0;">Verify Your Email</h1>
+        </div>
+        <div class="content">
+            <p>Thanks for signing up for PriceFeed! Please verify your email address to complete your registration.</p>
+            <p>Click the button below to verify your email:</p>
+            <p style="text-align: center;">
+                <a href="` + fullVerifyURL + `" class="btn">Verify Email</a>
+            </p>
+            <div class="info">
+                <strong>ℹ️ Note:</strong> This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
+            </div>
+            <p>If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #6b7280;">` + fullVerifyURL + `</p>
+        </div>
+        <div class="footer">
+            <p>© PriceFeed - Community-driven grocery price comparison</p>
+        </div>
+    </div>
+</body>
+</html>`
+
+	textBody := `Verify Your Email
+
+Thanks for signing up for PriceFeed! Please verify your email address to complete your registration.
+
+Click the link below to verify your email:
+` + fullVerifyURL + `
+
+Note: This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
+
+© PriceFeed - Community-driven grocery price comparison`
+
+	return s.SendEmail(to, subject, htmlBody, textBody)
+}
+
 // SendPasswordResetEmail sends a password reset email
 func (s *EmailService) SendPasswordResetEmail(to, resetToken string, resetURL string) error {
 	subject := "Reset Your PriceFeed Password"

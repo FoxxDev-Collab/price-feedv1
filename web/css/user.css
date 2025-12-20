@@ -3,6 +3,62 @@
    Professional SaaS User Panel
    ============================================ */
 
+/* Email Verification Banner */
+.email-verify-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-lg);
+  color: #92400e;
+}
+
+.dark .email-verify-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%);
+  border-color: #d97706;
+  color: #fcd34d;
+}
+
+.email-verify-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.email-verify-content svg {
+  flex-shrink: 0;
+}
+
+.email-verify-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.email-verify-text strong {
+  font-weight: var(--font-semibold);
+}
+
+.email-verify-text span {
+  font-size: var(--text-sm);
+  opacity: 0.9;
+}
+
+@media (max-width: 640px) {
+  .email-verify-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .email-verify-banner .btn {
+    width: 100%;
+  }
+}
+
 /* User Layout */
 .user-layout {
   display: flex;

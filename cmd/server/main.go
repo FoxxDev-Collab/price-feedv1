@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -68,6 +69,64 @@ func main() {
 	emailService := services.NewEmailService(db, cfg)
 	settingsHandler := handlers.NewSettingsHandler(db, cfg, emailService)
 
+	// Initialize Storage service for receipts
+	var receiptHandler *handlers.ReceiptHandler
+	if cfg.S3AccessKey != "" && cfg.S3SecretKey != "" {
+		storageService, err := services.NewStorageService(
+			cfg.S3Endpoint,
+			cfg.S3AccessKey,
+			cfg.S3SecretKey,
+			cfg.S3Bucket,
+			cfg.S3Region,
+			cfg.S3UseSSL,
+		)
+		if err != nil {
+			log.Printf("Warning: Failed to initialize storage service: %v", err)
+		} else {
+			// Ensure bucket exists
+			if err := storageService.EnsureBucket(context.Background()); err != nil {
+				log.Printf("Warning: Failed to ensure S3 bucket exists: %v", err)
+			}
+
+			// Initialize OCR service
+			ocrService, err := services.NewOCRService()
+			if err != nil {
+				log.Printf("Warning: Failed to initialize OCR service: %v", err)
+			} else {
+				// Initialize receipt parser and matcher
+				receiptParser := services.NewReceiptParser()
+				itemMatcher := services.NewItemMatcher(db)
+
+				// Create receipt handler
+				receiptHandler = handlers.NewReceiptHandler(
+					db, cfg, storageService, ocrService, receiptParser, itemMatcher,
+				)
+				log.Println("Receipt scanning service initialized")
+
+				// Run cleanup of expired receipts on startup
+				go func() {
+					ctx := context.Background()
+					keys, err := db.CleanupExpiredReceipts(ctx)
+					if err != nil {
+						log.Printf("Warning: Failed to cleanup expired receipts: %v", err)
+						return
+					}
+					if len(keys) > 0 {
+						log.Printf("Cleaned up %d expired receipt(s) from database", len(keys))
+						// Delete S3 objects
+						if err := storageService.DeleteMultiple(ctx, keys); err != nil {
+							log.Printf("Warning: Failed to delete some S3 objects: %v", err)
+						} else {
+							log.Printf("Deleted %d expired receipt image(s) from storage", len(keys))
+						}
+					}
+				}()
+			}
+		}
+	} else {
+		log.Println("S3 credentials not configured, receipt scanning disabled")
+	}
+
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
@@ -76,19 +135,26 @@ func main() {
 	// API routes
 	api := app.Group("/api")
 
+	// Create email verification middleware for write operations
+	emailVerified := middleware.EmailVerifiedRequiredFunc(h.CreateEmailVerificationChecker())
+
 	// Auth routes (public)
 	auth := api.Group("/auth")
+	auth.Get("/captcha-config", h.GetCaptchaConfig)
 	auth.Post("/register", h.Register)
 	auth.Post("/login", h.Login)
 	auth.Post("/logout", h.Logout)
 	auth.Get("/me", middleware.AuthRequired(cfg), h.GetCurrentUser)
 	auth.Post("/refresh", middleware.AuthRequired(cfg), h.RefreshToken)
+	auth.Get("/verify-email", h.VerifyEmail)
+	auth.Post("/resend-verification", middleware.AuthRequired(cfg), h.ResendVerificationEmail)
+	auth.Get("/verification-status", middleware.AuthRequired(cfg), h.GetEmailVerificationStatus)
 
 	// User routes (authenticated)
 	users := api.Group("/users", middleware.AuthRequired(cfg))
 	users.Get("/:id", h.GetUser)
-	users.Put("/:id", h.UpdateUser)
-	users.Post("/:id/change-password", h.ChangePassword)
+	users.Put("/:id", emailVerified, h.UpdateUser)
+	users.Post("/:id/change-password", emailVerified, h.ChangePassword)
 	users.Get("/:id/stats", h.GetUserStats)
 
 	// Region routes (public read, admin write)
@@ -133,9 +199,9 @@ func main() {
 	stores.Get("/stats", h.GetStoreStats)
 	stores.Get("/search", h.SearchStores)
 	stores.Get("/:id", h.GetStore)
-	stores.Post("/", middleware.AuthRequired(cfg), h.UserCreateStore)
-	stores.Put("/:id", middleware.AuthRequired(cfg), h.UserUpdateStore)
-	stores.Delete("/:id", middleware.AuthRequired(cfg), h.UserDeleteStore)
+	stores.Post("/", middleware.AuthRequired(cfg), emailVerified, h.UserCreateStore)
+	stores.Put("/:id", middleware.AuthRequired(cfg), emailVerified, h.UserUpdateStore)
+	stores.Delete("/:id", middleware.AuthRequired(cfg), emailVerified, h.UserDeleteStore)
 
 	// Admin store routes
 	admin.Post("/stores", h.CreateStore)
@@ -149,9 +215,9 @@ func main() {
 	items.Get("/stats", h.GetItemStats)
 	items.Get("/search", h.SearchItems)
 	items.Get("/:id", h.GetItem)
-	items.Post("/", middleware.AuthRequired(cfg), h.UserCreateItem)
-	items.Put("/:id", middleware.AuthRequired(cfg), h.UserUpdateItem)
-	items.Delete("/:id", middleware.AuthRequired(cfg), h.UserDeleteItem)
+	items.Post("/", middleware.AuthRequired(cfg), emailVerified, h.UserCreateItem)
+	items.Put("/:id", middleware.AuthRequired(cfg), emailVerified, h.UserUpdateItem)
+	items.Delete("/:id", middleware.AuthRequired(cfg), emailVerified, h.UserDeleteItem)
 
 	// Tags routes (public)
 	tags := api.Group("/tags")
@@ -169,36 +235,48 @@ func main() {
 	prices.Get("/by-store/:store_id", h.GetPricesByStore)
 	prices.Get("/by-item/:item_id", h.GetPricesByItem)
 	prices.Get("/:id", h.GetPrice)
-	prices.Post("/", middleware.AuthRequired(cfg), h.CreatePrice)
-	prices.Post("/:id/verify", middleware.AuthRequired(cfg), h.VerifyPrice)
-	prices.Put("/:id", middleware.AuthRequired(cfg), h.UserUpdatePrice)
-	prices.Delete("/:id", middleware.AuthRequired(cfg), h.UserDeletePrice)
+	prices.Post("/", middleware.AuthRequired(cfg), emailVerified, h.CreatePrice)
+	prices.Post("/:id/verify", middleware.AuthRequired(cfg), emailVerified, h.VerifyPrice)
+	prices.Put("/:id", middleware.AuthRequired(cfg), emailVerified, h.UserUpdatePrice)
+	prices.Delete("/:id", middleware.AuthRequired(cfg), emailVerified, h.UserDeletePrice)
 
 	// Admin price routes
 	admin.Put("/prices/:id", h.UpdatePrice)
 	admin.Delete("/prices/:id", h.DeletePrice)
 
-	// Shopping list routes (authenticated)
+	// Shopping list routes (authenticated, email verification required for write operations)
 	lists := api.Group("/lists", middleware.AuthRequired(cfg))
 	lists.Get("/", h.ListShoppingLists)
-	lists.Post("/", h.CreateShoppingList)
+	lists.Post("/", emailVerified, h.CreateShoppingList)
 	lists.Get("/:id", h.GetShoppingList)
-	lists.Put("/:id", h.UpdateShoppingList)
-	lists.Delete("/:id", h.DeleteShoppingList)
-	lists.Post("/:id/items", h.AddItemToList)
-	lists.Put("/:id/items/:item_id", h.UpdateListItem)
-	lists.Delete("/:id/items/:item_id", h.RemoveItemFromList)
+	lists.Put("/:id", emailVerified, h.UpdateShoppingList)
+	lists.Delete("/:id", emailVerified, h.DeleteShoppingList)
+	lists.Post("/:id/items", emailVerified, h.AddItemToList)
+	lists.Put("/:id/items/:item_id", emailVerified, h.UpdateListItem)
+	lists.Delete("/:id/items/:item_id", emailVerified, h.RemoveItemFromList)
 	lists.Post("/:id/build-plan", h.BuildShoppingPlan)
-	lists.Post("/:id/complete", h.CompleteShoppingList)
-	lists.Post("/:id/reopen", h.ReopenShoppingList)
-	lists.Post("/:id/duplicate", h.DuplicateShoppingList)
-	lists.Post("/:id/share", h.GenerateShareLink)
-	lists.Post("/:id/email", h.EmailShoppingList)
+	lists.Post("/:id/complete", emailVerified, h.CompleteShoppingList)
+	lists.Post("/:id/reopen", emailVerified, h.ReopenShoppingList)
+	lists.Post("/:id/duplicate", emailVerified, h.DuplicateShoppingList)
+	lists.Post("/:id/share", emailVerified, h.GenerateShareLink)
+	lists.Post("/:id/email", emailVerified, h.EmailShoppingList)
 
 	// Public share routes (no auth required)
 	share := api.Group("/share")
 	share.Get("/:token", h.GetSharedList)
 	share.Post("/:token/items/:itemId/toggle", h.ToggleSharedListItem)
+
+	// Receipt routes (authenticated, only if receipt handler is available)
+	if receiptHandler != nil {
+		receipts := api.Group("/receipts", middleware.AuthRequired(cfg))
+		receipts.Post("/upload", emailVerified, receiptHandler.UploadReceipt)
+		receipts.Get("/", receiptHandler.ListReceipts)
+		receipts.Get("/:id", receiptHandler.GetReceipt)
+		receipts.Put("/:id/items/:itemId", emailVerified, receiptHandler.UpdateReceiptItem)
+		receipts.Post("/:id/confirm", emailVerified, receiptHandler.ConfirmReceipt)
+		receipts.Delete("/:id", emailVerified, receiptHandler.DeleteReceipt)
+		receipts.Get("/:id/image", receiptHandler.GetReceiptImage)
+	}
 
 	// Price comparison route (authenticated)
 	api.Get("/compare", middleware.AuthRequired(cfg), h.GetPriceComparison)

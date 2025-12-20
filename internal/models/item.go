@@ -14,6 +14,7 @@ type Item struct {
 	Description       *string    `json:"description,omitempty"`
 	Verified          bool       `json:"verified"`
 	VerificationCount int        `json:"verification_count"`
+	IsPrivate         bool       `json:"is_private"`
 	CreatedBy         *int       `json:"created_by,omitempty"`
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
@@ -37,6 +38,7 @@ type CreateItemRequest struct {
 	Unit        *string  `json:"unit,omitempty"`
 	Description *string  `json:"description,omitempty"`
 	Tags        []string `json:"tags,omitempty"`
+	IsPrivate   *bool    `json:"is_private,omitempty"` // Defaults to true if not specified
 }
 
 // UpdateItemRequest is the request body for updating an item
@@ -52,10 +54,12 @@ type UpdateItemRequest struct {
 
 // ItemListParams contains parameters for listing items
 type ItemListParams struct {
-	Limit  int
-	Offset int
-	Search string
-	Tag    string
+	Limit     int
+	Offset    int
+	Search    string
+	Tag       string
+	UserID    *int  // Filter by creator (for visibility)
+	IsPrivate *bool // Filter by private/public items
 }
 
 // ItemStats contains aggregate statistics for items

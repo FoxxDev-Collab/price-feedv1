@@ -86,12 +86,15 @@ type RegisterRequest struct {
 	Latitude      *float64 `json:"latitude,omitempty"`
 	Longitude     *float64 `json:"longitude,omitempty"`
 	GooglePlaceID *string  `json:"google_place_id,omitempty"`
+	// Captcha token for Cloudflare Turnstile verification
+	CaptchaToken string `json:"captcha_token,omitempty"`
 }
 
 // LoginRequest is the request body for user login
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email        string `json:"email"`
+	Password     string `json:"password"`
+	CaptchaToken string `json:"captcha_token,omitempty"`
 }
 
 // AuthResponse is returned after successful login/register

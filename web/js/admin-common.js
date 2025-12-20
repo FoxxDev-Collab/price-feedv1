@@ -232,6 +232,7 @@ toastStyles.textContent = `
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     background: white;
+    color: #1f2937;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     min-width: 280px;
     animation: slideIn 0.3s ease;

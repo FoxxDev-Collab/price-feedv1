@@ -438,3 +438,92 @@ func (db *DB) CleanupExpiredSessions(ctx context.Context) error {
 	_, err := db.Pool.Exec(ctx, `DELETE FROM user_sessions WHERE expires_at < NOW()`)
 	return err
 }
+
+// EmailVerificationToken represents a token for email verification
+type EmailVerificationToken struct {
+	ID        int
+	UserID    int
+	Token     string
+	ExpiresAt time.Time
+	UsedAt    *time.Time
+	CreatedAt time.Time
+}
+
+// CreateEmailVerificationToken creates a new email verification token
+func (db *DB) CreateEmailVerificationToken(ctx context.Context, userID int, token string, expiresAt time.Time) (*EmailVerificationToken, error) {
+	// Delete any existing unused tokens for this user
+	_, _ = db.Pool.Exec(ctx, `DELETE FROM email_verification_tokens WHERE user_id = $1 AND used_at IS NULL`, userID)
+
+	evt := &EmailVerificationToken{}
+	err := db.Pool.QueryRow(ctx, `
+		INSERT INTO email_verification_tokens (user_id, token, expires_at)
+		VALUES ($1, $2, $3)
+		RETURNING id, user_id, token, expires_at, used_at, created_at
+	`, userID, token, expiresAt).Scan(
+		&evt.ID,
+		&evt.UserID,
+		&evt.Token,
+		&evt.ExpiresAt,
+		&evt.UsedAt,
+		&evt.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return evt, nil
+}
+
+// GetEmailVerificationToken retrieves a verification token by its token string
+func (db *DB) GetEmailVerificationToken(ctx context.Context, token string) (*EmailVerificationToken, error) {
+	evt := &EmailVerificationToken{}
+	err := db.Pool.QueryRow(ctx, `
+		SELECT id, user_id, token, expires_at, used_at, created_at
+		FROM email_verification_tokens
+		WHERE token = $1
+	`, token).Scan(
+		&evt.ID,
+		&evt.UserID,
+		&evt.Token,
+		&evt.ExpiresAt,
+		&evt.UsedAt,
+		&evt.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return evt, nil
+}
+
+// MarkEmailVerificationTokenUsed marks a verification token as used
+func (db *DB) MarkEmailVerificationTokenUsed(ctx context.Context, token string) error {
+	result, err := db.Pool.Exec(ctx, `
+		UPDATE email_verification_tokens SET used_at = NOW() WHERE token = $1 AND used_at IS NULL
+	`, token)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return errors.New("token not found or already used")
+	}
+	return nil
+}
+
+// SetUserEmailVerified sets the email_verified flag for a user
+func (db *DB) SetUserEmailVerified(ctx context.Context, userID int, verified bool) error {
+	result, err := db.Pool.Exec(ctx, `
+		UPDATE users SET email_verified = $2, updated_at = NOW() WHERE id = $1
+	`, userID, verified)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+// CleanupExpiredVerificationTokens removes expired verification tokens
+func (db *DB) CleanupExpiredVerificationTokens(ctx context.Context) error {
+	_, err := db.Pool.Exec(ctx, `DELETE FROM email_verification_tokens WHERE expires_at < NOW()`)
+	return err
+}

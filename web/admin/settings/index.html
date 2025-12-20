@@ -287,6 +287,35 @@
                   Require API Key for external access
                 </label>
               </div>
+
+              <h4 style="font-weight: var(--font-semibold); margin: var(--space-6) 0 var(--space-3);">Cloudflare Turnstile (CAPTCHA)</h4>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" id="captcha-enabled">
+                  Enable CAPTCHA on registration and login
+                </label>
+                <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-top: var(--space-1);">Protect forms with Cloudflare Turnstile. <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank">Get your keys here</a></p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Site Key</label>
+                <input type="text" class="admin-form-input" placeholder="0x4AAAAAAA..." id="captcha-site-key">
+                <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Public key used in the browser widget</p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Secret Key</label>
+                <input type="password" class="admin-form-input" placeholder="0x4AAAAAAA..." id="captcha-secret-key">
+                <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Private key for server-side verification. Leave blank to keep existing.</p>
+              </div>
+
+              <h4 style="font-weight: var(--font-semibold); margin: var(--space-6) 0 var(--space-3);">Email Verification</h4>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" id="require-email-verify">
+                  Require email verification for new users
+                </label>
+                <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-top: var(--space-1);">New users must verify their email before accessing most features. Admin accounts are exempt. Requires SMTP to be configured.</p>
+              </div>
+
               <h4 style="font-weight: var(--font-semibold); margin: var(--space-6) 0 var(--space-3);">JWT Settings</h4>
               <div class="admin-form-group">
                 <label class="admin-form-label">JWT Secret</label>
@@ -400,6 +429,10 @@
         'cors-origins': 'cors_origins',
         'enable-api': 'enable_public_api',
         'require-api-key': 'require_api_key',
+        'captcha-enabled': 'captcha_enabled',
+        'captcha-site-key': 'captcha_site_key',
+        'captcha-secret-key': 'captcha_secret_key',
+        'require-email-verify': 'require_email_verify',
         'jwt-expiry': 'jwt_expiry_hours'
       }
     };
@@ -460,6 +493,15 @@
         if (!element) continue;
 
         const value = data[dbKey];
+
+        // Handle password fields specially - show placeholder if value exists
+        if (element.type === 'password') {
+          if (value && value !== '' && value !== '••••••••') {
+            element.placeholder = '••••••••';
+          }
+          continue; // Don't set the actual value for password fields
+        }
+
         if (value === undefined || value === null) continue;
 
         if (element.type === 'checkbox') {

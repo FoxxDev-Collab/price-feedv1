@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"regexp"
 	"time"
@@ -16,11 +18,43 @@ import (
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
+// generateSecureToken generates a cryptographically secure random token
+func generateSecureToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+// getEncryptionKey returns the encryption key for settings
+func (h *Handler) getEncryptionKey() []byte {
+	key := make([]byte, 32)
+	copy(key, []byte(h.cfg.JWTSecret))
+	return key
+}
+
+// isEmailVerificationRequired checks if email verification is enabled
+func (h *Handler) isEmailVerificationRequired(c *fiber.Ctx) bool {
+	return h.db.GetSettingBool(c.Context(), "require_email_verify", false, h.getEncryptionKey())
+}
+
+// GetCaptchaConfig returns the public captcha configuration
+func (h *Handler) GetCaptchaConfig(c *fiber.Ctx) error {
+	config := h.captchaService.GetConfig(c.Context())
+	return Success(c, config)
+}
+
 // Register handles user registration
 func (h *Handler) Register(c *fiber.Ctx) error {
 	var req models.RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
 		return Error(c, fiber.StatusBadRequest, "invalid request body")
+	}
+
+	// Verify captcha if enabled
+	if err := h.captchaService.Verify(c.Context(), req.CaptchaToken, c.IP()); err != nil {
+		return Error(c, fiber.StatusBadRequest, err.Error())
 	}
 
 	// Validate email
@@ -58,16 +92,45 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return Error(c, fiber.StatusInternalServerError, "failed to create user")
 	}
 
+	// Check if email verification is required
+	requireVerification := h.isEmailVerificationRequired(c)
+
+	// Send verification email if required and email service is configured
+	if requireVerification && h.emailService.IsConfiguredWithContext(c.Context()) {
+		verifyToken, err := generateSecureToken()
+		if err == nil {
+			// Token expires in 24 hours
+			expiresAt := time.Now().Add(24 * time.Hour)
+			_, err = h.db.CreateEmailVerificationToken(c.Context(), user.ID, verifyToken, expiresAt)
+			if err == nil {
+				// Get the base URL from the request
+				scheme := "https"
+				if c.Protocol() == "http" {
+					scheme = "http"
+				}
+				baseURL := scheme + "://" + c.Hostname()
+				verifyURL := baseURL + "/verify-email"
+
+				// Send verification email (don't block on failure)
+				go h.emailService.SendEmailVerificationEmail(user.Email, verifyToken, verifyURL)
+			}
+		}
+	}
+
 	// Generate JWT token
 	token, err := h.generateToken(user)
 	if err != nil {
 		return Error(c, fiber.StatusInternalServerError, "failed to generate token")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(models.AuthResponse{
-		Token: token,
-		User:  user,
-	})
+	response := fiber.Map{
+		"token":                    token,
+		"user":                     user,
+		"email_verification_sent":  requireVerification && h.emailService.IsConfiguredWithContext(c.Context()),
+		"email_verification_required": requireVerification,
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(response)
 }
 
 // Login handles user authentication
@@ -75,6 +138,11 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	var req models.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return Error(c, fiber.StatusBadRequest, "invalid request body")
+	}
+
+	// Verify captcha if enabled
+	if err := h.captchaService.Verify(c.Context(), req.CaptchaToken, c.IP()); err != nil {
+		return Error(c, fiber.StatusBadRequest, err.Error())
 	}
 
 	// Validate input
@@ -178,4 +246,117 @@ func (h *Handler) generateToken(user *models.User) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(h.cfg.JWTSecret))
+}
+
+// VerifyEmail handles email verification
+func (h *Handler) VerifyEmail(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return Error(c, fiber.StatusBadRequest, "verification token is required")
+	}
+
+	// Get the verification token
+	evt, err := h.db.GetEmailVerificationToken(c.Context(), token)
+	if err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid or expired verification token")
+	}
+
+	// Check if token is expired
+	if time.Now().After(evt.ExpiresAt) {
+		return Error(c, fiber.StatusBadRequest, "verification token has expired")
+	}
+
+	// Check if token was already used
+	if evt.UsedAt != nil {
+		return Error(c, fiber.StatusBadRequest, "verification token has already been used")
+	}
+
+	// Mark token as used
+	if err := h.db.MarkEmailVerificationTokenUsed(c.Context(), token); err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to verify email")
+	}
+
+	// Set user email as verified
+	if err := h.db.SetUserEmailVerified(c.Context(), evt.UserID, true); err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to verify email")
+	}
+
+	return Success(c, fiber.Map{
+		"message": "Email verified successfully",
+	})
+}
+
+// ResendVerificationEmail sends a new verification email
+func (h *Handler) ResendVerificationEmail(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	if userID == 0 {
+		return Error(c, fiber.StatusUnauthorized, "unauthorized")
+	}
+
+	// Get user
+	user, err := h.db.GetUserByID(c.Context(), userID)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to get user")
+	}
+
+	// Check if already verified
+	if user.EmailVerified {
+		return Error(c, fiber.StatusBadRequest, "email is already verified")
+	}
+
+	// Check if email service is configured
+	if !h.emailService.IsConfiguredWithContext(c.Context()) {
+		return Error(c, fiber.StatusServiceUnavailable, "email service is not configured")
+	}
+
+	// Generate new verification token
+	verifyToken, err := generateSecureToken()
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to generate verification token")
+	}
+
+	// Token expires in 24 hours
+	expiresAt := time.Now().Add(24 * time.Hour)
+	_, err = h.db.CreateEmailVerificationToken(c.Context(), user.ID, verifyToken, expiresAt)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to create verification token")
+	}
+
+	// Get the base URL from the request
+	scheme := "https"
+	if c.Protocol() == "http" {
+		scheme = "http"
+	}
+	baseURL := scheme + "://" + c.Hostname()
+	verifyURL := baseURL + "/verify-email"
+
+	// Send verification email
+	if err := h.emailService.SendEmailVerificationEmail(user.Email, verifyToken, verifyURL); err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to send verification email")
+	}
+
+	return Success(c, fiber.Map{
+		"message": "Verification email sent",
+	})
+}
+
+// GetEmailVerificationStatus returns the current user's email verification status
+func (h *Handler) GetEmailVerificationStatus(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	if userID == 0 {
+		return Error(c, fiber.StatusUnauthorized, "unauthorized")
+	}
+
+	user, err := h.db.GetUserByID(c.Context(), userID)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to get user")
+	}
+
+	requireVerification := h.isEmailVerificationRequired(c)
+
+	return Success(c, fiber.Map{
+		"email_verified":             user.EmailVerified,
+		"verification_required":      requireVerification,
+		"email_service_configured":   h.emailService.IsConfiguredWithContext(c.Context()),
+	})
 }

@@ -127,6 +127,11 @@
 
           <div class="register-footer">
             <div class="error-message"></div>
+            <!-- Cloudflare Turnstile CAPTCHA -->
+            <div id="captcha-container" class="captcha-container" style="display: none;">
+              <div id="cf-turnstile"></div>
+            </div>
+            <input type="hidden" id="captcha-token" name="captcha_token">
             <button type="submit" class="btn btn-primary btn-lg btn-full">Create Account</button>
             <p class="auth-footer-text">Already have an account? <a href="/login/">Sign in</a></p>
           </div>
@@ -147,6 +152,8 @@
     let marker = null;
     let selectedLocation = null;
     let autocomplete = null;
+    let captchaConfig = null;
+    let turnstileWidgetId = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
       // If already logged in, redirect to dashboard
@@ -154,6 +161,9 @@
         window.location.href = '/dashboard/';
         return;
       }
+
+      // Load captcha config and initialize if enabled
+      await initCaptcha();
 
       // Initialize Google Maps
       await initLocationSelection();
@@ -169,9 +179,55 @@
           return;
         }
 
+        // Validate captcha if enabled
+        if (captchaConfig && captchaConfig.enabled) {
+          const token = document.getElementById('captcha-token').value;
+          if (!token) {
+            showError('Please complete the CAPTCHA verification');
+            return;
+          }
+        }
+
         await handleRegisterSubmit(form);
       });
     });
+
+    async function initCaptcha() {
+      try {
+        const response = await api.get('/auth/captcha-config');
+        if (response.success && response.data && response.data.enabled) {
+          captchaConfig = response.data;
+          document.getElementById('captcha-container').style.display = 'block';
+
+          // Load Turnstile script
+          const script = document.createElement('script');
+          script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
+        }
+      } catch (err) {
+        console.error('Failed to load captcha config:', err);
+      }
+    }
+
+    // Callback when Turnstile script loads
+    window.onTurnstileLoad = function() {
+      if (captchaConfig && captchaConfig.site_key) {
+        turnstileWidgetId = turnstile.render('#cf-turnstile', {
+          sitekey: captchaConfig.site_key,
+          callback: function(token) {
+            document.getElementById('captcha-token').value = token;
+          },
+          'expired-callback': function() {
+            document.getElementById('captcha-token').value = '';
+          },
+          'error-callback': function() {
+            document.getElementById('captcha-token').value = '';
+          }
+        });
+      }
+    };
 
     async function initLocationSelection() {
       try {
@@ -524,16 +580,29 @@
         zip_code: document.getElementById('user-zip').value || null,
         latitude: parseFloat(document.getElementById('user-latitude').value) || null,
         longitude: parseFloat(document.getElementById('user-longitude').value) || null,
-        google_place_id: document.getElementById('user-place-id').value || null
+        google_place_id: document.getElementById('user-place-id').value || null,
+        captcha_token: document.getElementById('captcha-token').value || null
       };
 
       try {
         const response = await authApi.registerWithLocation(formData);
         auth.user = response.user;
         auth.updateUI();
-        window.location.href = '/user/';
+
+        // Check if email verification is required
+        if (response.email_verification_required && response.email_verification_sent) {
+          // Redirect to verification pending page
+          window.location.href = '/user/?verify=pending';
+        } else {
+          window.location.href = '/user/';
+        }
       } catch (err) {
         showError(err.message || 'Registration failed. Please try again.');
+        // Reset captcha on error
+        if (turnstileWidgetId !== null && typeof turnstile !== 'undefined') {
+          turnstile.reset(turnstileWidgetId);
+          document.getElementById('captcha-token').value = '';
+        }
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.textContent = 'Create Account';

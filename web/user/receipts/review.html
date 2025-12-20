@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Receipt - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    .review-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: var(--space-6);
+    }
+    @media (max-width: 1024px) {
+      .review-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .receipt-image-container {
+      position: sticky;
+      top: var(--space-4);
+      background: var(--color-gray-100);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      text-align: center;
+    }
+    .receipt-image {
+      max-width: 100%;
+      max-height: 600px;
+      border-radius: var(--radius-md);
+    }
+    .item-row {
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      margin-bottom: var(--space-3);
+      background: var(--color-bg);
+    }
+    .item-row.confirmed {
+      background: var(--color-success-50);
+      border-color: var(--color-success-200);
+    }
+    .item-row.skipped {
+      opacity: 0.5;
+    }
+    .item-raw-text {
+      font-family: monospace;
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+      background: var(--color-gray-50);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-2);
+    }
+    .confidence-badge {
+      font-size: var(--text-xs);
+      padding: 2px 6px;
+      border-radius: 9999px;
+    }
+    .confidence-high { background: var(--color-success-100); color: var(--color-success-700); }
+    .confidence-medium { background: var(--color-warning-100); color: var(--color-warning-700); }
+    .confidence-low { background: var(--color-error-100); color: var(--color-error-700); }
+    .suggestion-dropdown {
+      position: relative;
+    }
+    .suggestion-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--color-bg);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .suggestion-list.open { display: block; }
+    .suggestion-item {
+      padding: var(--space-2) var(--space-3);
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-gray-100);
+    }
+    .suggestion-item:hover { background: var(--color-gray-50); }
+    .suggestion-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Review Receipt</h1>
+          <p class="user-page-subtitle">Verify the extracted items and prices, then confirm to add them to the database.</p>
+        </div>
+
+        <div id="loading" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">
+          Loading receipt...
+        </div>
+
+        <div id="review-content" style="display: none;">
+          <div class="review-layout">
+            <!-- Items Panel -->
+            <div class="user-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                <h3 style="font-weight: var(--font-semibold);">Extracted Items</h3>
+                <div id="item-count" style="color: var(--color-gray-500); font-size: var(--text-sm);"></div>
+              </div>
+
+              <!-- Store Selection -->
+              <div class="user-form-group" style="margin-bottom: var(--space-4);">
+                <label class="user-form-label">Store *</label>
+                <select class="user-form-input" id="store-select" required>
+                  <option value="">Select a store</option>
+                </select>
+              </div>
+
+              <!-- Items List -->
+              <div id="items-container"></div>
+
+              <!-- Actions -->
+              <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--color-gray-200);">
+                <a href="/user/receipts/" class="btn btn-secondary">Back to Receipts</a>
+                <button type="button" class="btn btn-primary" id="confirm-btn" onclick="confirmReceipt()">
+                  Confirm & Save Prices
+                </button>
+              </div>
+            </div>
+
+            <!-- Image Panel -->
+            <div class="receipt-image-container">
+              <img id="receipt-image" class="receipt-image" alt="Receipt">
+              <div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-gray-500);">
+                <div id="receipt-meta"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let receiptData = null;
+    let receiptId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('receipts');
+
+      // Get receipt ID from URL
+      const params = new URLSearchParams(window.location.search);
+      receiptId = params.get('id');
+
+      if (!receiptId) {
+        window.location.href = '/user/receipts/';
+        return;
+      }
+
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Receipts', href: '/user/receipts/' },
+        { label: 'Review', href: `/user/receipts/review.html?id=${receiptId}` }
+      ]);
+
+      await loadReceipt();
+      await loadStores();
+    });
+
+    async function loadReceipt() {
+      try {
+        const response = await receiptsApi.getById(receiptId);
+        receiptData = response?.data || response;
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('review-content').style.display = 'block';
+
+        renderReceipt();
+      } catch (err) {
+        console.error('Failed to load receipt:', err);
+        document.getElementById('loading').innerHTML = `
+          <div style="color: var(--color-error);">Failed to load receipt: ${err.message || 'Unknown error'}</div>
+          <a href="/user/receipts/" class="btn btn-secondary" style="margin-top: var(--space-4);">Back to Receipts</a>
+        `;
+      }
+    }
+
+    async function loadStores() {
+      try {
+        const response = await storesApi.list({ limit: 100 });
+        const stores = response?.data || response || [];
+        const select = document.getElementById('store-select');
+
+        stores.forEach(store => {
+          const option = document.createElement('option');
+          option.value = store.id;
+          option.textContent = `${store.name} - ${store.city}, ${store.state}`;
+          if (receiptData.store_id === store.id) {
+            option.selected = true;
+          }
+          select.appendChild(option);
+        });
+      } catch (err) {
+        console.error('Failed to load stores:', err);
+      }
+    }
+
+    function renderReceipt() {
+      // Receipt image
+      if (receiptData.image_url) {
+        document.getElementById('receipt-image').src = receiptData.image_url;
+      }
+
+      // Meta info
+      const meta = [];
+      if (receiptData.receipt_date) {
+        meta.push(`Date: ${user.formatDateShort(receiptData.receipt_date)}`);
+      }
+      if (receiptData.receipt_total) {
+        meta.push(`Total: ${user.formatCurrency(receiptData.receipt_total)}`);
+      }
+      document.getElementById('receipt-meta').innerHTML = meta.join('<br>');
+
+      // Items
+      const items = receiptData.items || [];
+      document.getElementById('item-count').textContent = `${items.length} items found`;
+
+      const container = document.getElementById('items-container');
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="user-empty-state" style="padding: var(--space-6);">
+            <div class="user-empty-title">No items extracted</div>
+            <div class="user-empty-text">We couldn't find any items in this receipt. The image may be unclear or the receipt format is not supported.</div>
+          </div>
+        `;
+        document.getElementById('confirm-btn').disabled = true;
+        return;
+      }
+
+      container.innerHTML = items.map((item, index) => renderItemRow(item, index)).join('');
+
+      // Update confirm button state
+      updateConfirmButton();
+    }
+
+    function renderItemRow(item, index) {
+      const confidenceLevel = getConfidenceLevel(item.match_confidence);
+      const isConfirmed = item.is_confirmed || receiptData.status === 'confirmed';
+
+      return `
+        <div class="item-row ${isConfirmed ? 'confirmed' : ''}" id="item-row-${item.id}">
+          <div class="item-raw-text">${user.escapeHtml(item.raw_text)}</div>
+
+          <div style="display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-3); align-items: center;">
+            <!-- Item Selection -->
+            <div class="suggestion-dropdown">
+              <input type="text" class="user-form-input" id="item-name-${item.id}"
+                value="${item.matched_item_name || item.extracted_name || ''}"
+                placeholder="Item name"
+                data-item-id="${item.matched_item_id || ''}"
+                onfocus="showSuggestions(${item.id})"
+                onblur="setTimeout(() => hideSuggestions(${item.id}), 200)"
+                oninput="searchItemsDebounced(${item.id}, this.value)"
+                ${isConfirmed ? 'readonly' : ''}>
+              <div class="suggestion-list" id="suggestions-${item.id}">
+                ${(item.suggestions || []).map(s => `
+                  <div class="suggestion-item" onclick="selectSuggestion(${item.id}, ${s.item_id}, '${user.escapeHtml(s.name)}')">
+                    <div style="font-weight: var(--font-medium);">${user.escapeHtml(s.name)}</div>
+                    <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
+                      ${s.brand ? user.escapeHtml(s.brand) + ' - ' : ''}
+                      Confidence: ${Math.round(s.confidence * 100)}%
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Price -->
+            <div style="width: 100px;">
+              <input type="number" step="0.01" min="0" class="user-form-input" id="item-price-${item.id}"
+                value="${item.confirmed_price || item.extracted_price || ''}"
+                placeholder="Price"
+                ${isConfirmed ? 'readonly' : ''}>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: var(--space-2);">
+              ${item.match_confidence ? `
+                <span class="confidence-badge confidence-${confidenceLevel}" title="Match confidence">
+                  ${Math.round(item.match_confidence * 100)}%
+                </span>
+              ` : ''}
+              ${!isConfirmed ? `
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--text-sm);">
+                  <input type="checkbox" id="skip-${item.id}" onchange="toggleSkip(${item.id})">
+                  Skip
+                </label>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getConfidenceLevel(confidence) {
+      if (!confidence) return 'low';
+      if (confidence >= 0.7) return 'high';
+      if (confidence >= 0.5) return 'medium';
+      return 'low';
+    }
+
+    function showSuggestions(itemId) {
+      document.getElementById(`suggestions-${itemId}`).classList.add('open');
+    }
+
+    function hideSuggestions(itemId) {
+      document.getElementById(`suggestions-${itemId}`).classList.remove('open');
+    }
+
+    let searchTimeouts = {};
+    function searchItemsDebounced(itemId, query) {
+      clearTimeout(searchTimeouts[itemId]);
+      searchTimeouts[itemId] = setTimeout(() => searchItems(itemId, query), 300);
+    }
+
+    async function searchItems(itemId, query) {
+      if (query.length < 2) return;
+
+      try {
+        const response = await itemsApi.search(query, 5);
+        const items = response?.data || response || [];
+        const container = document.getElementById(`suggestions-${itemId}`);
+
+        container.innerHTML = items.map(item => `
+          <div class="suggestion-item" onclick="selectSuggestion(${itemId}, ${item.id}, '${user.escapeHtml(item.name)}')">
+            <div style="font-weight: var(--font-medium);">${user.escapeHtml(item.name)}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
+              ${item.brand ? user.escapeHtml(item.brand) : ''}
+            </div>
+          </div>
+        `).join('');
+
+        // Add "Create new item" option
+        container.innerHTML += `
+          <div class="suggestion-item" onclick="selectSuggestion(${itemId}, null, '${user.escapeHtml(query)}', true)">
+            <div style="font-weight: var(--font-medium); color: var(--color-primary-600);">+ Create new item: "${user.escapeHtml(query)}"</div>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Search failed:', err);
+      }
+    }
+
+    function selectSuggestion(receiptItemId, itemId, name, isNew = false) {
+      const input = document.getElementById(`item-name-${receiptItemId}`);
+      input.value = name;
+      input.dataset.itemId = itemId || '';
+      input.dataset.createNew = isNew ? 'true' : '';
+      hideSuggestions(receiptItemId);
+      updateConfirmButton();
+    }
+
+    function toggleSkip(itemId) {
+      const row = document.getElementById(`item-row-${itemId}`);
+      const checkbox = document.getElementById(`skip-${itemId}`);
+      row.classList.toggle('skipped', checkbox.checked);
+      updateConfirmButton();
+    }
+
+    function updateConfirmButton() {
+      const storeId = document.getElementById('store-select').value;
+      const confirmBtn = document.getElementById('confirm-btn');
+
+      if (receiptData.status === 'confirmed') {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Already Confirmed';
+        return;
+      }
+
+      confirmBtn.disabled = !storeId;
+    }
+
+    document.getElementById('store-select').addEventListener('change', updateConfirmButton);
+
+    async function confirmReceipt() {
+      const storeId = parseInt(document.getElementById('store-select').value);
+      if (!storeId) {
+        user.toast('Please select a store', 'error');
+        return;
+      }
+
+      const confirmBtn = document.getElementById('confirm-btn');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Saving...';
+
+      // Collect item data
+      const items = (receiptData.items || []).map(item => {
+        const skip = document.getElementById(`skip-${item.id}`)?.checked || false;
+        const nameInput = document.getElementById(`item-name-${item.id}`);
+        const priceInput = document.getElementById(`item-price-${item.id}`);
+
+        const data = {
+          receipt_item_id: item.id,
+          skip: skip
+        };
+
+        if (!skip) {
+          const itemId = nameInput.dataset.itemId;
+          const createNew = nameInput.dataset.createNew === 'true';
+
+          if (createNew) {
+            data.create_new_item = true;
+            data.new_item_name = nameInput.value;
+          } else if (itemId) {
+            data.item_id = parseInt(itemId);
+          }
+
+          const price = parseFloat(priceInput.value);
+          if (!isNaN(price) && price > 0) {
+            data.price = price;
+          }
+        }
+
+        return data;
+      });
+
+      try {
+        await receiptsApi.confirm(receiptId, { store_id: storeId, items });
+        user.toast('Receipt confirmed! Prices have been added.', 'success');
+        window.location.href = '/user/receipts/';
+      } catch (err) {
+        console.error('Failed to confirm receipt:', err);
+        user.toast('Failed to confirm receipt: ' + (err.message || 'Unknown error'), 'error');
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm & Save Prices';
+      }
+    }
+  </script>
+</body>
+</html>

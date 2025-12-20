@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receipts - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Receipt Scanning</h1>
+          <p class="user-page-subtitle">Upload receipt photos to automatically add items and prices.</p>
+          <div class="user-page-header-actions">
+            <a href="/user/receipts/upload.html" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Upload Receipt
+            </a>
+          </div>
+        </div>
+
+        <!-- Status Tabs -->
+        <div class="user-tabs" id="status-tabs">
+          <button class="user-tab active" data-status="" onclick="filterByStatus('')">All</button>
+          <button class="user-tab" data-status="pending" onclick="filterByStatus('pending')">Pending</button>
+          <button class="user-tab" data-status="completed" onclick="filterByStatus('completed')">Ready for Review</button>
+          <button class="user-tab" data-status="confirmed" onclick="filterByStatus('confirmed')">Confirmed</button>
+        </div>
+
+        <!-- Receipts Grid -->
+        <div id="receipts-container" class="user-item-grid">
+          <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let currentStatusFilter = '';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('receipts');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Receipts', href: '/user/receipts/' }
+      ]);
+
+      await loadReceipts();
+    });
+
+    function filterByStatus(status) {
+      currentStatusFilter = status;
+      document.querySelectorAll('#status-tabs .user-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.status === status);
+      });
+      loadReceipts();
+    }
+
+    async function loadReceipts() {
+      const container = document.getElementById('receipts-container');
+      container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+
+      try {
+        const params = { limit: 50 };
+        if (currentStatusFilter) params.status = currentStatusFilter;
+        const response = await receiptsApi.list(params);
+        const receipts = response?.data || response || [];
+
+        if (receipts.length === 0) {
+          container.innerHTML = `
+            <div style="grid-column: 1 / -1;" class="user-empty-state">
+              <div class="user-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </div>
+              <div class="user-empty-title">No receipts yet</div>
+              <div class="user-empty-text">Upload your first receipt to automatically extract items and prices</div>
+              <a href="/user/receipts/upload.html" class="btn btn-primary">Upload Your First Receipt</a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = receipts.map(receipt => renderReceiptCard(receipt)).join('');
+      } catch (err) {
+        console.error('Failed to load receipts:', err);
+        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load receipts</div>';
+      }
+    }
+
+    function renderReceiptCard(receipt) {
+      const statusColors = {
+        pending: 'warning',
+        processing: 'warning',
+        completed: 'primary',
+        failed: 'error',
+        confirmed: 'success'
+      };
+      const statusLabels = {
+        pending: 'Pending',
+        processing: 'Processing',
+        completed: 'Ready for Review',
+        failed: 'Failed',
+        confirmed: 'Confirmed'
+      };
+
+      const statusColor = statusColors[receipt.status] || 'gray';
+      const statusLabel = statusLabels[receipt.status] || receipt.status;
+
+      return `
+        <div class="user-list-card">
+          <div class="user-list-card-header">
+            <div>
+              <div class="user-list-card-title">${receipt.original_filename ? user.escapeHtml(receipt.original_filename) : 'Receipt #' + receipt.id}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
+                ${receipt.store_name ? user.escapeHtml(receipt.store_name) : 'No store assigned'}
+              </div>
+            </div>
+            <span class="badge badge-${statusColor}">${statusLabel}</span>
+          </div>
+          <div class="user-list-card-stats">
+            <div class="user-list-stat">
+              <div class="user-list-stat-value">${receipt.receipt_total ? user.formatCurrency(receipt.receipt_total) : '-'}</div>
+              <div class="user-list-stat-label">Total</div>
+            </div>
+            <div class="user-list-stat">
+              <div class="user-list-stat-value">${receipt.receipt_date ? user.formatDateShort(receipt.receipt_date) : '-'}</div>
+              <div class="user-list-stat-label">Date</div>
+            </div>
+          </div>
+          <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-bottom: var(--space-3);">
+            Uploaded ${user.formatDateShort(receipt.uploaded_at)}
+          </div>
+          <div class="user-list-card-actions">
+            ${receipt.status === 'completed'
+              ? `<a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-primary btn-sm">Review & Confirm</a>`
+              : receipt.status === 'confirmed'
+                ? `<a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-secondary btn-sm">View Details</a>`
+                : `<a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-secondary btn-sm">View</a>`
+            }
+            <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteReceipt(${receipt.id})">Delete</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function deleteReceipt(receiptId) {
+      if (!await user.confirm('Are you sure you want to delete this receipt?')) {
+        return;
+      }
+
+      try {
+        await receiptsApi.delete(receiptId);
+        user.toast('Receipt deleted', 'success');
+        await loadReceipts();
+      } catch (err) {
+        user.toast('Failed to delete receipt: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+  </script>
+</body>
+</html>

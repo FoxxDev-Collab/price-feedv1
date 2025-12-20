@@ -37,6 +37,14 @@ type Config struct {
 	SMTPFromAddr string
 	SMTPFromName string
 	SMTPEnabled  bool
+
+	// S3/Garage Storage
+	S3Endpoint  string
+	S3AccessKey string
+	S3SecretKey string
+	S3Bucket    string
+	S3UseSSL    bool
+	S3Region    string
 }
 
 func Load() *Config {
@@ -58,6 +66,12 @@ func Load() *Config {
 		SMTPFromAddr:     getEnv("SMTP_FROM_ADDR", "noreply@pricefeed.app"),
 		SMTPFromName:     getEnv("SMTP_FROM_NAME", "PriceFeed"),
 		SMTPEnabled:      getBoolEnv("SMTP_ENABLED", false),
+		S3Endpoint:       getEnv("S3_ENDPOINT", "localhost:3900"),
+		S3AccessKey:      getEnv("S3_ACCESS_KEY", ""),
+		S3SecretKey:      getEnv("S3_SECRET_KEY", ""),
+		S3Bucket:         getEnv("S3_BUCKET", "receipts"),
+		S3UseSSL:         getBoolEnv("S3_USE_SSL", false),
+		S3Region:         getEnv("S3_REGION", "garage"),
 	}
 }
 

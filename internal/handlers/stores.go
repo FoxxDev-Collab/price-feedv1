@@ -31,6 +31,11 @@ func (h *Handler) ListStores(c *fiber.Ctx) error {
 		params.Verified = &v
 	}
 
+	// Filter by user visibility - users only see their own stores + public stores
+	if userID := middleware.GetUserID(c); userID != 0 {
+		params.UserID = &userID
+	}
+
 	// Validate limits
 	if params.Limit < 1 || params.Limit > 100 {
 		params.Limit = 50
@@ -333,7 +338,13 @@ func (h *Handler) SearchStores(c *fiber.Ctx) error {
 		limit = 20
 	}
 
-	stores, err := h.db.SearchStores(c.Context(), query, limit)
+	// Get user ID for visibility filtering
+	var userID *int
+	if uid := middleware.GetUserID(c); uid != 0 {
+		userID = &uid
+	}
+
+	stores, err := h.db.SearchStores(c.Context(), query, limit, userID)
 	if err != nil {
 		return Error(c, fiber.StatusInternalServerError, "failed to search stores")
 	}

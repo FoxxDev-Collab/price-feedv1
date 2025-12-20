@@ -280,17 +280,37 @@ func (db *DB) GetStoreStats(ctx context.Context) (*models.StoreStats, error) {
 }
 
 // SearchStores performs a fuzzy search on stores
-func (db *DB) SearchStores(ctx context.Context, query string, limit int) ([]*models.Store, error) {
-	rows, err := db.Pool.Query(ctx, `
-		SELECT id, name, street_address, city, state, zip_code, region_id, store_type, chain, latitude, longitude, verified, verification_count, is_private, created_by, created_at, updated_at
-		FROM stores
-		WHERE (name ILIKE $1 OR street_address ILIKE $1 OR chain ILIKE $1 OR zip_code = $2)
-		AND is_private = false
-		ORDER BY
-			CASE WHEN name ILIKE $2 || '%' THEN 0 ELSE 1 END,
-			name
-		LIMIT $3
-	`, "%"+query+"%", query, limit)
+// Only returns stores visible to the user (public stores OR user's own private stores)
+func (db *DB) SearchStores(ctx context.Context, query string, limit int, userID *int) ([]*models.Store, error) {
+	var rows pgx.Rows
+	var err error
+
+	if userID != nil {
+		// User is logged in: show public stores OR their own private stores
+		rows, err = db.Pool.Query(ctx, `
+			SELECT id, name, street_address, city, state, zip_code, region_id, store_type, chain, latitude, longitude, verified, verification_count, is_private, created_by, created_at, updated_at
+			FROM stores
+			WHERE (name ILIKE $1 OR street_address ILIKE $1 OR chain ILIKE $1 OR zip_code = $2)
+			AND (is_private = false OR created_by = $4)
+			ORDER BY
+				CASE WHEN name ILIKE $2 || '%' THEN 0 ELSE 1 END,
+				name
+			LIMIT $3
+		`, "%"+query+"%", query, limit, *userID)
+	} else {
+		// No user: show only public stores
+		rows, err = db.Pool.Query(ctx, `
+			SELECT id, name, street_address, city, state, zip_code, region_id, store_type, chain, latitude, longitude, verified, verification_count, is_private, created_by, created_at, updated_at
+			FROM stores
+			WHERE (name ILIKE $1 OR street_address ILIKE $1 OR chain ILIKE $1 OR zip_code = $2)
+			AND is_private = false
+			ORDER BY
+				CASE WHEN name ILIKE $2 || '%' THEN 0 ELSE 1 END,
+				name
+			LIMIT $3
+		`, "%"+query+"%", query, limit)
+	}
+
 	if err != nil {
 		return nil, err
 	}

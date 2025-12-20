@@ -18,6 +18,27 @@ services:
     networks:
       - pricefeed-net
 
+  garage:
+    image: dxflrs/garage:v1.0.1
+    container_name: pricefeed-garage
+    restart: unless-stopped
+    environment:
+      GARAGE_RPC_SECRET: "${GARAGE_RPC_SECRET}"
+    volumes:
+      - garage-data:/var/lib/garage/data
+      - garage-meta:/var/lib/garage/meta
+      - ./garage.toml:/etc/garage.toml:ro
+    ports:
+      - "3900:3900"
+      - "3902:3902"
+    networks:
+      - pricefeed-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3902/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   app:
     build:
       context: .
@@ -30,11 +51,14 @@ services:
       ENVIRONMENT: development
       ALLOWED_ORIGINS: "*"
       DATABASE_URL: postgres://pricefeed:pricefeed_dev@db:5432/pricefeed?sslmode=disable
+      S3_ENDPOINT: garage:3900
     ports:
       - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
+      garage:
+        condition: service_started
     networks:
       - pricefeed-net
 
@@ -58,6 +82,8 @@ volumes:
   pricefeed-data:
   npm-data:
   npm-letsencrypt:
+  garage-data:
+  garage-meta:
 
 networks:
   pricefeed-net:
