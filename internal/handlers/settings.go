@@ -205,6 +205,149 @@ func (h *SettingsHandler) UpdateEmailSettings(c *fiber.Ctx) error {
 	})
 }
 
+// StorageConfigResponse contains the S3 storage configuration for the frontend
+type StorageConfigResponse struct {
+	Enabled      bool   `json:"enabled"`
+	Endpoint     string `json:"endpoint"`
+	AccessKey    string `json:"accessKey"`
+	Bucket       string `json:"bucket"`
+	Region       string `json:"region"`
+	UseSSL       bool   `json:"useSSL"`
+	HasSecretKey bool   `json:"hasSecretKey"`
+	Configured   bool   `json:"configured"`
+}
+
+// GetStorageConfig returns the current S3 storage configuration
+func (h *SettingsHandler) GetStorageConfig(c *fiber.Ctx) error {
+	settings, err := h.db.GetSettingsByCategoryAsMap(c.Context(), "storage", h.encryptionKey, true)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to get storage settings: "+err.Error())
+	}
+
+	// Helper to get string from interface{}
+	getString := func(key string) string {
+		if v, ok := settings[key]; ok {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+		return ""
+	}
+
+	enabled := getString("s3_enabled") == "true"
+	endpoint := getString("s3_endpoint")
+	accessKey := getString("s3_access_key")
+	secretKey := getString("s3_secret_key")
+	bucket := getString("s3_bucket")
+	region := getString("s3_region")
+	useSSL := getString("s3_use_ssl") == "true"
+
+	// Check if configured (has all required fields)
+	configured := endpoint != "" && accessKey != "" && secretKey != "" && bucket != ""
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data": StorageConfigResponse{
+			Enabled:      enabled,
+			Endpoint:     endpoint,
+			AccessKey:    accessKey,
+			Bucket:       bucket,
+			Region:       region,
+			UseSSL:       useSSL,
+			HasSecretKey: secretKey != "",
+			Configured:   configured,
+		},
+	})
+}
+
+// UpdateStorageSettingsRequest is the request body for updating storage settings
+type UpdateStorageSettingsRequest struct {
+	Enabled   bool   `json:"s3_enabled"`
+	Endpoint  string `json:"s3_endpoint"`
+	AccessKey string `json:"s3_access_key"`
+	SecretKey string `json:"s3_secret_key"`
+	Bucket    string `json:"s3_bucket"`
+	Region    string `json:"s3_region"`
+	UseSSL    bool   `json:"s3_use_ssl"`
+}
+
+// UpdateStorageSettings updates S3 storage configuration
+func (h *SettingsHandler) UpdateStorageSettings(c *fiber.Ctx) error {
+	var req UpdateStorageSettingsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid request body")
+	}
+
+	// Build settings map
+	settings := map[string]string{
+		"s3_enabled":    strconv.FormatBool(req.Enabled),
+		"s3_endpoint":   req.Endpoint,
+		"s3_access_key": req.AccessKey,
+		"s3_bucket":     req.Bucket,
+		"s3_region":     req.Region,
+		"s3_use_ssl":    strconv.FormatBool(req.UseSSL),
+	}
+
+	// Only update secret key if a new one is provided (not masked)
+	if req.SecretKey != "" && req.SecretKey != "••••••••" {
+		settings["s3_secret_key"] = req.SecretKey
+	}
+
+	if err := h.db.SetSettings(c.Context(), settings, h.encryptionKey); err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to update storage settings: "+err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Storage settings updated successfully",
+	})
+}
+
+// TestStorageConnection tests the S3 storage connection
+func (h *SettingsHandler) TestStorageConnection(c *fiber.Ctx) error {
+	settings, err := h.db.GetSettingsByCategoryAsMap(c.Context(), "storage", h.encryptionKey, true)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to get storage settings: "+err.Error())
+	}
+
+	// Helper to get string from interface{}
+	getString := func(key string) string {
+		if v, ok := settings[key]; ok {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+		return ""
+	}
+
+	endpoint := getString("s3_endpoint")
+	accessKey := getString("s3_access_key")
+	secretKey := getString("s3_secret_key")
+	bucket := getString("s3_bucket")
+	region := getString("s3_region")
+	useSSL := getString("s3_use_ssl") == "true"
+
+	if endpoint == "" || accessKey == "" || secretKey == "" {
+		return Error(c, fiber.StatusBadRequest, "Storage is not configured. Please save settings first.")
+	}
+
+	// Try to create a storage service and test connection
+	storageService, err := services.NewStorageService(endpoint, accessKey, secretKey, bucket, region, useSSL)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "Failed to connect: "+err.Error())
+	}
+
+	// Try to ensure bucket exists (this tests the connection)
+	if err := storageService.EnsureBucket(c.Context()); err != nil {
+		return Error(c, fiber.StatusInternalServerError, "Connection failed: "+err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": fmt.Sprintf("Successfully connected to S3 storage. Bucket '%s' is accessible.", bucket),
+	})
+}
+
 // RegenerateJWTSecret generates a new JWT secret and stores it in the database
 func (h *SettingsHandler) RegenerateJWTSecret(c *fiber.Ctx) error {
 	// Generate a cryptographically secure random secret (32 bytes = 256 bits)

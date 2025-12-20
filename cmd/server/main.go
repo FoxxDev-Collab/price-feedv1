@@ -69,63 +69,104 @@ func main() {
 	emailService := services.NewEmailService(db, cfg)
 	settingsHandler := handlers.NewSettingsHandler(db, cfg, emailService)
 
-	// Initialize Storage service for receipts
+	// Initialize Storage service for receipts (load from database settings)
 	var receiptHandler *handlers.ReceiptHandler
-	if cfg.S3AccessKey != "" && cfg.S3SecretKey != "" {
-		storageService, err := services.NewStorageService(
-			cfg.S3Endpoint,
-			cfg.S3AccessKey,
-			cfg.S3SecretKey,
-			cfg.S3Bucket,
-			cfg.S3Region,
-			cfg.S3UseSSL,
-		)
+	initReceiptService := func() {
+		// Create encryption key from JWT secret
+		encryptionKey := make([]byte, 32)
+		copy(encryptionKey, []byte(cfg.JWTSecret))
+
+		// Load S3 settings from database
+		ctx := context.Background()
+		settings, err := db.GetSettingsByCategoryAsMap(ctx, "storage", encryptionKey, true)
+		if err != nil {
+			log.Printf("Warning: Failed to load storage settings: %v", err)
+			return
+		}
+
+		// Helper to get string from interface{}
+		getString := func(key string) string {
+			if v, ok := settings[key]; ok {
+				if s, ok := v.(string); ok {
+					return s
+				}
+			}
+			return ""
+		}
+
+		enabled := getString("s3_enabled") == "true"
+		endpoint := getString("s3_endpoint")
+		accessKey := getString("s3_access_key")
+		secretKey := getString("s3_secret_key")
+		bucket := getString("s3_bucket")
+		region := getString("s3_region")
+		useSSL := getString("s3_use_ssl") == "true"
+
+		if !enabled {
+			log.Println("Receipt storage is disabled in settings")
+			return
+		}
+
+		if endpoint == "" || accessKey == "" || secretKey == "" {
+			log.Println("S3 credentials not configured in settings, receipt scanning disabled")
+			return
+		}
+
+		if bucket == "" {
+			bucket = "receipts"
+		}
+		if region == "" {
+			region = "garage"
+		}
+
+		storageService, err := services.NewStorageService(endpoint, accessKey, secretKey, bucket, region, useSSL)
 		if err != nil {
 			log.Printf("Warning: Failed to initialize storage service: %v", err)
-		} else {
-			// Ensure bucket exists
-			if err := storageService.EnsureBucket(context.Background()); err != nil {
-				log.Printf("Warning: Failed to ensure S3 bucket exists: %v", err)
-			}
-
-			// Initialize OCR service
-			ocrService, err := services.NewOCRService()
-			if err != nil {
-				log.Printf("Warning: Failed to initialize OCR service: %v", err)
-			} else {
-				// Initialize receipt parser and matcher
-				receiptParser := services.NewReceiptParser()
-				itemMatcher := services.NewItemMatcher(db)
-
-				// Create receipt handler
-				receiptHandler = handlers.NewReceiptHandler(
-					db, cfg, storageService, ocrService, receiptParser, itemMatcher,
-				)
-				log.Println("Receipt scanning service initialized")
-
-				// Run cleanup of expired receipts on startup
-				go func() {
-					ctx := context.Background()
-					keys, err := db.CleanupExpiredReceipts(ctx)
-					if err != nil {
-						log.Printf("Warning: Failed to cleanup expired receipts: %v", err)
-						return
-					}
-					if len(keys) > 0 {
-						log.Printf("Cleaned up %d expired receipt(s) from database", len(keys))
-						// Delete S3 objects
-						if err := storageService.DeleteMultiple(ctx, keys); err != nil {
-							log.Printf("Warning: Failed to delete some S3 objects: %v", err)
-						} else {
-							log.Printf("Deleted %d expired receipt image(s) from storage", len(keys))
-						}
-					}
-				}()
-			}
+			return
 		}
-	} else {
-		log.Println("S3 credentials not configured, receipt scanning disabled")
+
+		// Ensure bucket exists
+		if err := storageService.EnsureBucket(ctx); err != nil {
+			log.Printf("Warning: Failed to ensure S3 bucket exists: %v", err)
+		}
+
+		// Initialize OCR service
+		ocrService, err := services.NewOCRService()
+		if err != nil {
+			log.Printf("Warning: Failed to initialize OCR service: %v", err)
+			return
+		}
+
+		// Initialize receipt parser and matcher
+		receiptParser := services.NewReceiptParser()
+		itemMatcher := services.NewItemMatcher(db)
+
+		// Create receipt handler
+		receiptHandler = handlers.NewReceiptHandler(
+			db, cfg, storageService, ocrService, receiptParser, itemMatcher,
+		)
+		log.Println("Receipt scanning service initialized")
+
+		// Run cleanup of expired receipts on startup
+		go func() {
+			cleanupCtx := context.Background()
+			keys, err := db.CleanupExpiredReceipts(cleanupCtx)
+			if err != nil {
+				log.Printf("Warning: Failed to cleanup expired receipts: %v", err)
+				return
+			}
+			if len(keys) > 0 {
+				log.Printf("Cleaned up %d expired receipt(s) from database", len(keys))
+				// Delete S3 objects
+				if err := storageService.DeleteMultiple(cleanupCtx, keys); err != nil {
+					log.Printf("Warning: Failed to delete some S3 objects: %v", err)
+				} else {
+					log.Printf("Deleted %d expired receipt image(s) from storage", len(keys))
+				}
+			}
+		}()
 	}
+	initReceiptService()
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -189,6 +230,11 @@ func main() {
 	admin.Post("/email/test", settingsHandler.SendTestEmail)
 	admin.Put("/email/config", settingsHandler.UpdateEmailSettings)
 	admin.Get("/email/status", settingsHandler.GetEmailStatus)
+
+	// Admin storage routes (S3/Garage)
+	admin.Get("/storage/config", settingsHandler.GetStorageConfig)
+	admin.Put("/storage/config", settingsHandler.UpdateStorageSettings)
+	admin.Post("/storage/test", settingsHandler.TestStorageConnection)
 
 	// Admin security routes
 	admin.Post("/settings/regenerate-jwt-secret", settingsHandler.RegenerateJWTSecret)

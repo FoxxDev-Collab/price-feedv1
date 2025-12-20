@@ -30,6 +30,7 @@
             <button class="settings-tab" data-tab="prices" onclick="switchTab('prices')">Prices</button>
             <button class="settings-tab" data-tab="reputation" onclick="switchTab('reputation')">Reputation</button>
             <button class="settings-tab" data-tab="email" onclick="switchTab('email')">Email</button>
+            <button class="settings-tab" data-tab="storage" onclick="switchTab('storage')">Storage</button>
             <button class="settings-tab" data-tab="api" onclick="switchTab('api')">API & Security</button>
           </div>
         </div>
@@ -259,6 +260,74 @@
           </div>
         </div>
 
+        <!-- Storage Settings (S3/Garage) -->
+        <div id="tab-storage" class="settings-content hidden">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Receipt Storage Configuration</h3>
+              <span id="storage-status" class="status-badge"></span>
+            </div>
+            <div class="admin-card-body">
+              <p style="font-size: var(--text-sm); color: var(--color-gray-600); margin-bottom: var(--space-4);">
+                Configure S3-compatible storage for receipt images. This is required for the receipt scanning feature.
+                Supports Garage, MinIO, AWS S3, or any S3-compatible service.
+              </p>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" id="s3-enabled">
+                  Enable Receipt Storage
+                </label>
+                <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-top: var(--space-1);">When enabled, users can upload and scan receipt images.</p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">S3 Endpoint</label>
+                <input type="text" class="admin-form-input" placeholder="garage:3900 or s3.amazonaws.com" id="s3-endpoint">
+                <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">For Garage/MinIO, use hostname:port. For AWS S3, use s3.amazonaws.com or regional endpoint.</p>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Access Key ID</label>
+                  <input type="text" class="admin-form-input" placeholder="GK..." id="s3-access-key">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Secret Access Key</label>
+                  <input type="password" class="admin-form-input" placeholder="Enter secret key" id="s3-secret-key">
+                  <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Leave blank to keep existing</p>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4);">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Bucket Name</label>
+                  <input type="text" class="admin-form-input" placeholder="receipts" id="s3-bucket">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Region</label>
+                  <input type="text" class="admin-form-input" placeholder="garage" id="s3-region">
+                  <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Use "garage" for Garage</p>
+                </div>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" id="s3-use-ssl">
+                  Use SSL/TLS (HTTPS)
+                </label>
+                <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-top: var(--space-1);">Enable for production. Disable for local Garage/MinIO without SSL.</p>
+              </div>
+
+              <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--color-gray-200);">
+                <label class="admin-form-label">Test Connection</label>
+                <div style="display: flex; gap: var(--space-2); margin-top: var(--space-2);">
+                  <button class="btn btn-secondary" onclick="testStorageConnection()" id="test-storage-btn">Test Connection</button>
+                </div>
+                <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Test the S3 connection and verify bucket access</p>
+              </div>
+            </div>
+            <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" onclick="saveStorageSettings()" id="save-storage-btn">Save Storage Settings</button>
+            </div>
+          </div>
+        </div>
+
         <!-- API & Security Settings -->
         <div id="tab-api" class="settings-content hidden">
           <div class="admin-card">
@@ -468,7 +537,8 @@
         loadSettingsCategory('prices'),
         loadSettingsCategory('reputation'),
         loadSettingsCategory('api'),
-        loadEmailSettings()
+        loadEmailSettings(),
+        loadStorageSettings()
       ]);
     }
 
@@ -613,6 +683,100 @@
       } finally {
         btn.disabled = false;
         btn.textContent = 'Send Test Email';
+      }
+    }
+
+    // Storage Settings Functions
+    let storageConfig = {};
+
+    async function loadStorageSettings() {
+      try {
+        const response = await api.get('/admin/storage/config');
+        if (response.success) {
+          storageConfig = response.data;
+          populateStorageForm(storageConfig);
+          updateStorageStatus(storageConfig);
+        }
+      } catch (err) {
+        console.error('Failed to load storage settings:', err);
+      }
+    }
+
+    function populateStorageForm(config) {
+      document.getElementById('s3-enabled').checked = config.enabled || false;
+      document.getElementById('s3-endpoint').value = config.endpoint || '';
+      document.getElementById('s3-access-key').value = config.accessKey || '';
+      document.getElementById('s3-bucket').value = config.bucket || 'receipts';
+      document.getElementById('s3-region').value = config.region || 'garage';
+      document.getElementById('s3-use-ssl').checked = config.useSSL || false;
+      // Password field shows placeholder if key exists
+      document.getElementById('s3-secret-key').placeholder = config.hasSecretKey ? '••••••••' : 'Enter secret key';
+    }
+
+    function updateStorageStatus(config) {
+      const statusEl = document.getElementById('storage-status');
+      if (!config.enabled) {
+        statusEl.className = 'status-badge disabled';
+        statusEl.textContent = 'Disabled';
+      } else if (config.configured) {
+        statusEl.className = 'status-badge configured';
+        statusEl.textContent = 'Configured';
+      } else {
+        statusEl.className = 'status-badge not-configured';
+        statusEl.textContent = 'Not Configured';
+      }
+    }
+
+    async function saveStorageSettings() {
+      const btn = document.getElementById('save-storage-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      try {
+        const data = {
+          s3_enabled: document.getElementById('s3-enabled').checked,
+          s3_endpoint: document.getElementById('s3-endpoint').value.trim(),
+          s3_access_key: document.getElementById('s3-access-key').value.trim(),
+          s3_secret_key: document.getElementById('s3-secret-key').value,
+          s3_bucket: document.getElementById('s3-bucket').value.trim() || 'receipts',
+          s3_region: document.getElementById('s3-region').value.trim() || 'garage',
+          s3_use_ssl: document.getElementById('s3-use-ssl').checked
+        };
+
+        const response = await api.put('/admin/storage/config', data);
+        if (response.success) {
+          admin.toast('Storage settings saved successfully', 'success');
+          await loadStorageSettings();
+        } else {
+          admin.toast(response.error || 'Failed to save storage settings', 'error');
+        }
+      } catch (err) {
+        console.error('Failed to save storage settings:', err);
+        admin.toast('Failed to save storage settings: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Storage Settings';
+      }
+    }
+
+    async function testStorageConnection() {
+      const btn = document.getElementById('test-storage-btn');
+      btn.disabled = true;
+      btn.textContent = 'Testing...';
+
+      try {
+        const response = await api.post('/admin/storage/test');
+        if (response.success) {
+          admin.toast(response.message || 'Storage connection successful!', 'success');
+        } else {
+          admin.toast(response.error || 'Storage connection failed', 'error');
+        }
+      } catch (err) {
+        console.error('Storage test failed:', err);
+        admin.toast('Storage test failed: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Test Connection';
       }
     }
 
