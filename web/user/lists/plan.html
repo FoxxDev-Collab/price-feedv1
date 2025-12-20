@@ -267,12 +267,15 @@
     /* Print-specific button group */
     .export-buttons {
       display: flex;
+      flex-wrap: wrap;
       gap: var(--space-2);
       margin-bottom: var(--space-4);
     }
 
     .export-buttons .btn {
-      flex: 1;
+      flex: 1 1 auto;
+      min-width: 0;
+      white-space: nowrap;
     }
 
     /* Loading/Empty States */
