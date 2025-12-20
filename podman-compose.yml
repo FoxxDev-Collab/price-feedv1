@@ -1,3 +1,11 @@
+# Podman Compose file for Rocky Linux 9 with SELinux
+# Run with: podman-compose up -d
+# Or: podman compose up -d (if using podman-compose plugin)
+#
+# For rootless podman with ports 80/443, first run:
+#   sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
+# Or add to /etc/sysctl.d/podman-privileged-ports.conf for persistence
+
 services:
   db:
     image: docker.io/library/postgres:16-alpine
@@ -7,9 +15,7 @@ services:
       POSTGRES_PASSWORD: pricefeed_dev
       POSTGRES_DB: pricefeed
     volumes:
-      - pricefeed-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - pricefeed-data:/var/lib/postgresql/data:Z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pricefeed -d pricefeed"]
       interval: 5s
@@ -19,18 +25,15 @@ services:
       - pricefeed-net
 
   garage:
-    image: dxflrs/garage:v1.0.1
+    image: docker.io/dxflrs/garage:v1.0.1
     container_name: pricefeed-garage
     restart: unless-stopped
     environment:
       GARAGE_RPC_SECRET: "${GARAGE_RPC_SECRET}"
     volumes:
-      - garage-data:/var/lib/garage/data
-      - garage-meta:/var/lib/garage/meta
-      - ./garage.toml:/etc/garage.toml:ro
-    ports:
-      - "3900:3900"
-      - "3902:3902"
+      - garage-data:/var/lib/garage/data:Z
+      - garage-meta:/var/lib/garage/meta:Z
+      - ./garage.toml:/etc/garage.toml:ro,Z
     networks:
       - pricefeed-net
     healthcheck:
@@ -48,12 +51,10 @@ services:
       - .env
     environment:
       PORT: "8080"
-      ENVIRONMENT: development
+      ENVIRONMENT: production
       ALLOWED_ORIGINS: "*"
       DATABASE_URL: postgres://pricefeed:pricefeed_dev@db:5432/pricefeed?sslmode=disable
       S3_ENDPOINT: garage:3900
-    ports:
-      - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -71,8 +72,8 @@ services:
       - "443:443"
       - "81:81"
     volumes:
-      - npm-data:/data
-      - npm-letsencrypt:/etc/letsencrypt
+      - npm-data:/data:Z
+      - npm-letsencrypt:/etc/letsencrypt:Z
     depends_on:
       - app
     networks:
