@@ -28,6 +28,15 @@ type Config struct {
 
 	// Google Maps
 	GoogleMapsAPIKey string
+
+	// SMTP Email
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFromAddr string
+	SMTPFromName string
+	SMTPEnabled  bool
 }
 
 func Load() *Config {
@@ -42,12 +51,37 @@ func Load() *Config {
 		AdminPassword:    getEnv("ADMIN_PASSWORD", ""),
 		Environment:      getEnv("ENVIRONMENT", "development"),
 		GoogleMapsAPIKey: getEnv("GOOGLE_API_KEY_MAPS", ""),
+		SMTPHost:         getEnv("SMTP_HOST", ""),
+		SMTPPort:         getIntEnv("SMTP_PORT", 587),
+		SMTPUser:         getEnv("SMTP_USER", ""),
+		SMTPPassword:     getEnv("SMTP_PASSWORD", ""),
+		SMTPFromAddr:     getEnv("SMTP_FROM_ADDR", "noreply@pricefeed.app"),
+		SMTPFromName:     getEnv("SMTP_FROM_NAME", "PriceFeed"),
+		SMTPEnabled:      getBoolEnv("SMTP_ENABLED", false),
 	}
 }
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getIntEnv(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intVal, err := strconv.Atoi(value); err == nil {
+			return intVal
+		}
+	}
+	return defaultValue
+}
+
+func getBoolEnv(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if boolVal, err := strconv.ParseBool(value); err == nil {
+			return boolVal
+		}
 	}
 	return defaultValue
 }

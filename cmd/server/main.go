@@ -64,6 +64,10 @@ func main() {
 	mapsService := services.NewGoogleMapsService(cfg.GoogleMapsAPIKey)
 	mapsHandler := handlers.NewMapsHandler(mapsService, cfg.GoogleMapsAPIKey)
 
+	// Initialize Email service and settings handler
+	emailService := services.NewEmailService(db, cfg)
+	settingsHandler := handlers.NewSettingsHandler(db, cfg, emailService)
+
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
@@ -108,6 +112,17 @@ func main() {
 	admin.Post("/regions", h.CreateRegion)
 	admin.Put("/regions/:id", h.UpdateRegion)
 	admin.Delete("/regions/:id", h.DeleteRegion)
+
+	// Admin settings routes
+	admin.Get("/settings", settingsHandler.GetAllSettings)
+	admin.Get("/settings/:category", settingsHandler.GetSettingsByCategory)
+	admin.Put("/settings/:category", settingsHandler.UpdateSettings)
+
+	// Admin email routes
+	admin.Get("/email/config", settingsHandler.GetEmailConfig)
+	admin.Post("/email/test", settingsHandler.SendTestEmail)
+	admin.Put("/email/config", settingsHandler.UpdateEmailSettings)
+	admin.Get("/email/status", settingsHandler.GetEmailStatus)
 
 	// Store routes (public read, authenticated write)
 	stores := api.Group("/stores")

@@ -214,40 +214,55 @@
           <div class="admin-card">
             <div class="admin-card-header">
               <h3 class="admin-card-title">Email Configuration</h3>
+              <span id="email-status" class="status-badge"></span>
             </div>
             <div class="admin-card-body">
               <div class="admin-form-group">
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" id="smtp-enabled">
+                  Enable SMTP Email
+                </label>
+                <p style="font-size: var(--text-sm); color: var(--color-gray-500); margin-top: var(--space-1);">When enabled, the system can send emails for password resets, welcome messages, etc.</p>
+              </div>
+              <div class="admin-form-group">
                 <label class="admin-form-label">SMTP Host</label>
-                <input type="text" class="admin-form-input" value="smtp.sendgrid.net" id="smtp-host">
+                <input type="text" class="admin-form-input" placeholder="smtp.sendgrid.net" id="smtp-host">
               </div>
               <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4);">
                 <div class="admin-form-group">
                   <label class="admin-form-label">SMTP Username</label>
-                  <input type="text" class="admin-form-input" value="apikey" id="smtp-user">
+                  <input type="text" class="admin-form-input" placeholder="apikey" id="smtp-user">
                 </div>
                 <div class="admin-form-group">
                   <label class="admin-form-label">SMTP Port</label>
                   <input type="number" class="admin-form-input" value="587" id="smtp-port">
+                  <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">587 (TLS) or 465 (SSL)</p>
                 </div>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">SMTP Password</label>
-                <input type="password" class="admin-form-input" placeholder="••••••••" id="smtp-password">
+                <input type="password" class="admin-form-input" placeholder="Enter password or API key" id="smtp-password">
+                <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Leave blank to keep existing password</p>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">From Address</label>
-                <input type="email" class="admin-form-input" value="noreply@pricefeed.app" id="from-email">
+                <input type="email" class="admin-form-input" placeholder="noreply@pricefeed.app" id="smtp-from-addr">
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">From Name</label>
-                <input type="text" class="admin-form-input" value="PriceFeed" id="from-name">
+                <input type="text" class="admin-form-input" placeholder="PriceFeed" id="smtp-from-name">
               </div>
-              <div style="margin-top: var(--space-4);">
-                <button class="btn btn-secondary" onclick="testEmail()">Send Test Email</button>
+              <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--color-gray-200);">
+                <label class="admin-form-label">Test Email Configuration</label>
+                <div style="display: flex; gap: var(--space-2); margin-top: var(--space-2);">
+                  <input type="email" class="admin-form-input" placeholder="test@example.com" id="test-email-address" style="flex: 1;">
+                  <button class="btn btn-secondary" onclick="testEmail()" id="test-email-btn">Send Test Email</button>
+                </div>
+                <p style="font-size: var(--text-xs); color: var(--color-gray-500); margin-top: var(--space-1);">Send a test email to verify your SMTP configuration</p>
               </div>
             </div>
             <div class="admin-card-footer" style="display: flex; justify-content: flex-end;">
-              <button class="btn btn-primary" onclick="saveSettings('email')">Save Changes</button>
+              <button class="btn btn-primary" onclick="saveEmailSettings()" id="save-email-btn">Save Email Settings</button>
             </div>
           </div>
         </div>
@@ -324,6 +339,26 @@
     .settings-content.hidden {
       display: none;
     }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+    }
+    .status-badge.configured {
+      background: var(--color-green-100);
+      color: var(--color-green-700);
+    }
+    .status-badge.not-configured {
+      background: var(--color-yellow-100);
+      color: var(--color-yellow-700);
+    }
+    .status-badge.disabled {
+      background: var(--color-gray-100);
+      color: var(--color-gray-600);
+    }
   </style>
 
   <script src="/js/api.js"></script>
@@ -331,6 +366,8 @@
   <script src="/js/admin-common.js"></script>
   <script src="/js/admin-sidebar.js"></script>
   <script>
+    let emailConfig = {};
+
     document.addEventListener('DOMContentLoaded', async () => {
       if (!await admin.init()) return;
 
@@ -339,7 +376,117 @@
         { label: 'Admin', href: '/admin/' },
         { label: 'Settings', href: '/admin/settings/' }
       ]);
+
+      // Load all settings
+      await loadAllSettings();
     });
+
+    async function loadAllSettings() {
+      await loadEmailSettings();
+      // Add more setting loaders as we migrate them
+    }
+
+    async function loadEmailSettings() {
+      try {
+        const response = await api.get('/admin/email/config');
+        if (response.success) {
+          emailConfig = response.data;
+          populateEmailForm(emailConfig);
+          updateEmailStatus(emailConfig);
+        }
+      } catch (err) {
+        console.error('Failed to load email settings:', err);
+        admin.toast('Failed to load email settings', 'error');
+      }
+    }
+
+    function populateEmailForm(config) {
+      document.getElementById('smtp-enabled').checked = config.enabled || false;
+      document.getElementById('smtp-host').value = config.host || '';
+      document.getElementById('smtp-port').value = config.port || 587;
+      document.getElementById('smtp-user').value = config.user || '';
+      document.getElementById('smtp-from-addr').value = config.fromAddr || '';
+      document.getElementById('smtp-from-name').value = config.fromName || '';
+      // Password field shows placeholder if password exists
+      document.getElementById('smtp-password').placeholder = config.password ? '••••••••' : 'Enter password or API key';
+    }
+
+    function updateEmailStatus(config) {
+      const statusEl = document.getElementById('email-status');
+      if (!config.enabled) {
+        statusEl.className = 'status-badge disabled';
+        statusEl.textContent = '● Disabled';
+      } else if (config.configured) {
+        statusEl.className = 'status-badge configured';
+        statusEl.textContent = '● Configured';
+      } else {
+        statusEl.className = 'status-badge not-configured';
+        statusEl.textContent = '● Not Configured';
+      }
+    }
+
+    async function saveEmailSettings() {
+      const btn = document.getElementById('save-email-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      try {
+        const data = {
+          smtp_enabled: document.getElementById('smtp-enabled').checked,
+          smtp_host: document.getElementById('smtp-host').value.trim(),
+          smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
+          smtp_user: document.getElementById('smtp-user').value.trim(),
+          smtp_password: document.getElementById('smtp-password').value,
+          smtp_from_addr: document.getElementById('smtp-from-addr').value.trim(),
+          smtp_from_name: document.getElementById('smtp-from-name').value.trim()
+        };
+
+        const response = await api.put('/admin/email/config', data);
+        if (response.success) {
+          admin.toast('Email settings saved successfully', 'success');
+          // Reload to get updated status
+          await loadEmailSettings();
+        } else {
+          admin.toast(response.error || 'Failed to save email settings', 'error');
+        }
+      } catch (err) {
+        console.error('Failed to save email settings:', err);
+        admin.toast('Failed to save email settings: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Email Settings';
+      }
+    }
+
+    async function testEmail() {
+      const btn = document.getElementById('test-email-btn');
+      const emailInput = document.getElementById('test-email-address');
+      const toEmail = emailInput.value.trim();
+
+      if (!toEmail) {
+        admin.toast('Please enter an email address for the test', 'warning');
+        emailInput.focus();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        const response = await api.post('/admin/email/test', { to_email: toEmail });
+        if (response.success) {
+          admin.toast(response.message || 'Test email sent successfully!', 'success');
+        } else {
+          admin.toast(response.error || 'Failed to send test email', 'error');
+        }
+      } catch (err) {
+        console.error('Failed to send test email:', err);
+        admin.toast('Failed to send test email: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Test Email';
+      }
+    }
 
     function switchTab(tabId) {
       // Hide all content
@@ -354,10 +501,6 @@
 
     async function saveSettings(section) {
       admin.toast(`${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully`, 'success');
-    }
-
-    function testEmail() {
-      admin.toast('Test email sent to your admin email address', 'info');
     }
 
     async function regenerateSecret() {
