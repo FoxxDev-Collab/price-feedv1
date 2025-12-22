@@ -33,7 +33,8 @@
       "Bash(podman volume rm:*)",
       "Bash(bash:*)",
       "Bash(NODE_ID=\"e5d5096114155c48\":*)",
-      "Bash(sudo firewall-cmd:*)"
+      "Bash(sudo firewall-cmd:*)",
+      "Bash(chmod:*)"
     ]
   }
 }
