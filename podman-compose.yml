@@ -1,7 +1,17 @@
-# Podman Compose for Rocky Linux 9 VPS (no iptables required)
-# All services run in a single pod, communicating via localhost
+# Podman Compose for Price Feed Application
+# Uses bridge networking with port mappings (works with rootless podman)
+#
+# Ports exposed:
+#   - 8080: Application (direct access for dev/test)
+#   - 8181: Nginx Proxy Manager Admin UI
+#   - 80:   HTTP (via NPM)
+#   - 443:  HTTPS (via NPM)
+#
+# NOTE: Requires unprivileged port binding enabled:
+#   sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
 #
 # Run with: podman-compose up -d
+# First time: After startup, run ./scripts/setup-garage.sh
 
 services:
   db:
@@ -18,7 +28,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    network_mode: host
+    networks:
+      - pricefeed-net
 
   garage:
     image: docker.io/dxflrs/garage:v1.0.1
@@ -31,11 +42,12 @@ services:
       - garage-meta:/var/lib/garage/meta:Z
       - ./garage.toml:/etc/garage.toml:ro,Z
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3902/health"]
+      test: ["CMD", "/garage", "status"]
       interval: 30s
       timeout: 10s
       retries: 3
-    network_mode: host
+    networks:
+      - pricefeed-net
     depends_on:
       db:
         condition: service_healthy
@@ -45,31 +57,44 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: pricefeed-app
+    restart: unless-stopped
     env_file:
       - .env
     environment:
       PORT: "8080"
-      ENVIRONMENT: production
+      ENVIRONMENT: development
       ALLOWED_ORIGINS: "*"
-      DATABASE_URL: postgres://pricefeed:pricefeed_dev@127.0.0.1:5432/pricefeed?sslmode=disable
-      S3_ENDPOINT: 127.0.0.1:3900
+      DATABASE_URL: postgres://pricefeed:pricefeed_dev@db:5432/pricefeed?sslmode=disable
+      S3_ENDPOINT: garage:3900
+    ports:
+      - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
       garage:
         condition: service_started
-    network_mode: host
+    networks:
+      - pricefeed-net
 
   npm:
     image: docker.io/jc21/nginx-proxy-manager:latest
     container_name: pricefeed-npm
     restart: unless-stopped
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+      - "8181:81"    # Admin UI
     volumes:
       - npm-data:/data:Z
       - npm-letsencrypt:/etc/letsencrypt:Z
     depends_on:
       - app
-    network_mode: host
+    networks:
+      - pricefeed-net
+
+networks:
+  pricefeed-net:
+    driver: bridge
 
 volumes:
   pricefeed-data:

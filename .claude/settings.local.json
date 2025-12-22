@@ -23,7 +23,17 @@
       "Bash(wc:*)",
       "Bash(ls -la \"d:\\\\Foxx Cyber LLC\\\\price-feed\\\\web\\\\user\"\" 2>/dev/null || echo \"Directory not found \")",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(docker ps:*)",
+      "Bash(ss:*)",
+      "Bash(netstat:*)",
+      "Bash(podman-compose:*)",
+      "Bash(podman info:*)",
+      "Bash(sudo sysctl:*)",
+      "Bash(podman volume rm:*)",
+      "Bash(bash:*)",
+      "Bash(NODE_ID=\"e5d5096114155c48\":*)",
+      "Bash(sudo firewall-cmd:*)"
     ]
   }
 }
