@@ -283,7 +283,20 @@
         container.innerHTML = lists.map(list => renderListCard(list)).join('');
       } catch (err) {
         console.error('Failed to load lists:', err);
-        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load lists</div>';
+        // Show friendly empty state instead of error
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1;" class="user-empty-state">
+            <div class="user-empty-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+            </div>
+            <div class="user-empty-title">No shopping lists yet</div>
+            <div class="user-empty-text">Create your first shopping list to start tracking prices</div>
+            <button class="btn btn-primary" onclick="openCreateListModal()">Create Your First List</button>
+          </div>
+        `;
       }
     }
 

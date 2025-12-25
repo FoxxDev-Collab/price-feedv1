@@ -160,6 +160,7 @@ var migrations = map[int]string{
 	8:  migration008,
 	9:  migration009,
 	10: migration010,
+	11: migration011,
 }
 
 const migration001 = `
@@ -711,4 +712,21 @@ INSERT INTO system_settings (key, value, value_type, category, description, is_s
     ('max_login_attempts', '5', 'int', 'auth', 'Maximum login attempts before lockout', false),
     ('lockout_duration_minutes', '15', 'int', 'auth', 'Account lockout duration in minutes', false)
 ON CONFLICT (key) DO NOTHING;
+`
+
+const migration011 = `
+-- Migration 011: Add privacy column to items table for user data isolation
+-- is_private = true (default): Item visible only to creator
+-- is_private = false: Shared community item (visible to all)
+
+ALTER TABLE items ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT TRUE;
+
+-- Create indexes for efficient filtering
+CREATE INDEX IF NOT EXISTS idx_items_private ON items(is_private);
+
+-- Composite index for user's items query (their own items)
+CREATE INDEX IF NOT EXISTS idx_items_user_private ON items(created_by, is_private) WHERE is_private = true;
+
+-- Update existing items to be private (owned by their creator)
+UPDATE items SET is_private = true WHERE is_private IS NULL;
 `

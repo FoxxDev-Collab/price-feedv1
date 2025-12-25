@@ -2325,8 +2325,17 @@
 }
 
 .dark .discover-store-card.active {
-  background: var(--color-primary-50);
+  background: #1a4d2e;
   border-color: var(--primary);
+}
+
+.dark .discover-store-card.active .discover-store-name {
+  color: #ffffff;
+}
+
+.dark .discover-store-card.active .discover-store-address,
+.dark .discover-store-card.active .discover-store-rating {
+  color: #d1d5db;
 }
 
 .dark .discover-store-name {

@@ -508,12 +508,25 @@
 
     .discover-store-card:hover,
     .discover-store-card.active {
-      background: var(--color-gray-50);
+      background: #f9fafb;
     }
 
-    .dark .discover-store-card:hover,
-    .dark .discover-store-card.active {
-      background: var(--color-gray-800);
+    html.dark .discover-store-card:hover {
+      background: #444444;
+    }
+
+    html.dark .discover-store-card.active {
+      background: #1a4d2e;
+      border-color: #34a85a;
+    }
+
+    html.dark .discover-store-card.active .discover-store-name {
+      color: #ffffff;
+    }
+
+    html.dark .discover-store-card.active .discover-store-address,
+    html.dark .discover-store-card.active .discover-store-rating {
+      color: #d1d5db;
     }
 
     .discover-store-card.existing {

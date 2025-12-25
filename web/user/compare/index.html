@@ -562,7 +562,22 @@
         render();
       } catch (err) {
         console.error('Failed to load data:', err);
-        content.innerHTML = '<div class="empty-state"><div class="empty-state-title" style="color: var(--destructive);">Failed to load data</div></div>';
+        // Show friendly empty state instead of error
+        content.innerHTML = '<div class="empty-state">' +
+          '<div class="empty-state-icon" style="width: 64px; height: 64px; margin: 0 auto var(--space-4); color: var(--color-gray-400);">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+              '<line x1="18" y1="20" x2="18" y2="10"></line>' +
+              '<line x1="12" y1="20" x2="12" y2="4"></line>' +
+              '<line x1="6" y1="20" x2="6" y2="14"></line>' +
+            '</svg>' +
+          '</div>' +
+          '<div class="empty-state-title">No data to compare yet</div>' +
+          '<p>Add stores and items first, then report some prices to start comparing.</p>' +
+          '<div style="display: flex; gap: var(--space-3); justify-content: center; margin-top: var(--space-4);">' +
+            '<a href="/user/stores/" class="btn btn-outline">Add Stores</a>' +
+            '<a href="/user/items/" class="btn btn-primary">Add Items</a>' +
+          '</div>' +
+        '</div>';
       }
     }
 

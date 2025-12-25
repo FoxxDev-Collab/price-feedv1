@@ -1169,7 +1169,19 @@
         updatePagination(page, totalItems);
       } catch (err) {
         console.error('Failed to load items:', err);
-        content.innerHTML = '<div class="empty-state"><div class="empty-state-title" style="color: var(--destructive);">Failed to load items</div></div>';
+        // Show friendly empty state instead of error
+        content.innerHTML = '<div class="empty-state">' +
+          '<div class="empty-state-icon">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+              '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>' +
+              '<line x1="3" y1="6" x2="21" y2="6"></line>' +
+              '<path d="M16 10a4 4 0 0 1-8 0"></path>' +
+            '</svg>' +
+          '</div>' +
+          '<div class="empty-state-title">No items yet</div>' +
+          '<p>Add items you want to track prices for</p>' +
+          '<button class="btn btn-primary" onclick="openAddItemModal()" style="margin-top: var(--space-4);">Add Your First Item</button>' +
+        '</div>';
       }
     }
 
