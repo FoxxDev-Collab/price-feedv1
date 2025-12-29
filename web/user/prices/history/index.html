@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price History - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <!-- Back link -->
+        <a href="/user/prices/" class="price-history-back">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Back to Prices
+        </a>
+
+        <!-- Page Header with Item Info -->
+        <div class="user-page-header" style="margin-bottom: var(--space-6);">
+          <div>
+            <h1 class="user-page-title" id="item-name">Price History</h1>
+            <p class="user-page-subtitle" id="item-brand"></p>
+          </div>
+          <div class="price-history-current" id="current-price-container">
+            <div class="price-history-current-label">Current Price</div>
+            <div class="price-history-current-value" id="current-price">--</div>
+            <div class="price-history-trend" id="price-trend"></div>
+          </div>
+        </div>
+
+        <!-- Store Filter -->
+        <div class="user-search-bar" style="margin-bottom: var(--space-6);">
+          <select class="user-form-select" id="store-filter" style="width: auto; min-width: 200px;">
+            <option value="">All Stores</option>
+          </select>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="user-card" style="margin-bottom: var(--space-6);">
+          <div class="user-card-header">
+            <h3 class="user-card-title">Price Trend</h3>
+          </div>
+          <div class="user-card-body">
+            <div class="price-chart-container">
+              <canvas id="price-chart"></canvas>
+            </div>
+            <div class="price-chart-empty hidden" id="chart-empty">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <p>No price history available yet</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="user-card">
+          <div class="user-card-header">
+            <h3 class="user-card-title">Price History</h3>
+          </div>
+          <div class="user-card-body" style="padding: 0;">
+            <table class="user-table" id="history-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Store</th>
+                  <th>Price</th>
+                  <th>Change</th>
+                  <th>Reported By</th>
+                </tr>
+              </thead>
+              <tbody id="history-body">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let chart = null;
+    let itemId = null;
+    let allStores = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('prices');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Prices', href: '/user/prices/' },
+        { label: 'History', href: '#' }
+      ]);
+
+      // Get item_id from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      itemId = urlParams.get('item_id');
+
+      if (!itemId) {
+        document.getElementById('item-name').textContent = 'No item selected';
+        document.getElementById('history-body').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: var(--space-8); color: var(--color-error);">Please select an item from the prices page</td></tr>';
+        return;
+      }
+
+      // Load stores for dropdown
+      await loadStores();
+
+      // Setup store filter
+      document.getElementById('store-filter').addEventListener('change', () => loadHistory());
+
+      // Load initial history
+      await loadHistory();
+    });
+
+    async function loadStores() {
+      try {
+        const response = await storesApi.list({ limit: 1000 });
+        allStores = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+
+        const select = document.getElementById('store-filter');
+        allStores.forEach(store => {
+          const label = `${store.name} - ${store.city}, ${store.state}`;
+          select.innerHTML += `<option value="${store.id}">${user.escapeHtml(label)}</option>`;
+        });
+
+        // Check if store_id was in URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeId = urlParams.get('store_id');
+        if (storeId) {
+          select.value = storeId;
+        }
+      } catch (err) {
+        console.error('Failed to load stores:', err);
+      }
+    }
+
+    async function loadHistory() {
+      const tbody = document.getElementById('history-body');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</td></tr>';
+
+      try {
+        const storeId = document.getElementById('store-filter').value;
+        const params = { limit: 50 };
+        if (storeId) {
+          params.store_id = storeId;
+        }
+
+        const response = await api.get(`/prices/history/${itemId}`, params);
+        const data = response?.data || response;
+
+        // Update item info
+        if (data.item) {
+          document.getElementById('item-name').textContent = data.item.name;
+          document.getElementById('item-brand').textContent = data.item.brand || '';
+          document.getElementById('current-price').textContent = user.formatCurrency(data.item.current_price);
+        }
+
+        // Update trend
+        updateTrend(data.trend);
+
+        // Render chart
+        renderChart(data.history || []);
+
+        // Render table
+        renderHistoryTable(data.history || []);
+
+      } catch (err) {
+        console.error('Failed to load history:', err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load price history</td></tr>';
+      }
+    }
+
+    function updateTrend(trend) {
+      const trendEl = document.getElementById('price-trend');
+
+      if (!trend) {
+        trendEl.innerHTML = '<span class="price-trend-badge price-trend-stable">No trend data</span>';
+        return;
+      }
+
+      const arrow = trend.direction === 'up' ? '&#9650;' : (trend.direction === 'down' ? '&#9660;' : '&#8212;');
+      const sign = trend.direction === 'up' ? '+' : (trend.direction === 'down' ? '' : '');
+      const className = `price-trend-badge price-trend-${trend.direction}`;
+
+      trendEl.innerHTML = `
+        <span class="${className}">
+          <span class="price-trend-arrow">${arrow}</span>
+          ${sign}${Math.abs(trend.change_percent).toFixed(1)}%
+        </span>
+        <span class="price-trend-period">over ${trend.period_days} day${trend.period_days > 1 ? 's' : ''}</span>
+      `;
+    }
+
+    function renderChart(history) {
+      const chartContainer = document.querySelector('.price-chart-container');
+      const emptyState = document.getElementById('chart-empty');
+      const canvas = document.getElementById('price-chart');
+
+      if (history.length < 2) {
+        chartContainer.style.display = 'none';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      chartContainer.style.display = 'block';
+      emptyState.classList.add('hidden');
+
+      // Reverse to show oldest first
+      const sortedHistory = [...history].reverse();
+
+      const labels = sortedHistory.map(h => {
+        const date = new Date(h.recorded_at);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+
+      const prices = sortedHistory.map(h => h.price);
+
+      // Get theme-aware colors
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+      const textColor = isDark ? '#e5e5e5' : '#374151';
+
+      // Determine line color based on trend
+      let lineColor = '#6b7280'; // gray for stable
+      if (history.length >= 2) {
+        const oldest = sortedHistory[0].price;
+        const newest = sortedHistory[sortedHistory.length - 1].price;
+        if (newest > oldest) {
+          lineColor = '#ef4444'; // red for increase
+        } else if (newest < oldest) {
+          lineColor = '#22c55e'; // green for decrease
+        }
+      }
+
+      if (chart) {
+        chart.destroy();
+      }
+
+      chart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Price',
+            data: prices,
+            borderColor: lineColor,
+            backgroundColor: lineColor + '20',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return '$' + context.parsed.y.toFixed(2);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                color: gridColor
+              },
+              ticks: {
+                color: textColor
+              }
+            },
+            y: {
+              grid: {
+                color: gridColor
+              },
+              ticks: {
+                color: textColor,
+                callback: function(value) {
+                  return '$' + value.toFixed(2);
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderHistoryTable(history) {
+      const tbody = document.getElementById('history-body');
+
+      if (history.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5">
+              <div class="user-empty-state" style="padding: var(--space-8);">
+                <div class="user-empty-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+                <div class="user-empty-title">No price history</div>
+                <div class="user-empty-text">Price changes will appear here as they're recorded</div>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = history.map(entry => {
+        const date = new Date(entry.recorded_at);
+        const formattedDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        let changeHtml = '<span class="price-change-badge price-change-none">First entry</span>';
+        if (entry.previous_price !== null && entry.previous_price !== undefined) {
+          const change = entry.price - entry.previous_price;
+          const changePercent = entry.change_percent || ((change / entry.previous_price) * 100);
+          const sign = change > 0 ? '+' : '';
+          const direction = change > 0 ? 'up' : (change < 0 ? 'down' : 'none');
+          const arrow = change > 0 ? '&#9650;' : (change < 0 ? '&#9660;' : '');
+
+          changeHtml = `
+            <span class="price-change-badge price-change-${direction}">
+              ${arrow} ${sign}${user.formatCurrency(change)} (${sign}${changePercent.toFixed(1)}%)
+            </span>
+          `;
+        }
+
+        return `
+          <tr>
+            <td>${formattedDate}</td>
+            <td>${user.escapeHtml(entry.store_name || 'Unknown')}</td>
+            <td>
+              <span style="font-weight: var(--font-bold); color: var(--color-primary-600);">
+                ${user.formatCurrency(entry.price)}
+              </span>
+            </td>
+            <td>${changeHtml}</td>
+            <td>${user.escapeHtml(entry.user_name || 'Unknown')}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Re-render chart when theme changes
+    const originalToggle = theme.toggle;
+    theme.toggle = function() {
+      originalToggle.call(theme);
+      // Re-render chart with new theme colors after a short delay
+      setTimeout(() => {
+        const historyData = chart?.data?.datasets[0]?.data;
+        if (historyData) {
+          loadHistory();
+        }
+      }, 100);
+    };
+  </script>
+</body>
+</html>

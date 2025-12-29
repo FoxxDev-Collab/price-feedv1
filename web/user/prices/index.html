@@ -278,6 +278,13 @@
           <td>${user.formatDate(price.updated_at)}</td>
           <td>
             <div class="user-table-actions">
+              <a href="/user/prices/history/?item_id=${price.item_id}&store_id=${price.store_id}" class="user-table-btn" title="View Price History">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 2px;">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                History
+              </a>
               <button class="user-table-btn" onclick="editPrice(${price.id})">Edit</button>
               <button class="user-table-btn danger" onclick="deletePrice(${price.id})">Delete</button>
             </div>

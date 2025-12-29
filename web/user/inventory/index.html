@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    .inventory-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    .inventory-stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      text-align: center;
+    }
+    .inventory-stat-value {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--color-primary);
+    }
+    .inventory-stat-value.warning {
+      color: var(--color-warning);
+    }
+    .inventory-stat-value.error {
+      color: var(--color-error);
+    }
+    .inventory-stat-label {
+      font-size: var(--text-sm);
+      color: var(--color-gray-500);
+      margin-top: var(--space-1);
+    }
+    .inventory-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      align-items: center;
+    }
+    .inventory-search {
+      flex: 1;
+      min-width: 200px;
+    }
+    .inventory-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      transition: box-shadow 0.2s;
+    }
+    .inventory-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+    .inventory-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-3);
+    }
+    .inventory-card-title {
+      font-weight: var(--font-semibold);
+      font-size: var(--text-lg);
+    }
+    .inventory-card-brand {
+      font-size: var(--text-sm);
+      color: var(--color-gray-500);
+    }
+    .inventory-card-badges {
+      display: flex;
+      gap: var(--space-1);
+      flex-wrap: wrap;
+    }
+    .inventory-badge {
+      font-size: var(--text-xs);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-weight: var(--font-medium);
+    }
+    .inventory-badge.low-stock {
+      background: var(--color-warning-100);
+      color: var(--color-warning-700);
+    }
+    .inventory-badge.expired {
+      background: var(--color-error-100);
+      color: var(--color-error-700);
+    }
+    .inventory-badge.expiring {
+      background: var(--color-warning-50);
+      color: var(--color-warning-600);
+    }
+    .inventory-badge.location {
+      background: var(--color-gray-100);
+      color: var(--color-gray-600);
+    }
+    .inventory-card-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+      font-size: var(--text-sm);
+    }
+    .inventory-card-info dt {
+      color: var(--color-gray-500);
+    }
+    .inventory-card-info dd {
+      font-weight: var(--font-medium);
+      text-align: right;
+    }
+    .quantity-adjuster {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--color-gray-100);
+      border-radius: var(--radius-md);
+      padding: 4px;
+    }
+    .quantity-adjuster button {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-lg);
+      color: var(--foreground);
+    }
+    .quantity-adjuster button:hover {
+      background: var(--color-gray-200);
+    }
+    .quantity-adjuster .quantity-value {
+      min-width: 40px;
+      text-align: center;
+      font-weight: var(--font-semibold);
+    }
+    .inventory-card-actions {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-top: var(--space-3);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border);
+    }
+    .add-item-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--space-4);
+    }
+    .add-item-tab {
+      padding: var(--space-3) var(--space-4);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-weight: var(--font-medium);
+      color: var(--color-gray-500);
+    }
+    .add-item-tab.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+    .add-item-content {
+      display: none;
+    }
+    .add-item-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Inventory</h1>
+          <p class="user-page-subtitle">Track what you have on hand and easily add items to your shopping list.</p>
+          <div class="user-page-header-actions">
+            <button class="btn btn-primary" onclick="openAddItemModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Item
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="inventory-summary" id="inventory-summary">
+          <div class="inventory-stat-card">
+            <div class="inventory-stat-value" id="stat-total">-</div>
+            <div class="inventory-stat-label">Total Items</div>
+          </div>
+          <div class="inventory-stat-card">
+            <div class="inventory-stat-value warning" id="stat-low-stock">-</div>
+            <div class="inventory-stat-label">Low Stock</div>
+          </div>
+          <div class="inventory-stat-card">
+            <div class="inventory-stat-value error" id="stat-expired">-</div>
+            <div class="inventory-stat-label">Expired</div>
+          </div>
+          <div class="inventory-stat-card">
+            <div class="inventory-stat-value warning" id="stat-expiring">-</div>
+            <div class="inventory-stat-label">Expiring Soon</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="inventory-filters">
+          <div class="inventory-search">
+            <input type="text" class="user-form-input" id="search-input" placeholder="Search items...">
+          </div>
+          <select class="user-form-select" id="location-filter" style="min-width: 150px;">
+            <option value="">All Locations</option>
+          </select>
+          <select class="user-form-select" id="status-filter" style="min-width: 150px;">
+            <option value="">All Items</option>
+            <option value="low_stock">Low Stock</option>
+            <option value="expired">Expired</option>
+            <option value="expiring_soon">Expiring Soon</option>
+          </select>
+        </div>
+
+        <!-- Inventory Grid -->
+        <div id="inventory-container" class="user-item-grid">
+          <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Item Modal -->
+  <div class="user-modal-backdrop hidden" id="add-item-modal">
+    <div class="user-modal">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Add to Inventory</h3>
+        <button class="user-modal-close" onclick="userModal.close('add-item-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <!-- Tabs -->
+        <div class="add-item-tabs">
+          <button class="add-item-tab active" onclick="switchAddItemTab('catalog')">From Catalog</button>
+          <button class="add-item-tab" onclick="switchAddItemTab('custom')">Custom Item</button>
+        </div>
+
+        <!-- Catalog Tab -->
+        <div id="catalog-tab" class="add-item-content active">
+          <div class="user-form-group">
+            <label class="user-form-label">Search Items</label>
+            <input type="text" class="user-form-input" id="catalog-search" placeholder="Start typing to search...">
+          </div>
+          <div id="catalog-search-results" style="max-height: 150px; overflow-y: auto; margin-bottom: var(--space-4);">
+            <div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">Type to search for items</div>
+          </div>
+          <input type="hidden" id="selected-catalog-item-id">
+        </div>
+
+        <!-- Custom Tab -->
+        <div id="custom-tab" class="add-item-content">
+          <div class="user-form-group">
+            <label class="user-form-label">Item Name *</label>
+            <input type="text" class="user-form-input" id="custom-name" placeholder="e.g., Almond Milk">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+            <div class="user-form-group">
+              <label class="user-form-label">Brand</label>
+              <input type="text" class="user-form-input" id="custom-brand" placeholder="e.g., Silk">
+            </div>
+            <div class="user-form-group">
+              <label class="user-form-label">Size</label>
+              <div style="display: flex; gap: var(--space-2);">
+                <input type="number" class="user-form-input" id="custom-size" placeholder="64" step="0.1">
+                <input type="text" class="user-form-input" id="custom-unit" placeholder="oz" style="width: 80px;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Common Fields -->
+        <div style="border-top: 1px solid var(--border); margin-top: var(--space-4); padding-top: var(--space-4);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+            <div class="user-form-group">
+              <label class="user-form-label">Quantity *</label>
+              <input type="number" class="user-form-input" id="add-quantity" value="1" min="0" step="0.1">
+            </div>
+            <div class="user-form-group">
+              <label class="user-form-label">Location</label>
+              <input type="text" class="user-form-input" id="add-location" placeholder="e.g., Pantry, Fridge" list="location-list">
+              <datalist id="location-list"></datalist>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+            <div class="user-form-group">
+              <label class="user-form-label">Purchase Date</label>
+              <input type="date" class="user-form-input" id="add-purchase-date">
+            </div>
+            <div class="user-form-group">
+              <label class="user-form-label">Expiration Date</label>
+              <input type="date" class="user-form-input" id="add-expiration-date">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+            <div class="user-form-group">
+              <label class="user-form-label">Low Stock Threshold</label>
+              <input type="number" class="user-form-input" id="add-threshold" value="1" min="0" step="0.1">
+            </div>
+            <div class="user-form-group" style="display: flex; align-items: flex-end; padding-bottom: var(--space-2);">
+              <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+                <input type="checkbox" id="add-alert-enabled" checked>
+                <span>Enable low stock alerts</span>
+              </label>
+            </div>
+          </div>
+          <div class="user-form-group">
+            <label class="user-form-label">Notes</label>
+            <textarea class="user-form-input" id="add-notes" rows="2" placeholder="Optional notes..."></textarea>
+          </div>
+        </div>
+
+        <div class="user-form-error" id="add-item-error" style="display: none;"></div>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('add-item-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveInventoryItem()">Add to Inventory</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Item Modal -->
+  <div class="user-modal-backdrop hidden" id="edit-item-modal">
+    <div class="user-modal">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Edit Inventory Item</h3>
+        <button class="user-modal-close" onclick="userModal.close('edit-item-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <input type="hidden" id="edit-item-id">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="user-form-group">
+            <label class="user-form-label">Quantity</label>
+            <input type="number" class="user-form-input" id="edit-quantity" min="0" step="0.1">
+          </div>
+          <div class="user-form-group">
+            <label class="user-form-label">Location</label>
+            <input type="text" class="user-form-input" id="edit-location" placeholder="e.g., Pantry, Fridge" list="edit-location-list">
+            <datalist id="edit-location-list"></datalist>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="user-form-group">
+            <label class="user-form-label">Purchase Date</label>
+            <input type="date" class="user-form-input" id="edit-purchase-date">
+          </div>
+          <div class="user-form-group">
+            <label class="user-form-label">Expiration Date</label>
+            <input type="date" class="user-form-input" id="edit-expiration-date">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="user-form-group">
+            <label class="user-form-label">Low Stock Threshold</label>
+            <input type="number" class="user-form-input" id="edit-threshold" min="0" step="0.1">
+          </div>
+          <div class="user-form-group" style="display: flex; align-items: flex-end; padding-bottom: var(--space-2);">
+            <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+              <input type="checkbox" id="edit-alert-enabled">
+              <span>Enable low stock alerts</span>
+            </label>
+          </div>
+        </div>
+        <div class="user-form-group">
+          <label class="user-form-label">Notes</label>
+          <textarea class="user-form-input" id="edit-notes" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+        <div class="user-form-error" id="edit-item-error" style="display: none;"></div>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('edit-item-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="updateInventoryItem()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add to List Modal -->
+  <div class="user-modal-backdrop hidden" id="add-to-list-modal">
+    <div class="user-modal">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Add to Shopping List</h3>
+        <button class="user-modal-close" onclick="userModal.close('add-to-list-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <input type="hidden" id="add-to-list-item-id">
+        <div class="user-form-group">
+          <label class="user-form-label">Select Shopping List</label>
+          <select class="user-form-select" id="add-to-list-select" style="width: 100%;">
+            <option value="">Loading lists...</option>
+          </select>
+        </div>
+        <div class="user-form-group">
+          <label class="user-form-label">Quantity</label>
+          <input type="number" class="user-form-input" id="add-to-list-quantity" value="1" min="1">
+        </div>
+        <div class="user-form-error" id="add-to-list-error" style="display: none;"></div>
+      </div>
+      <div class="user-modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="userModal.close('add-to-list-modal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="addToShoppingList()">Add to List</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let currentFilters = { search: '', location: '', status: '' };
+    let locations = [];
+    let catalogSearchTimeout = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('inventory');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Inventory', href: '/user/inventory/' }
+      ]);
+
+      userModal.setupBackdropClose();
+
+      // Setup search
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        currentFilters.search = e.target.value;
+        loadInventory();
+      });
+
+      // Setup location filter
+      document.getElementById('location-filter').addEventListener('change', (e) => {
+        currentFilters.location = e.target.value;
+        loadInventory();
+      });
+
+      // Setup status filter
+      document.getElementById('status-filter').addEventListener('change', (e) => {
+        currentFilters.status = e.target.value;
+        loadInventory();
+      });
+
+      // Setup catalog search
+      document.getElementById('catalog-search').addEventListener('input', (e) => {
+        clearTimeout(catalogSearchTimeout);
+        catalogSearchTimeout = setTimeout(() => searchCatalog(e.target.value), 300);
+      });
+
+      await loadSummary();
+      await loadLocations();
+      await loadInventory();
+    });
+
+    async function loadSummary() {
+      try {
+        const response = await inventoryApi.getSummary();
+        const summary = response?.data || response;
+
+        document.getElementById('stat-total').textContent = summary.total_items || 0;
+        document.getElementById('stat-low-stock').textContent = summary.low_stock_count || 0;
+        document.getElementById('stat-expired').textContent = summary.expired_count || 0;
+        document.getElementById('stat-expiring').textContent = summary.expiring_soon_count || 0;
+      } catch (err) {
+        console.error('Failed to load summary:', err);
+      }
+    }
+
+    async function loadLocations() {
+      try {
+        const response = await inventoryApi.getLocations();
+        locations = response?.data || response || [];
+
+        const select = document.getElementById('location-filter');
+        select.innerHTML = '<option value="">All Locations</option>';
+        locations.forEach(loc => {
+          select.innerHTML += `<option value="${user.escapeHtml(loc)}">${user.escapeHtml(loc)}</option>`;
+        });
+
+        // Also update datalists
+        const datalist = document.getElementById('location-list');
+        const editDatalist = document.getElementById('edit-location-list');
+        const options = locations.map(loc => `<option value="${user.escapeHtml(loc)}">`).join('');
+        if (datalist) datalist.innerHTML = options;
+        if (editDatalist) editDatalist.innerHTML = options;
+      } catch (err) {
+        console.error('Failed to load locations:', err);
+      }
+    }
+
+    async function loadInventory() {
+      const container = document.getElementById('inventory-container');
+      container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+
+      try {
+        const params = { limit: 100 };
+        if (currentFilters.search) params.search = currentFilters.search;
+        if (currentFilters.location) params.location = currentFilters.location;
+        if (currentFilters.status === 'low_stock') params.low_stock = true;
+        if (currentFilters.status === 'expired') params.expired = true;
+        if (currentFilters.status === 'expiring_soon') params.expiring_soon = true;
+
+        const response = await inventoryApi.list(params);
+        const items = response?.data || response || [];
+
+        if (items.length === 0) {
+          container.innerHTML = `
+            <div style="grid-column: 1 / -1;" class="user-empty-state">
+              <div class="user-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </div>
+              <div class="user-empty-title">No items in your inventory</div>
+              <div class="user-empty-text">Add items to track what you have on hand</div>
+              <button class="btn btn-primary" onclick="openAddItemModal()">Add Your First Item</button>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = items.map(item => renderInventoryCard(item)).join('');
+      } catch (err) {
+        console.error('Failed to load inventory:', err);
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1;" class="user-empty-state">
+            <div class="user-empty-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              </svg>
+            </div>
+            <div class="user-empty-title">No items in your inventory</div>
+            <div class="user-empty-text">Add items to track what you have on hand</div>
+            <button class="btn btn-primary" onclick="openAddItemModal()">Add Your First Item</button>
+          </div>
+        `;
+      }
+    }
+
+    function renderInventoryCard(item) {
+      const badges = [];
+      if (item.is_expired) badges.push('<span class="inventory-badge expired">Expired</span>');
+      else if (item.expires_soon) badges.push(`<span class="inventory-badge expiring">Expires in ${item.days_until_expiry}d</span>`);
+      if (item.is_low_stock) badges.push('<span class="inventory-badge low-stock">Low Stock</span>');
+      if (item.location) badges.push(`<span class="inventory-badge location">${user.escapeHtml(item.location)}</span>`);
+
+      const hasItemId = item.item_id != null;
+
+      return `
+        <div class="inventory-card" data-item-id="${item.id}">
+          <div class="inventory-card-header">
+            <div>
+              <div class="inventory-card-title">${user.escapeHtml(item.display_name)}</div>
+              ${item.display_brand ? `<div class="inventory-card-brand">${user.escapeHtml(item.display_brand)}</div>` : ''}
+            </div>
+            <div class="inventory-card-badges">
+              ${badges.join('')}
+            </div>
+          </div>
+          <dl class="inventory-card-info">
+            <dt>Quantity</dt>
+            <dd>
+              <div class="quantity-adjuster">
+                <button onclick="adjustQuantity(${item.id}, -1)">-</button>
+                <span class="quantity-value">${item.quantity}</span>
+                <button onclick="adjustQuantity(${item.id}, 1)">+</button>
+              </div>
+            </dd>
+            ${item.expiration_date ? `
+              <dt>Expires</dt>
+              <dd>${user.formatDateShort(item.expiration_date)}</dd>
+            ` : ''}
+            ${item.purchase_date ? `
+              <dt>Purchased</dt>
+              <dd>${user.formatDateShort(item.purchase_date)}</dd>
+            ` : ''}
+            <dt>Threshold</dt>
+            <dd>${item.low_stock_threshold}</dd>
+          </dl>
+          ${item.notes ? `<div style="font-size: var(--text-sm); color: var(--color-gray-500); margin-bottom: var(--space-2);">${user.escapeHtml(item.notes)}</div>` : ''}
+          <div class="inventory-card-actions">
+            ${hasItemId ? `<button class="btn btn-primary btn-sm" onclick="openAddToListModal(${item.id})">Add to List</button>` : ''}
+            <button class="btn btn-secondary btn-sm" onclick="openEditModal(${item.id})">Edit</button>
+            <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteItem(${item.id}, '${user.escapeHtml(item.display_name)}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function adjustQuantity(itemId, adjustment) {
+      try {
+        await inventoryApi.adjustQuantity(itemId, adjustment);
+        await loadInventory();
+        await loadSummary();
+      } catch (err) {
+        user.toast('Failed to adjust quantity: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    function switchAddItemTab(tab) {
+      document.querySelectorAll('.add-item-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.add-item-content').forEach(c => c.classList.remove('active'));
+
+      document.querySelector(`.add-item-tab:nth-child(${tab === 'catalog' ? 1 : 2})`).classList.add('active');
+      document.getElementById(tab + '-tab').classList.add('active');
+    }
+
+    function openAddItemModal() {
+      // Reset form
+      document.getElementById('catalog-search').value = '';
+      document.getElementById('catalog-search-results').innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">Type to search for items</div>';
+      document.getElementById('selected-catalog-item-id').value = '';
+      document.getElementById('custom-name').value = '';
+      document.getElementById('custom-brand').value = '';
+      document.getElementById('custom-size').value = '';
+      document.getElementById('custom-unit').value = '';
+      document.getElementById('add-quantity').value = '1';
+      document.getElementById('add-location').value = '';
+      document.getElementById('add-purchase-date').value = '';
+      document.getElementById('add-expiration-date').value = '';
+      document.getElementById('add-threshold').value = '1';
+      document.getElementById('add-alert-enabled').checked = true;
+      document.getElementById('add-notes').value = '';
+      document.getElementById('add-item-error').style.display = 'none';
+
+      switchAddItemTab('catalog');
+      userModal.open('add-item-modal');
+    }
+
+    async function searchCatalog(query) {
+      const results = document.getElementById('catalog-search-results');
+
+      if (query.length < 2) {
+        results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">Type at least 2 characters</div>';
+        return;
+      }
+
+      results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">Searching...</div>';
+
+      try {
+        const response = await itemsApi.search(query, 10);
+        const items = response?.data || response || [];
+
+        if (items.length === 0) {
+          results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-gray-500);">No items found</div>';
+          return;
+        }
+
+        results.innerHTML = items.map(item => `
+          <div style="padding: var(--space-2) var(--space-3); cursor: pointer; border-bottom: 1px solid var(--color-gray-100); transition: background 0.15s;"
+               onclick="selectCatalogItem(${item.id}, '${user.escapeHtml(item.name)}')"
+               onmouseover="this.style.background='var(--color-gray-50)'"
+               onmouseout="this.style.background='transparent'">
+            <div style="font-weight: var(--font-medium);">${user.escapeHtml(item.name)}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
+              ${item.brand ? user.escapeHtml(item.brand) : ''}
+              ${item.size ? ` - ${item.size} ${item.unit || ''}` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        results.innerHTML = '<div style="text-align: center; padding: var(--space-4); color: var(--color-error);">Search failed</div>';
+      }
+    }
+
+    function selectCatalogItem(itemId, itemName) {
+      document.getElementById('selected-catalog-item-id').value = itemId;
+      document.getElementById('catalog-search').value = itemName;
+      document.getElementById('catalog-search-results').innerHTML = `<div style="padding: var(--space-3); background: var(--color-primary-50); border-radius: var(--radius-md); color: var(--color-primary-700);">Selected: ${itemName}</div>`;
+    }
+
+    async function saveInventoryItem() {
+      const errorEl = document.getElementById('add-item-error');
+
+      const isCatalogTab = document.getElementById('catalog-tab').classList.contains('active');
+      const catalogItemId = document.getElementById('selected-catalog-item-id').value;
+      const customName = document.getElementById('custom-name').value.trim();
+
+      // Validate
+      if (isCatalogTab && !catalogItemId) {
+        errorEl.textContent = 'Please select an item from the catalog.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      if (!isCatalogTab && !customName) {
+        errorEl.textContent = 'Please enter an item name.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      const quantity = parseFloat(document.getElementById('add-quantity').value);
+      if (isNaN(quantity) || quantity < 0) {
+        errorEl.textContent = 'Please enter a valid quantity.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      const data = {
+        quantity: quantity,
+        low_stock_threshold: parseFloat(document.getElementById('add-threshold').value) || 1,
+        low_stock_alert_enabled: document.getElementById('add-alert-enabled').checked,
+      };
+
+      if (isCatalogTab) {
+        data.item_id = parseInt(catalogItemId);
+      } else {
+        data.custom_name = customName;
+        const brand = document.getElementById('custom-brand').value.trim();
+        const size = document.getElementById('custom-size').value;
+        const unit = document.getElementById('custom-unit').value.trim();
+        if (brand) data.custom_brand = brand;
+        if (size) data.custom_size = parseFloat(size);
+        if (unit) data.custom_unit = unit;
+      }
+
+      const location = document.getElementById('add-location').value.trim();
+      const purchaseDate = document.getElementById('add-purchase-date').value;
+      const expirationDate = document.getElementById('add-expiration-date').value;
+      const notes = document.getElementById('add-notes').value.trim();
+
+      if (location) data.location = location;
+      if (purchaseDate) data.purchase_date = purchaseDate + 'T00:00:00Z';
+      if (expirationDate) data.expiration_date = expirationDate + 'T00:00:00Z';
+      if (notes) data.notes = notes;
+
+      try {
+        await inventoryApi.create(data);
+        user.toast('Item added to inventory', 'success');
+        userModal.close('add-item-modal');
+        await loadInventory();
+        await loadSummary();
+        await loadLocations();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to add item';
+        errorEl.style.display = 'block';
+      }
+    }
+
+    async function openEditModal(itemId) {
+      try {
+        const response = await inventoryApi.getById(itemId);
+        const item = response?.data || response;
+
+        document.getElementById('edit-item-id').value = item.id;
+        document.getElementById('edit-quantity').value = item.quantity;
+        document.getElementById('edit-location').value = item.location || '';
+        document.getElementById('edit-purchase-date').value = item.purchase_date ? item.purchase_date.split('T')[0] : '';
+        document.getElementById('edit-expiration-date').value = item.expiration_date ? item.expiration_date.split('T')[0] : '';
+        document.getElementById('edit-threshold').value = item.low_stock_threshold;
+        document.getElementById('edit-alert-enabled').checked = item.low_stock_alert_enabled;
+        document.getElementById('edit-notes').value = item.notes || '';
+        document.getElementById('edit-item-error').style.display = 'none';
+
+        userModal.open('edit-item-modal');
+      } catch (err) {
+        user.toast('Failed to load item: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function updateInventoryItem() {
+      const itemId = parseInt(document.getElementById('edit-item-id').value);
+      const errorEl = document.getElementById('edit-item-error');
+
+      const data = {
+        quantity: parseFloat(document.getElementById('edit-quantity').value),
+        low_stock_threshold: parseFloat(document.getElementById('edit-threshold').value),
+        low_stock_alert_enabled: document.getElementById('edit-alert-enabled').checked,
+      };
+
+      const location = document.getElementById('edit-location').value.trim();
+      const purchaseDate = document.getElementById('edit-purchase-date').value;
+      const expirationDate = document.getElementById('edit-expiration-date').value;
+      const notes = document.getElementById('edit-notes').value.trim();
+
+      if (location) data.location = location;
+      if (purchaseDate) data.purchase_date = purchaseDate + 'T00:00:00Z';
+      if (expirationDate) data.expiration_date = expirationDate + 'T00:00:00Z';
+      if (notes) data.notes = notes;
+
+      try {
+        await inventoryApi.update(itemId, data);
+        user.toast('Item updated', 'success');
+        userModal.close('edit-item-modal');
+        await loadInventory();
+        await loadSummary();
+        await loadLocations();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to update item';
+        errorEl.style.display = 'block';
+      }
+    }
+
+    async function deleteItem(itemId, itemName) {
+      if (!await user.confirm(`Delete "${itemName}" from your inventory?`)) {
+        return;
+      }
+
+      try {
+        await inventoryApi.delete(itemId);
+        user.toast('Item deleted', 'success');
+        await loadInventory();
+        await loadSummary();
+      } catch (err) {
+        user.toast('Failed to delete item: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    async function openAddToListModal(itemId) {
+      document.getElementById('add-to-list-item-id').value = itemId;
+      document.getElementById('add-to-list-quantity').value = '1';
+      document.getElementById('add-to-list-error').style.display = 'none';
+
+      const select = document.getElementById('add-to-list-select');
+      select.innerHTML = '<option value="">Loading lists...</option>';
+
+      userModal.open('add-to-list-modal');
+
+      try {
+        const response = await inventoryApi.getActiveLists();
+        const lists = response?.data || response || [];
+
+        if (lists.length === 0) {
+          select.innerHTML = '<option value="">No active lists - create one first</option>';
+          return;
+        }
+
+        select.innerHTML = '<option value="">Select a list...</option>';
+        lists.forEach(list => {
+          select.innerHTML += `<option value="${list.id}">${user.escapeHtml(list.name)} (${list.item_count} items)</option>`;
+        });
+      } catch (err) {
+        select.innerHTML = '<option value="">Failed to load lists</option>';
+      }
+    }
+
+    async function addToShoppingList() {
+      const inventoryId = parseInt(document.getElementById('add-to-list-item-id').value);
+      const listId = parseInt(document.getElementById('add-to-list-select').value);
+      const quantity = parseInt(document.getElementById('add-to-list-quantity').value);
+      const errorEl = document.getElementById('add-to-list-error');
+
+      if (!listId) {
+        errorEl.textContent = 'Please select a shopping list.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      if (!quantity || quantity < 1) {
+        errorEl.textContent = 'Please enter a valid quantity.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        await inventoryApi.addToList(inventoryId, listId, quantity);
+        user.toast('Item added to shopping list', 'success');
+        userModal.close('add-to-list-modal');
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to add to list';
+        errorEl.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -16,7 +16,7 @@
         <h1>Welcome Back</h1>
         <p class="auth-subtitle">Sign in to your Price Feed account</p>
 
-        <form id="login-form" class="auth-form">
+        <form id="login-form" class="auth-form" method="POST" action="/api/auth/login">
           <div class="form-group">
             <label for="email">Email</label>
             <input type="email" id="email" name="email" required placeholder="you@example.com">

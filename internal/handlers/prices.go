@@ -119,9 +119,22 @@ func (h *Handler) CreatePrice(c *fiber.Ctx) error {
 		}
 	}
 
+	// Check if there's an existing price for this item/store to get previous price
+	var previousPrice *float64
+	existingPrice, err := h.db.GetPriceForItemStore(c.Context(), req.ItemID, req.StoreID)
+	if err == nil {
+		previousPrice = &existingPrice.Price
+	}
+
 	price, err := h.db.CreatePrice(c.Context(), &req, userID)
 	if err != nil {
 		return Error(c, fiber.StatusInternalServerError, "failed to create price")
+	}
+
+	// Record price history
+	if err := h.db.RecordPriceHistory(c.Context(), req.StoreID, req.ItemID, req.Price, previousPrice, userID); err != nil {
+		// Log but don't fail the request
+		// The price was created successfully
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(APIResponse{
@@ -172,8 +185,8 @@ func (h *Handler) UserUpdatePrice(c *fiber.Ctx) error {
 		return Error(c, fiber.StatusUnauthorized, "unauthorized")
 	}
 
-	// Verify price exists
-	_, err = h.db.GetPriceByID(c.Context(), id)
+	// Get existing price to record history
+	existingPrice, err := h.db.GetPriceByID(c.Context(), id)
 	if err != nil {
 		if errors.Is(err, database.ErrPriceNotFound) {
 			return Error(c, fiber.StatusNotFound, "price not found")
@@ -197,6 +210,14 @@ func (h *Handler) UserUpdatePrice(c *fiber.Ctx) error {
 			return Error(c, fiber.StatusNotFound, "price not found")
 		}
 		return Error(c, fiber.StatusInternalServerError, "failed to update price")
+	}
+
+	// Record price history if price actually changed
+	if req.Price != nil && *req.Price != existingPrice.Price {
+		previousPrice := existingPrice.Price
+		if err := h.db.RecordPriceHistory(c.Context(), existingPrice.StoreID, existingPrice.ItemID, *req.Price, &previousPrice, &userID); err != nil {
+			// Log but don't fail the request
+		}
 	}
 
 	return Success(c, updatedPrice)
@@ -321,4 +342,39 @@ func (h *Handler) GetPricesByItem(c *fiber.Ctx) error {
 	}
 
 	return Success(c, prices)
+}
+
+// GetPriceHistory returns the price history for an item
+func (h *Handler) GetPriceHistory(c *fiber.Ctx) error {
+	itemID, err := strconv.Atoi(c.Params("item_id"))
+	if err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid item id")
+	}
+
+	params := &models.PriceHistoryParams{
+		ItemID: itemID,
+		Limit:  c.QueryInt("limit", 50),
+	}
+
+	// Optional store filter
+	if storeID := c.Query("store_id"); storeID != "" {
+		if id, err := strconv.Atoi(storeID); err == nil {
+			params.StoreID = &id
+		}
+	}
+
+	// Validate limit
+	if params.Limit < 1 || params.Limit > 100 {
+		params.Limit = 50
+	}
+
+	history, err := h.db.GetPriceHistory(c.Context(), params)
+	if err != nil {
+		if err.Error() == "item not found" {
+			return Error(c, fiber.StatusNotFound, "item not found")
+		}
+		return Error(c, fiber.StatusInternalServerError, "failed to get price history")
+	}
+
+	return Success(c, history)
 }

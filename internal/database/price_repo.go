@@ -381,3 +381,168 @@ func (db *DB) GetPricesByItem(ctx context.Context, itemID int) ([]*models.StoreP
 
 	return prices, nil
 }
+
+// RecordPriceHistory records a price change in the history table
+func (db *DB) RecordPriceHistory(ctx context.Context, storeID, itemID int, price float64, previousPrice *float64, userID *int) error {
+	_, err := db.Pool.Exec(ctx, `
+		INSERT INTO price_history (store_id, item_id, price, previous_price, user_id, recorded_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+	`, storeID, itemID, price, previousPrice, userID)
+	return err
+}
+
+// GetPriceHistory returns the price history for an item, optionally filtered by store
+func (db *DB) GetPriceHistory(ctx context.Context, params *models.PriceHistoryParams) (*models.PriceHistoryResponse, error) {
+	// Get item details first
+	var item models.PriceHistoryItem
+	err := db.Pool.QueryRow(ctx, `
+		SELECT i.id, i.name, i.brand
+		FROM items i
+		WHERE i.id = $1
+	`, params.ItemID).Scan(&item.ID, &item.Name, &item.Brand)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errors.New("item not found")
+		}
+		return nil, err
+	}
+
+	// Get current price for this item (lowest if multiple stores, or specific store)
+	var currentPriceQuery string
+	var currentPriceArgs []interface{}
+	if params.StoreID != nil {
+		currentPriceQuery = `
+			SELECT COALESCE(sp.price, 0)
+			FROM store_prices sp
+			WHERE sp.item_id = $1 AND sp.store_id = $2
+			LIMIT 1
+		`
+		currentPriceArgs = []interface{}{params.ItemID, *params.StoreID}
+	} else {
+		currentPriceQuery = `
+			SELECT COALESCE(MIN(sp.price), 0)
+			FROM store_prices sp
+			WHERE sp.item_id = $1
+		`
+		currentPriceArgs = []interface{}{params.ItemID}
+	}
+	err = db.Pool.QueryRow(ctx, currentPriceQuery, currentPriceArgs...).Scan(&item.CurrentPrice)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
+	}
+
+	// Build history query
+	var historyQuery string
+	var historyArgs []interface{}
+
+	if params.StoreID != nil {
+		historyQuery = `
+			SELECT ph.id, ph.store_id, ph.item_id, ph.price, ph.previous_price, ph.user_id, ph.recorded_at,
+			       s.name as store_name, u.username as user_name
+			FROM price_history ph
+			JOIN stores s ON ph.store_id = s.id
+			LEFT JOIN users u ON ph.user_id = u.id
+			WHERE ph.item_id = $1 AND ph.store_id = $2
+			ORDER BY ph.recorded_at DESC
+			LIMIT $3
+		`
+		historyArgs = []interface{}{params.ItemID, *params.StoreID, params.Limit}
+	} else {
+		historyQuery = `
+			SELECT ph.id, ph.store_id, ph.item_id, ph.price, ph.previous_price, ph.user_id, ph.recorded_at,
+			       s.name as store_name, u.username as user_name
+			FROM price_history ph
+			JOIN stores s ON ph.store_id = s.id
+			LEFT JOIN users u ON ph.user_id = u.id
+			WHERE ph.item_id = $1
+			ORDER BY ph.recorded_at DESC
+			LIMIT $2
+		`
+		historyArgs = []interface{}{params.ItemID, params.Limit}
+	}
+
+	rows, err := db.Pool.Query(ctx, historyQuery, historyArgs...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var history []models.PriceHistoryEntry
+	for rows.Next() {
+		var entry models.PriceHistoryEntry
+		err := rows.Scan(
+			&entry.ID, &entry.StoreID, &entry.ItemID, &entry.Price, &entry.PreviousPrice,
+			&entry.UserID, &entry.RecordedAt, &entry.StoreName, &entry.UserName,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Calculate change percent if we have previous price
+		if entry.PreviousPrice != nil && *entry.PreviousPrice > 0 {
+			changePercent := ((entry.Price - *entry.PreviousPrice) / *entry.PreviousPrice) * 100
+			entry.ChangePercent = &changePercent
+		}
+
+		history = append(history, entry)
+	}
+
+	// Calculate trend
+	var trend *models.PriceTrend
+	if len(history) >= 2 {
+		oldest := history[len(history)-1]
+		newest := history[0]
+
+		changeAmount := newest.Price - oldest.Price
+		var changePercent float64
+		if oldest.Price > 0 {
+			changePercent = (changeAmount / oldest.Price) * 100
+		}
+
+		direction := "stable"
+		if changeAmount > 0.01 {
+			direction = "up"
+		} else if changeAmount < -0.01 {
+			direction = "down"
+		}
+
+		// Calculate period in days
+		periodDays := int(newest.RecordedAt.Sub(oldest.RecordedAt).Hours() / 24)
+		if periodDays < 1 {
+			periodDays = 1
+		}
+
+		trend = &models.PriceTrend{
+			Direction:     direction,
+			ChangeAmount:  changeAmount,
+			ChangePercent: changePercent,
+			PeriodDays:    periodDays,
+		}
+	}
+
+	return &models.PriceHistoryResponse{
+		Item:    item,
+		Trend:   trend,
+		History: history,
+	}, nil
+}
+
+// GetPriceForItemStore returns the current price for an item at a specific store
+func (db *DB) GetPriceForItemStore(ctx context.Context, itemID, storeID int) (*models.StorePrice, error) {
+	price := &models.StorePrice{}
+	err := db.Pool.QueryRow(ctx, `
+		SELECT id, store_id, item_id, price, user_id, is_shared, verified_count, last_verified, created_at, updated_at
+		FROM store_prices
+		WHERE item_id = $1 AND store_id = $2
+	`, itemID, storeID).Scan(
+		&price.ID, &price.StoreID, &price.ItemID, &price.Price, &price.UserID, &price.IsShared,
+		&price.VerifiedCount, &price.LastVerified, &price.CreatedAt, &price.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrPriceNotFound
+		}
+		return nil, err
+	}
+	return price, nil
+}

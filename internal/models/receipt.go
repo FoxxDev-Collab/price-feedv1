@@ -175,3 +175,26 @@ type MatchResult struct {
 	Confidence  float64
 	MatchType   string
 }
+
+// SpendingSummary represents monthly spending aggregations
+type SpendingSummary struct {
+	Months         []MonthlySpending `json:"months"`
+	GrandTotal     float64           `json:"grand_total"`
+	AverageMonthly float64           `json:"average_monthly"`
+}
+
+// MonthlySpending represents spending for a single month
+type MonthlySpending struct {
+	Month        string         `json:"month"`
+	Total        float64        `json:"total"`
+	ReceiptCount int            `json:"receipt_count"`
+	Stores       []StoreSpend   `json:"stores"`
+}
+
+// StoreSpend represents spending at a specific store
+type StoreSpend struct {
+	StoreID      int     `json:"store_id"`
+	StoreName    string  `json:"store_name"`
+	Total        float64 `json:"total"`
+	ReceiptCount int     `json:"receipt_count"`
+}

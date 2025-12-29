@@ -79,3 +79,48 @@ type PriceVerification struct {
 	IsAccurate bool      `json:"is_accurate"`
 	CreatedAt  time.Time `json:"created_at"`
 }
+
+// PriceHistoryEntry represents a single historical price record
+type PriceHistoryEntry struct {
+	ID            int        `json:"id"`
+	StoreID       int        `json:"store_id"`
+	ItemID        int        `json:"item_id"`
+	Price         float64    `json:"price"`
+	PreviousPrice *float64   `json:"previous_price,omitempty"`
+	UserID        *int       `json:"user_id,omitempty"`
+	RecordedAt    time.Time  `json:"recorded_at"`
+	// Joined fields
+	StoreName     string     `json:"store_name,omitempty"`
+	UserName      *string    `json:"user_name,omitempty"`
+	ChangePercent *float64   `json:"change_percent,omitempty"`
+}
+
+// PriceTrend represents the trend direction and magnitude for a price
+type PriceTrend struct {
+	Direction     string  `json:"direction"`      // "up", "down", or "stable"
+	ChangeAmount  float64 `json:"change_amount"`  // Absolute change in price
+	ChangePercent float64 `json:"change_percent"` // Percentage change
+	PeriodDays    int     `json:"period_days"`    // Period over which trend is calculated
+}
+
+// PriceHistoryResponse is the response for price history endpoint
+type PriceHistoryResponse struct {
+	Item    PriceHistoryItem    `json:"item"`
+	Trend   *PriceTrend         `json:"trend,omitempty"`
+	History []PriceHistoryEntry `json:"history"`
+}
+
+// PriceHistoryItem contains item details for history response
+type PriceHistoryItem struct {
+	ID           int     `json:"id"`
+	Name         string  `json:"name"`
+	Brand        *string `json:"brand,omitempty"`
+	CurrentPrice float64 `json:"current_price"`
+}
+
+// PriceHistoryParams contains parameters for querying price history
+type PriceHistoryParams struct {
+	ItemID  int
+	StoreID *int
+	Limit   int
+}

@@ -161,6 +161,7 @@ var migrations = map[int]string{
 	9:  migration009,
 	10: migration010,
 	11: migration011,
+	12: migration012,
 }
 
 const migration001 = `
@@ -729,4 +730,54 @@ CREATE INDEX IF NOT EXISTS idx_items_user_private ON items(created_by, is_privat
 
 -- Update existing items to be private (owned by their creator)
 UPDATE items SET is_private = true WHERE is_private IS NULL;
+`
+
+const migration012 = `
+-- Migration 012: Inventory tracking feature
+
+-- Main inventory table - tracks items the user has on hand
+CREATE TABLE IF NOT EXISTS inventory_items (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+
+    -- Can reference an existing catalog item OR be a custom inventory-only item
+    item_id INT REFERENCES items(id) ON DELETE SET NULL,
+
+    -- For custom inventory-only items (when item_id is NULL)
+    custom_name VARCHAR(255),
+    custom_brand VARCHAR(100),
+    custom_size DECIMAL(10, 3),
+    custom_unit VARCHAR(20),
+
+    -- Inventory tracking
+    quantity DECIMAL(10, 3) NOT NULL DEFAULT 1,
+    unit VARCHAR(20),
+
+    -- Stock management
+    low_stock_threshold DECIMAL(10, 3) DEFAULT 1,
+    low_stock_alert_enabled BOOLEAN DEFAULT TRUE,
+
+    -- Dates
+    purchase_date DATE,
+    expiration_date DATE,
+
+    -- Organization
+    location VARCHAR(100),
+    notes TEXT,
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for inventory_items
+CREATE INDEX IF NOT EXISTS idx_inventory_user ON inventory_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_item ON inventory_items(item_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_expiration ON inventory_items(user_id, expiration_date)
+    WHERE expiration_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_inventory_low_stock ON inventory_items(user_id, low_stock_alert_enabled)
+    WHERE low_stock_alert_enabled = true;
+
+-- Composite index for user's inventory with location filtering
+CREATE INDEX IF NOT EXISTS idx_inventory_user_location ON inventory_items(user_id, location);
 `

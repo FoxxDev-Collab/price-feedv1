@@ -837,6 +837,114 @@ const regionsApi = {
   },
 };
 
+/**
+ * Inventory API - Pantry/Inventory tracking
+ */
+const inventoryApi = {
+  /**
+   * List inventory items with filters
+   * @param {Object} params - { limit, offset, location, search, low_stock, expired, expiring_soon, sort_by, sort_order }
+   */
+  list(params = {}) {
+    const query = new URLSearchParams();
+    if (params.limit) query.set('limit', params.limit);
+    if (params.offset) query.set('offset', params.offset);
+    if (params.location) query.set('location', params.location);
+    if (params.search) query.set('search', params.search);
+    if (params.low_stock !== undefined) query.set('low_stock', params.low_stock);
+    if (params.expired !== undefined) query.set('expired', params.expired);
+    if (params.expiring_soon !== undefined) query.set('expiring_soon', params.expiring_soon);
+    if (params.sort_by) query.set('sort_by', params.sort_by);
+    if (params.sort_order) query.set('sort_order', params.sort_order);
+    const queryStr = query.toString();
+    return api.get(`/inventory${queryStr ? '?' + queryStr : ''}`);
+  },
+
+  /**
+   * Get a single inventory item by ID
+   */
+  getById(id) {
+    return api.get(`/inventory/${id}`);
+  },
+
+  /**
+   * Get inventory summary (stats)
+   */
+  getSummary() {
+    return api.get('/inventory/summary');
+  },
+
+  /**
+   * Get items with low stock
+   */
+  getLowStock() {
+    return api.get('/inventory/low-stock');
+  },
+
+  /**
+   * Get expiring items
+   * @param {number} days - Number of days to look ahead (default: 7)
+   */
+  getExpiring(days = 7) {
+    return api.get(`/inventory/expiring?days=${days}`);
+  },
+
+  /**
+   * Get unique inventory locations
+   */
+  getLocations() {
+    return api.get('/inventory/locations');
+  },
+
+  /**
+   * Get active shopping lists (for add-to-list dropdown)
+   */
+  getActiveLists() {
+    return api.get('/inventory/active-lists');
+  },
+
+  /**
+   * Create a new inventory item
+   * @param {Object} data - { item_id, custom_name, custom_brand, custom_size, custom_unit, quantity, unit, low_stock_threshold, low_stock_alert_enabled, purchase_date, expiration_date, location, notes }
+   */
+  create(data) {
+    return api.post('/inventory', data);
+  },
+
+  /**
+   * Update an inventory item
+   */
+  update(id, data) {
+    return api.put(`/inventory/${id}`, data);
+  },
+
+  /**
+   * Delete an inventory item
+   */
+  delete(id) {
+    return api.delete(`/inventory/${id}`);
+  },
+
+  /**
+   * Adjust inventory quantity
+   * @param {number} id - Inventory item ID
+   * @param {number} adjustment - Amount to add (positive) or subtract (negative)
+   */
+  adjustQuantity(id, adjustment) {
+    return api.post(`/inventory/${id}/adjust`, { adjustment });
+  },
+
+  /**
+   * Add inventory item to shopping list
+   * @param {number} inventoryId - Inventory item ID
+   * @param {number} listId - Shopping list ID
+   * @param {number} quantity - Quantity to add (default: 1)
+   */
+  addToList(inventoryId, listId, quantity = 1) {
+    return api.post(`/inventory/${inventoryId}/add-to-list`, { list_id: listId, quantity });
+  },
+};
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -853,5 +961,6 @@ if (typeof module !== 'undefined' && module.exports) {
     feedApi,
     receiptsApi,
     regionsApi,
+    inventoryApi,
   };
 }
