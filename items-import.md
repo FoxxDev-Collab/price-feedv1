@@ -1,0 +1,50 @@
+# No Label
+- [ ] 1/2 Cup Butter, Softened
+- [ ] 1 Eight Ounce Package Cream Cheese, Softened
+- [ ] 1/4 Cup Sun-Dried Tomatoes
+- [ ] 1/2 Tsp Dried Oregano
+- [ ] 1/2 Cup Half And Half
+- [ ] 1 Cup Shredded Mozzarella Cheese
+- [ ] 1/3 Cup Lower Carb Bbq Sauce
+- [ ] 1/2 Cup Shredded Cheese
+- [ ] 2 Heads Romaine Lettuce
+- [ ] 6 Hamburger Buns
+- [ ] 1 1/2 Teaspoon Dijon Mustard
+- [ ] 1 1/2 Tsp Dijon Mustard
+- [ ] 24 Mini Sandwich Rolls
+- [ ] 1 Pound Deli Ham, Thinly Sliced
+- [ ] 1 Pound Swiss Cheese, Thinly Sliced
+- [ ] 1 Pound Shrimp, Large, Peeled And Deveined
+- [ ] 4 Dashes Hot Sauce
+- [ ] Fresh Basil, Chopped
+- [ ] Fresh Parsley, Chopped
+- [ ] 12-14 Cups French Bread
+- [ ] 2 Cups 2% Milk
+- [ ] 1 Cup Strawberries, Sliced
+- [ ] 1/2 Cup Blueberries
+- [ ] 1 Cup Frozen Peas And Carrots
+- [ ] 1 1/2 Cups Cheddar Cheese, Shredded
+- [ ] 2.5-3 Lb Salmon Fillet
+- [ ] 1/4 Cup Sriracha
+- [ ] 8 Large Flour Tortillas
+- [ ] 3 Cups Mexican-Blend Shredded Cheese
+- [ ] Fresh Cilantro
+- [ ] Chopped Red Onions
+- [ ] Diced Avocado
+- [ ] Sour Cream
+- [ ] Crumbled Cotija Cheese
+- [ ] 6 Tbsp Creamy Caesar Dressing
+- [ ] 1 Cup Caesar-Style Croutons
+- [ ] Fresh Parsley, Chopped
+- [ ] 1 Small Head Green Cabbage, Shredded
+- [ ] 2 Cups Carrot, Grated
+- [ ] 1 Tbsp Fresh Dill, Chopped
+- [ ] 2 Tbsp Bread And Butter Pickles, Chopped
+- [ ] 4 Toasted Buns
+- [ ] Bread And Butter Pickles
+- [ ] Lemon Wedges
+- [ ] 1 Large Head Romaine Lettuce, Chopped
+- [ ] 1 Cup Cherry Tomatoes
+- [ ] 1 Avocado, Sliced
+- [ ] Sparkling Cider
+- [ ] Caesar Dressing
