@@ -497,3 +497,59 @@ func generateS3Key(userID int, filename string) string {
 	}
 	return fmt.Sprintf("receipts/%d/%d%s", userID, timestamp, ext)
 }
+
+// CreateManualReceipt creates a receipt without image upload (manual entry)
+func (h *ReceiptHandler) CreateManualReceipt(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	if userID == 0 {
+		return Error(c, fiber.StatusUnauthorized, "unauthorized")
+	}
+
+	var req models.CreateManualReceiptRequest
+	if err := c.BodyParser(&req); err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid request body")
+	}
+
+	// Validate required fields
+	if req.StoreID == 0 {
+		return Error(c, fiber.StatusBadRequest, "store_id is required")
+	}
+	if len(req.Items) == 0 {
+		return Error(c, fiber.StatusBadRequest, "at least one item is required")
+	}
+
+	// Create the receipt
+	receipt, err := h.db.CreateManualReceipt(c.Context(), userID, &req)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to create receipt")
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(APIResponse{
+		Success: true,
+		Data:    receipt,
+	})
+}
+
+// GetSpendingSummary returns monthly spending summary for the user
+func (h *ReceiptHandler) GetSpendingSummary(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	if userID == 0 {
+		return Error(c, fiber.StatusUnauthorized, "unauthorized")
+	}
+
+	// Get number of months (default 6)
+	months := c.QueryInt("months", 6)
+	if months < 1 {
+		months = 1
+	}
+	if months > 24 {
+		months = 24
+	}
+
+	summary, err := h.db.GetSpendingSummary(c.Context(), userID, months)
+	if err != nil {
+		return Error(c, fiber.StatusInternalServerError, "failed to get spending summary")
+	}
+
+	return Success(c, summary)
+}

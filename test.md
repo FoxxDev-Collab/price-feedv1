@@ -1,0 +1,46 @@
+# No Label
+- [ ] 1/2 cup butter,softened
+- [ ] 1 eight ounce package cream cheese, softened
+- [ ] 1/4 cup sun-dried tomatoes
+- [ ] 1/2 tsp dried oregano
+- [ ] 1/2 cup half and half
+- [ ] 1 cup shredded mozzarella cheese
+- [ ] ⅓ cup lower carb BBQ sauce
+- [ ] ½ cup shredded cheese
+- [ ] 2 heads romaine lettuce, inner leaves only, washed and carefully dried, large leaves torn into smaller pieces, smaller leaves left intact
+- [ ] 6 hamburger buns split
+- [ ] 1 ¹/₂ teaspoon Dijon mustard
+- [ ] 1 ¹/₂ tsp. Dijon mustard
+- [ ] 24 mini sandwich rolls
+- [ ] 1 pound deli ham thinly sliced cooked
+- [ ] 1 pound Swiss cheese thinly sliced
+- [ ] 1 pound shrimp large, peeled and deveined
+- [ ] 4 dashes hot sauce plus more to taste I used Tabasco
+- [ ] fresh basil Chopped, to taste
+- [ ] fresh parsley Chopped, to taste
+- [ ] 12-14 cups French bread
+- [ ] 2 cups 2% milk
+- [ ] 1 cup strawberries (sliced)
+- [ ] 1/2 cup blueberries
+- [ ] 1 cup frozen peas and carrots
+- [ ] 1 1/2 cups cheddar cheese (shredded )
+- [ ] 2.5 - 3 lb salmon fillet
+- [ ] 1/4 cup sriracha
+- [ ] 8 large flour tortillas
+- [ ] 3 cups Mexican-blend shredded cheese
+- [ ] optional toppings: fresh cilantro, chopped red onions, diced avocado, sour cream, and/or crumbled cotija cheese
+- [ ] 6 tbsp creamy Caesar dressing
+- [ ] 1 cup Caesar-style croutons (crushed into crumbs)
+- [ ] Fresh parsley (chopped)
+- [ ] 1 small head green cabbage shredded
+- [ ] 2 c. carrot grated
+- [ ] 1 tbsp. finely chopped fresh dill
+- [ ] 2 tbsp. finely chopped bread and butter pickles
+- [ ] 4 toasted buns for serving
+- [ ] Bread and butter pickles for serving
+- [ ] Lemon wedges for serving
+- [ ] 1 large head of romaine lettuce, chopped
+- [ ] 1 cup cherry tomatoes
+- [ ] 1 avocado, sliced
+- [ ] Sparkling Cider
+- [ ] Ceasar Dressing

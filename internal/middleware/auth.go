@@ -71,6 +71,49 @@ func AuthRequired(cfg *config.Config) fiber.Handler {
 	}
 }
 
+// AuthOptional middleware parses JWT token if present but doesn't require it
+// This allows public endpoints to optionally identify authenticated users
+func AuthOptional(cfg *config.Config) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Get Authorization header
+		authHeader := c.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			// No token or invalid format - continue without auth
+			return c.Next()
+		}
+
+		// Extract token
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+		// Parse and validate token
+		token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fiber.NewError(fiber.StatusUnauthorized, "invalid signing method")
+			}
+			return []byte(cfg.JWTSecret), nil
+		})
+
+		if err != nil {
+			// Invalid token - continue without auth (don't error)
+			return c.Next()
+		}
+
+		// Extract claims
+		claims, ok := token.Claims.(*JWTClaims)
+		if !ok || !token.Valid {
+			// Invalid claims - continue without auth
+			return c.Next()
+		}
+
+		// Store user info in context
+		c.Locals("user_id", claims.UserID)
+		c.Locals("user_email", claims.Email)
+		c.Locals("user_role", claims.Role)
+
+		return c.Next()
+	}
+}
+
 // AdminRequired middleware checks if the user has admin role
 func AdminRequired() fiber.Handler {
 	return func(c *fiber.Ctx) error {

@@ -397,6 +397,18 @@ const mapsApi = {
   },
 
   /**
+   * Search for stores by name/query with optional location bias
+   * @param {string} query - Search query (e.g., "King Soopers", "Safeway")
+   * @param {number} lat - Latitude for location bias (optional)
+   * @param {number} lng - Longitude for location bias (optional)
+   * @param {number} radius - Search radius in meters (default: 50000)
+   * @returns {Promise<Object>} List of matching stores
+   */
+  async textSearchStores(query, lat = 0, lng = 0, radius = 50000) {
+    return api.post('/maps/text-search', { query, latitude: lat, longitude: lng, radius });
+  },
+
+  /**
    * Get place details by place ID
    * @param {string} placeId - Google Place ID
    * @returns {Promise<Object>} Place details

@@ -175,6 +175,143 @@
     .add-item-content.active {
       display: block;
     }
+
+    /* View Toggle */
+    .view-toggle {
+      display: inline-flex;
+      background: var(--color-gray-100);
+      border-radius: var(--radius-lg);
+      padding: 4px;
+      gap: 4px;
+    }
+    .view-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: var(--color-gray-500);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .view-toggle-btn:hover {
+      color: var(--foreground);
+    }
+    .view-toggle-btn.active {
+      background: var(--card);
+      color: var(--foreground);
+      box-shadow: var(--shadow-sm);
+    }
+    .view-toggle-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Table View Styles */
+    .inventory-table-wrapper {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+    }
+    .inventory-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .inventory-table th,
+    .inventory-table td {
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .inventory-table th {
+      background: var(--color-gray-100);
+      font-weight: var(--font-semibold);
+      font-size: var(--text-sm);
+      color: var(--foreground);
+      white-space: nowrap;
+    }
+    .inventory-table tbody tr:hover {
+      background: var(--color-gray-50);
+    }
+    .inventory-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .inventory-table .item-name {
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+    }
+    .inventory-table .item-brand {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+    }
+    .inventory-table .table-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+    .inventory-table .table-btn {
+      padding: var(--space-1) var(--space-2);
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: var(--radius-md);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      color: var(--foreground);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .inventory-table .table-btn:hover {
+      background: var(--color-gray-100);
+    }
+    .inventory-table .table-btn.primary {
+      background: var(--color-primary-50);
+      border-color: var(--color-primary-200);
+      color: var(--color-primary-700);
+    }
+    .inventory-table .table-btn.primary:hover {
+      background: var(--color-primary-100);
+    }
+    .inventory-table .table-btn.danger {
+      color: var(--color-error);
+    }
+    .inventory-table .table-btn.danger:hover {
+      background: var(--color-gray-100);
+      border-color: var(--color-error);
+    }
+    .table-quantity-adjuster {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--color-gray-100);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+    }
+    .table-quantity-adjuster button {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-sm);
+      color: var(--foreground);
+    }
+    .table-quantity-adjuster button:hover {
+      background: var(--color-gray-200);
+    }
+    .table-quantity-adjuster .quantity-value {
+      min-width: 32px;
+      text-align: center;
+      font-weight: var(--font-semibold);
+      font-size: var(--text-sm);
+    }
   </style>
 </head>
 <body>
@@ -233,6 +370,27 @@
             <option value="expired">Expired</option>
             <option value="expiring_soon">Expiring Soon</option>
           </select>
+          <div style="margin-left: auto;">
+            <div class="view-toggle">
+              <button class="view-toggle-btn active" data-view="cards" onclick="setView('cards')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Cards
+              </button>
+              <button class="view-toggle-btn" data-view="table" onclick="setView('table')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+                Table
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Inventory Grid -->
@@ -431,6 +589,8 @@
     let currentFilters = { search: '', location: '', status: '' };
     let locations = [];
     let catalogSearchTimeout = null;
+    let currentView = 'cards';
+    let allInventoryItems = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
       if (!await user.init()) return;
@@ -442,6 +602,10 @@
       ]);
 
       userModal.setupBackdropClose();
+
+      // Load saved view preference
+      currentView = localStorage.getItem('inventoryView') || 'cards';
+      updateViewToggle();
 
       // Setup search
       document.getElementById('search-input').addEventListener('input', (e) => {
@@ -508,6 +672,23 @@
       }
     }
 
+    function setView(view) {
+      currentView = view;
+      localStorage.setItem('inventoryView', view);
+      updateViewToggle();
+      renderInventory();
+    }
+
+    function updateViewToggle() {
+      document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+        if (btn.dataset.view === currentView) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
     async function loadInventory() {
       const container = document.getElementById('inventory-container');
       container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
@@ -521,27 +702,9 @@
         if (currentFilters.status === 'expiring_soon') params.expiring_soon = true;
 
         const response = await inventoryApi.list(params);
-        const items = response?.data || response || [];
+        allInventoryItems = response?.data || response || [];
 
-        if (items.length === 0) {
-          container.innerHTML = `
-            <div style="grid-column: 1 / -1;" class="user-empty-state">
-              <div class="user-empty-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                </svg>
-              </div>
-              <div class="user-empty-title">No items in your inventory</div>
-              <div class="user-empty-text">Add items to track what you have on hand</div>
-              <button class="btn btn-primary" onclick="openAddItemModal()">Add Your First Item</button>
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = items.map(item => renderInventoryCard(item)).join('');
+        renderInventory();
       } catch (err) {
         console.error('Failed to load inventory:', err);
         container.innerHTML = `
@@ -607,6 +770,94 @@
           </div>
         </div>
       `;
+    }
+
+    function renderInventory() {
+      const container = document.getElementById('inventory-container');
+
+      if (allInventoryItems.length === 0) {
+        container.className = 'user-item-grid';
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1;" class="user-empty-state">
+            <div class="user-empty-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <div class="user-empty-title">No items in your inventory</div>
+            <div class="user-empty-text">Add items to track what you have on hand</div>
+            <button class="btn btn-primary" onclick="openAddItemModal()">Add Your First Item</button>
+          </div>
+        `;
+        return;
+      }
+
+      if (currentView === 'cards') {
+        container.className = 'user-item-grid';
+        container.innerHTML = allInventoryItems.map(item => renderInventoryCard(item)).join('');
+      } else {
+        container.className = '';
+        container.innerHTML = renderInventoryTable();
+      }
+    }
+
+    function renderInventoryTable() {
+      let html = '<div class="inventory-table-wrapper">';
+      html += '<table class="inventory-table">';
+      html += '<thead><tr>';
+      html += '<th>Item</th>';
+      html += '<th>Location</th>';
+      html += '<th>Quantity</th>';
+      html += '<th>Expiration</th>';
+      html += '<th>Status</th>';
+      html += '<th>Actions</th>';
+      html += '</tr></thead><tbody>';
+
+      for (const item of allInventoryItems) {
+        const hasItemId = item.item_id != null;
+
+        // Build status badges
+        const statusBadges = [];
+        if (item.is_expired) {
+          statusBadges.push('<span class="inventory-badge expired">Expired</span>');
+        } else if (item.expires_soon) {
+          statusBadges.push(`<span class="inventory-badge expiring">Expires in ${item.days_until_expiry}d</span>`);
+        }
+        if (item.is_low_stock) {
+          statusBadges.push('<span class="inventory-badge low-stock">Low Stock</span>');
+        }
+
+        html += '<tr>';
+        html += '<td>';
+        html += `<div class="item-name">${user.escapeHtml(item.display_name)}</div>`;
+        if (item.display_brand) {
+          html += `<div class="item-brand">${user.escapeHtml(item.display_brand)}</div>`;
+        }
+        html += '</td>';
+        html += `<td>${item.location ? `<span class="inventory-badge location">${user.escapeHtml(item.location)}</span>` : '—'}</td>`;
+        html += '<td>';
+        html += `<div class="table-quantity-adjuster">`;
+        html += `<button onclick="adjustQuantity(${item.id}, -1)">-</button>`;
+        html += `<span class="quantity-value">${item.quantity}</span>`;
+        html += `<button onclick="adjustQuantity(${item.id}, 1)">+</button>`;
+        html += '</div>';
+        html += '</td>';
+        html += `<td>${item.expiration_date ? user.formatDateShort(item.expiration_date) : '—'}</td>`;
+        html += `<td>${statusBadges.length > 0 ? statusBadges.join(' ') : '<span style="color: var(--color-gray-400);">OK</span>'}</td>`;
+        html += '<td>';
+        html += '<div class="table-actions">';
+        if (hasItemId) {
+          html += `<button class="table-btn primary" onclick="openAddToListModal(${item.id})">Add to List</button>`;
+        }
+        html += `<button class="table-btn" onclick="openEditModal(${item.id})">Edit</button>`;
+        html += `<button class="table-btn danger" onclick="deleteItem(${item.id}, '${user.escapeHtml(item.display_name).replace(/'/g, "\\'")}')">Delete</button>`;
+        html += '</div></td></tr>';
+      }
+
+      html += '</tbody></table></div>';
+      return html;
     }
 
     async function adjustQuantity(itemId, adjustment) {

@@ -379,6 +379,87 @@ func (db *DB) DeleteReceipt(ctx context.Context, id int) error {
 	return nil
 }
 
+// CreateManualReceipt creates a receipt with manually entered items (no image)
+func (db *DB) CreateManualReceipt(ctx context.Context, userID int, req *models.CreateManualReceiptRequest) (*models.ReceiptWithItems, error) {
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Parse the receipt date if provided
+	var receiptDate *time.Time
+	if req.ReceiptDate != nil && *req.ReceiptDate != "" {
+		parsed, err := time.Parse("2006-01-02", *req.ReceiptDate)
+		if err == nil {
+			receiptDate = &parsed
+		}
+	}
+
+	// Calculate total from items if not provided
+	var total float64
+	if req.Total != nil {
+		total = *req.Total
+	} else {
+		for _, item := range req.Items {
+			qty := item.Quantity
+			if qty < 1 {
+				qty = 1
+			}
+			total += item.Price * float64(qty)
+		}
+	}
+
+	// Create receipt record (manual entry - no S3 bucket/key, immediately confirmed)
+	var receiptID int
+	err = tx.QueryRow(ctx, `
+		INSERT INTO receipts (user_id, store_id, s3_bucket, s3_key, status, receipt_date, receipt_total, confirmed_at)
+		VALUES ($1, $2, '', '', 'confirmed', $3, $4, NOW())
+		RETURNING id
+	`, userID, req.StoreID, receiptDate, total).Scan(&receiptID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create receipt items and prices
+	for i, item := range req.Items {
+		qty := item.Quantity
+		if qty < 1 {
+			qty = 1
+		}
+
+		var itemID *int
+		if item.ItemID != nil {
+			itemID = item.ItemID
+		}
+
+		lineNum := i + 1
+		_, err = tx.Exec(ctx, `
+			INSERT INTO receipt_items (receipt_id, raw_text, extracted_name, extracted_price, extracted_quantity,
+			                          matched_item_id, confirmed_item_id, confirmed_price, match_status, is_confirmed, line_number)
+			VALUES ($1, $2, $2, $3, $4, $5, $5, $3, 'matched', true, $6)
+		`, receiptID, item.Name, item.Price, qty, itemID, lineNum)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create store price if we have an item ID
+		if itemID != nil {
+			_, _ = tx.Exec(ctx, `
+				INSERT INTO store_prices (store_id, item_id, price, user_id, is_shared, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+				ON CONFLICT (store_id, item_id) DO UPDATE SET price = $3, user_id = $4, updated_at = NOW()
+			`, req.StoreID, *itemID, item.Price, userID)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return db.GetReceiptByID(ctx, receiptID)
+}
+
 // CleanupExpiredReceipts deletes receipts past their expiration date and returns S3 keys to delete
 func (db *DB) CleanupExpiredReceipts(ctx context.Context) ([]string, error) {
 	// Get S3 keys of expired receipts
@@ -434,4 +515,123 @@ func (db *DB) FindSimilarItems(ctx context.Context, name string, limit int) ([]m
 	}
 
 	return results, nil
+}
+
+// GetSpendingSummary returns monthly spending summary for a user
+// Includes both receipts and completed shopping lists
+func (db *DB) GetSpendingSummary(ctx context.Context, userID int, months int) (*models.SpendingSummary, error) {
+	// Query combines receipts and completed shopping lists
+	rows, err := db.Pool.Query(ctx, `
+		WITH spending_data AS (
+			-- Receipts with store breakdown
+			SELECT
+				TO_CHAR(COALESCE(r.receipt_date, r.uploaded_at), 'YYYY-MM') as month,
+				COALESCE(r.store_id, 0) as store_id,
+				COALESCE(s.name, 'Unknown Store') as store_name,
+				r.receipt_total as total,
+				'receipt' as source
+			FROM receipts r
+			LEFT JOIN stores s ON r.store_id = s.id
+			WHERE r.user_id = $1
+			  AND r.receipt_total IS NOT NULL
+			  AND COALESCE(r.receipt_date, r.uploaded_at) >= DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * ($2 - 1)
+
+			UNION ALL
+
+			-- Completed shopping lists (estimated total from items)
+			SELECT
+				TO_CHAR(sl.completed_at, 'YYYY-MM') as month,
+				0 as store_id,
+				'Shopping Lists' as store_name,
+				COALESCE((
+					SELECT SUM(sli.quantity * COALESCE(
+						(SELECT MIN(sp.price) FROM store_prices sp WHERE sp.item_id = sli.item_id),
+						0
+					))
+					FROM shopping_list_items sli
+					WHERE sli.list_id = sl.id
+				), 0) as total,
+				'list' as source
+			FROM shopping_lists sl
+			WHERE sl.user_id = $1
+			  AND sl.status = 'completed'
+			  AND sl.completed_at IS NOT NULL
+			  AND sl.completed_at >= DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * ($2 - 1)
+		)
+		SELECT
+			month,
+			store_id,
+			store_name,
+			SUM(total) as total,
+			COUNT(*) as transaction_count,
+			source
+		FROM spending_data
+		WHERE total > 0
+		GROUP BY month, store_id, store_name, source
+		ORDER BY month DESC, total DESC
+	`, userID, months)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Build monthly data with store breakdowns
+	monthsMap := make(map[string]*models.MonthlySpending)
+	var monthOrder []string
+
+	for rows.Next() {
+		var month string
+		var storeID int
+		var storeName string
+		var total float64
+		var transactionCount int
+		var source string
+
+		if err := rows.Scan(&month, &storeID, &storeName, &total, &transactionCount, &source); err != nil {
+			return nil, err
+		}
+
+		if _, exists := monthsMap[month]; !exists {
+			monthsMap[month] = &models.MonthlySpending{
+				Month:  month,
+				Stores: []models.StoreSpend{},
+			}
+			monthOrder = append(monthOrder, month)
+		}
+
+		monthsMap[month].Total += total
+		monthsMap[month].TransactionCount += transactionCount
+
+		// Track totals by source
+		if source == "receipt" {
+			monthsMap[month].ReceiptTotal += total
+		} else {
+			monthsMap[month].ListTotal += total
+		}
+
+		monthsMap[month].Stores = append(monthsMap[month].Stores, models.StoreSpend{
+			StoreID:          storeID,
+			StoreName:        storeName,
+			Total:            total,
+			TransactionCount: transactionCount,
+			Source:           source,
+		})
+	}
+
+	// Convert to slice and calculate totals
+	var result models.SpendingSummary
+	var grandTotal float64
+
+	for _, month := range monthOrder {
+		m := monthsMap[month]
+		result.Months = append(result.Months, *m)
+		grandTotal += m.Total
+	}
+
+	result.GrandTotal = grandTotal
+	if len(result.Months) > 0 {
+		result.AverageMonthly = grandTotal / float64(len(result.Months))
+	}
+
+	return &result, nil
 }

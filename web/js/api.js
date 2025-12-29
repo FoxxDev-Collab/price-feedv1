@@ -717,6 +717,15 @@ const receiptsApi = {
   },
 
   /**
+   * Create a manual receipt entry (without image upload)
+   * @param {Object} data - { store_id, receipt_date, total, items: [{ item_id?, name, price, quantity }] }
+   * @returns {Promise} - Created receipt with items
+   */
+  createManual(data) {
+    return api.post('/receipts/manual', data);
+  },
+
+  /**
    * List user's receipts
    * @param {Object} params - Query parameters { limit, offset, status }
    */
@@ -945,6 +954,29 @@ const inventoryApi = {
   },
 };
 
+/**
+ * Import API - Shopping list import functionality
+ */
+const importApi = {
+  /**
+   * Parse a shopping list and match items
+   * @param {string} content - Raw markdown content from Mealie
+   * @returns {Promise} - Parsed items with match suggestions
+   */
+  parseShoppingList(content) {
+    return api.post('/import/shopping-list', { content });
+  },
+
+  /**
+   * Bulk create items from import
+   * @param {Array} items - Array of items to create { name, brand, size, unit, is_private }
+   * @returns {Promise} - Created items and any errors
+   */
+  bulkCreateItems(items) {
+    return api.post('/import/create-items', { items });
+  },
+};
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -962,5 +994,6 @@ if (typeof module !== 'undefined' && module.exports) {
     receiptsApi,
     regionsApi,
     inventoryApi,
+    importApi,
   };
 }

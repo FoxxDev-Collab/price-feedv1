@@ -28,7 +28,10 @@
       "Bash(sudo firewall-cmd:*)",
       "Bash(chmod:*)",
       "Bash(go vet:*)",
-      "Bash(dnf search:*)"
+      "Bash(dnf search:*)",
+      "Bash(go fmt:*)",
+      "Bash(gofmt:*)",
+      "Bash(podman rmi:*)"
     ]
   }
 }

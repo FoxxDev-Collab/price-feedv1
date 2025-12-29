@@ -14,18 +14,19 @@ import (
 const (
 	geocodeAPIURL       = "https://maps.googleapis.com/maps/api/geocode/json"
 	placesNearbyAPIURL  = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+	placesTextSearchURL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
 	placeDetailsAPIURL  = "https://maps.googleapis.com/maps/api/place/details/json"
 	defaultTimeout      = 10 * time.Second
 	defaultSearchRadius = 5000 // 5km in meters
 )
 
 var (
-	ErrNoResults       = errors.New("no results found")
-	ErrAPIError        = errors.New("google maps api error")
-	ErrInvalidAPIKey   = errors.New("invalid or missing api key")
-	ErrRequestDenied   = errors.New("request denied by google api")
-	ErrOverQueryLimit  = errors.New("over query limit")
-	ErrInvalidRequest  = errors.New("invalid request")
+	ErrNoResults      = errors.New("no results found")
+	ErrAPIError       = errors.New("google maps api error")
+	ErrInvalidAPIKey  = errors.New("invalid or missing api key")
+	ErrRequestDenied  = errors.New("request denied by google api")
+	ErrOverQueryLimit = errors.New("over query limit")
+	ErrInvalidRequest = errors.New("invalid request")
 )
 
 // GoogleMapsService provides methods to interact with Google Maps APIs
@@ -96,9 +97,9 @@ type PlaceDetails struct {
 type geocodeResponse struct {
 	Status  string `json:"status"`
 	Results []struct {
-		FormattedAddress  string `json:"formatted_address"`
-		PlaceID           string `json:"place_id"`
-		Geometry          struct {
+		FormattedAddress string `json:"formatted_address"`
+		PlaceID          string `json:"place_id"`
+		Geometry         struct {
 			Location struct {
 				Lat float64 `json:"lat"`
 				Lng float64 `json:"lng"`
@@ -159,8 +160,8 @@ type placeDetailsResponse struct {
 		Rating           float64  `json:"rating,omitempty"`
 		UserRatingsTotal int      `json:"user_ratings_total,omitempty"`
 		OpeningHours     *struct {
-			OpenNow         bool     `json:"open_now"`
-			WeekdayText     []string `json:"weekday_text"`
+			OpenNow     bool     `json:"open_now"`
+			WeekdayText []string `json:"weekday_text"`
 		} `json:"opening_hours,omitempty"`
 		PriceLevel *int `json:"price_level,omitempty"`
 	} `json:"result"`
@@ -271,6 +272,7 @@ func (s *GoogleMapsService) ReverseGeocode(ctx context.Context, lat, lng float64
 
 // NearbySearch searches for places near a location
 // radius is in meters, placeType can be "supermarket", "grocery_or_supermarket", "store", etc.
+// If placeType is empty, searches for both supermarket and grocery_store types
 func (s *GoogleMapsService) NearbySearch(ctx context.Context, lat, lng float64, radius int, placeType string) ([]*PlaceResult, error) {
 	if s.apiKey == "" {
 		return nil, ErrInvalidAPIKey
@@ -280,17 +282,46 @@ func (s *GoogleMapsService) NearbySearch(ctx context.Context, lat, lng float64, 
 		radius = defaultSearchRadius
 	}
 
+	// If no specific type requested, search for supermarkets
+	// Note: "grocery_store" is not a valid type in the legacy Places API - it causes
+	// the API to ignore the type filter entirely and return all nearby places
+	if placeType == "" {
+		placeType = "supermarket"
+	}
+
+	return s.nearbySearchSingleType(ctx, lat, lng, radius, placeType)
+}
+
+// nearbySearchMultipleTypes searches for multiple place types and deduplicates results
+func (s *GoogleMapsService) nearbySearchMultipleTypes(ctx context.Context, lat, lng float64, radius int, placeTypes []string) ([]*PlaceResult, error) {
+	seen := make(map[string]bool)
+	var allPlaces []*PlaceResult
+
+	for _, pType := range placeTypes {
+		places, err := s.nearbySearchSingleType(ctx, lat, lng, radius, pType)
+		if err != nil {
+			// Continue with other types even if one fails
+			continue
+		}
+
+		for _, place := range places {
+			if !seen[place.PlaceID] {
+				seen[place.PlaceID] = true
+				allPlaces = append(allPlaces, place)
+			}
+		}
+	}
+
+	return allPlaces, nil
+}
+
+// nearbySearchSingleType performs a nearby search for a single place type
+func (s *GoogleMapsService) nearbySearchSingleType(ctx context.Context, lat, lng float64, radius int, placeType string) ([]*PlaceResult, error) {
 	params := url.Values{}
 	params.Set("location", fmt.Sprintf("%f,%f", lat, lng))
 	params.Set("radius", strconv.Itoa(radius))
 	params.Set("key", s.apiKey)
-
-	if placeType != "" {
-		params.Set("type", placeType)
-	} else {
-		// Default to grocery/supermarket search
-		params.Set("type", "supermarket")
-	}
+	params.Set("type", placeType)
 
 	reqURL := placesNearbyAPIURL + "?" + params.Encode()
 
@@ -469,4 +500,102 @@ func checkGoogleAPIStatus(status, errorMessage string) error {
 		}
 		return fmt.Errorf("%w: %s", ErrAPIError, status)
 	}
+}
+
+// placesTextSearchResponse represents the response from the Text Search API
+type placesTextSearchResponse struct {
+	Status  string `json:"status"`
+	Results []struct {
+		PlaceID          string `json:"place_id"`
+		Name             string `json:"name"`
+		FormattedAddress string `json:"formatted_address"`
+		Geometry         struct {
+			Location struct {
+				Lat float64 `json:"lat"`
+				Lng float64 `json:"lng"`
+			} `json:"location"`
+		} `json:"geometry"`
+		Types            []string `json:"types"`
+		Rating           float64  `json:"rating,omitempty"`
+		UserRatingsTotal int      `json:"user_ratings_total,omitempty"`
+		OpeningHours     *struct {
+			OpenNow bool `json:"open_now"`
+		} `json:"opening_hours,omitempty"`
+		PriceLevel *int `json:"price_level,omitempty"`
+	} `json:"results"`
+	ErrorMessage string `json:"error_message,omitempty"`
+}
+
+// TextSearch searches for places by text query with optional location bias
+// query is the search string (e.g., "King Soopers", "Safeway grocery")
+// lat, lng provide location bias (results closer to this point are prioritized)
+// radius is in meters (used for location bias, not strict filtering)
+func (s *GoogleMapsService) TextSearch(ctx context.Context, query string, lat, lng float64, radius int) ([]*PlaceResult, error) {
+	if s.apiKey == "" {
+		return nil, ErrInvalidAPIKey
+	}
+
+	if query == "" {
+		return nil, ErrInvalidRequest
+	}
+
+	if radius <= 0 {
+		radius = defaultSearchRadius
+	}
+
+	params := url.Values{}
+	params.Set("query", query+" grocery store")
+	params.Set("key", s.apiKey)
+
+	// Add location bias if coordinates are provided
+	if lat != 0 || lng != 0 {
+		params.Set("location", fmt.Sprintf("%f,%f", lat, lng))
+		params.Set("radius", strconv.Itoa(radius))
+	}
+
+	reqURL := placesTextSearchURL + "?" + params.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("executing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var textResp placesTextSearchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&textResp); err != nil {
+		return nil, fmt.Errorf("decoding response: %w", err)
+	}
+
+	if err := checkGoogleAPIStatus(textResp.Status, textResp.ErrorMessage); err != nil {
+		if errors.Is(err, ErrNoResults) {
+			return []*PlaceResult{}, nil
+		}
+		return nil, err
+	}
+
+	places := make([]*PlaceResult, 0, len(textResp.Results))
+	for _, p := range textResp.Results {
+		place := &PlaceResult{
+			PlaceID:          p.PlaceID,
+			Name:             p.Name,
+			FormattedAddress: p.FormattedAddress,
+			Latitude:         p.Geometry.Location.Lat,
+			Longitude:        p.Geometry.Location.Lng,
+			Types:            p.Types,
+			Rating:           p.Rating,
+			UserRatingsTotal: p.UserRatingsTotal,
+			PriceLevel:       p.PriceLevel,
+		}
+		if p.OpeningHours != nil {
+			place.OpenNow = &p.OpeningHours.OpenNow
+		}
+		places = append(places, place)
+	}
+
+	return places, nil
 }

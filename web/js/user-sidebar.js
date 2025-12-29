@@ -39,6 +39,13 @@ function renderUserSidebar() {
           </svg>
           Stores
         </a>
+        <a href="/user/discover/" class="user-nav-item" data-page="discover">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+          </svg>
+          Discover
+        </a>
         <a href="/user/items/" class="user-nav-item" data-page="items">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
@@ -63,6 +70,14 @@ function renderUserSidebar() {
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
           Receipts
+        </a>
+        <a href="/user/spending/" class="user-nav-item" data-page="spending">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="20" x2="12" y2="10"></line>
+            <line x1="18" y1="20" x2="18" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="16"></line>
+          </svg>
+          Spending
         </a>
         <a href="/user/inventory/" class="user-nav-item" data-page="inventory">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -278,8 +278,8 @@ func main() {
 	admin.Delete("/stores/:id", h.DeleteStore)
 	admin.Post("/stores/:id/verify", h.VerifyStore)
 
-	// Item routes (public read, authenticated write)
-	items := api.Group("/items")
+	// Item routes (public read with optional auth for visibility, authenticated write)
+	items := api.Group("/items", middleware.AuthOptional(cfg))
 	items.Get("/", h.ListItems)
 	items.Get("/stats", h.GetItemStats)
 	items.Get("/search", h.SearchItems)
@@ -296,6 +296,11 @@ func main() {
 	admin.Post("/items", h.CreateItem)
 	admin.Put("/items/:id", h.UpdateItem)
 	admin.Delete("/items/:id", h.DeleteItem)
+
+	// Import routes (authenticated, email verification required)
+	importRoutes := api.Group("/import", middleware.AuthRequired(cfg), emailVerified)
+	importRoutes.Post("/shopping-list", h.ParseShoppingList)
+	importRoutes.Post("/create-items", h.BulkCreateItems)
 
 	// Price routes (public read, authenticated write)
 	prices := api.Group("/prices")
@@ -355,7 +360,9 @@ func main() {
 	if receiptHandler != nil {
 		receipts := api.Group("/receipts", middleware.AuthRequired(cfg))
 		receipts.Post("/upload", emailVerified, receiptHandler.UploadReceipt)
+		receipts.Post("/manual", emailVerified, receiptHandler.CreateManualReceipt)
 		receipts.Get("/", receiptHandler.ListReceipts)
+		receipts.Get("/spending-summary", receiptHandler.GetSpendingSummary)
 		receipts.Get("/:id", receiptHandler.GetReceipt)
 		receipts.Put("/:id/items/:itemId", emailVerified, receiptHandler.UpdateReceiptItem)
 		receipts.Post("/:id/confirm", emailVerified, receiptHandler.ConfirmReceipt)
@@ -374,6 +381,7 @@ func main() {
 	maps.Post("/geocode", mapsHandler.Geocode)
 	maps.Post("/reverse-geocode", mapsHandler.ReverseGeocode)
 	maps.Post("/nearby-stores", mapsHandler.NearbyStores)
+	maps.Post("/text-search", mapsHandler.TextSearch)
 	maps.Get("/place/:place_id", mapsHandler.GetPlaceDetails)
 
 	// Shared list page route (serves the HTML page for shared lists)

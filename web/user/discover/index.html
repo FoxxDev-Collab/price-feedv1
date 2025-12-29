@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discover Stores - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    /* Discover Page Styles - Theme Aware */
+    .discover-search-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+    }
+
+    .discover-search-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      background: var(--card);
+      color: var(--foreground);
+      font-size: 1rem;
+    }
+
+    .discover-search-input:focus {
+      outline: none;
+      border-color: var(--color-primary-500);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+    }
+
+    .discover-search-btn {
+      padding: 0.75rem 1.5rem;
+      background: var(--color-primary-500);
+      color: white;
+      border: none;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+
+    .discover-search-btn:hover {
+      background: var(--color-primary-600);
+    }
+
+    .discover-search-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Main Layout */
+    .discover-main {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
+      min-height: 500px;
+    }
+
+    @media (max-width: 900px) {
+      .discover-main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Panel - Controls */
+    .discover-controls-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .discover-control-section {
+      padding: 1rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+    }
+
+    .discover-control-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-gray-500);
+      margin-bottom: 0.75rem;
+    }
+
+    .discover-location-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      background: var(--muted);
+      border-radius: 0.375rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .discover-location-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-gray-400);
+    }
+
+    .discover-location-dot.active {
+      background: var(--color-primary-500);
+    }
+
+    .discover-location-text {
+      font-size: 0.875rem;
+      color: var(--foreground);
+    }
+
+    .discover-control-select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      background: var(--card);
+      color: var(--foreground);
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .discover-control-btn {
+      width: 100%;
+      padding: 0.625rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      background: var(--card);
+      color: var(--foreground);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      transition: background-color 0.2s;
+    }
+
+    .discover-control-btn:hover {
+      background: var(--color-gray-100);
+    }
+
+    .dark .discover-control-btn:hover {
+      background: var(--color-gray-700);
+    }
+
+    .discover-control-btn.primary {
+      background: var(--color-primary-500);
+      color: white;
+      border-color: var(--color-primary-500);
+    }
+
+    .discover-control-btn.primary:hover {
+      background: var(--color-primary-600);
+    }
+
+    /* Right Panel - Map and Results */
+    .discover-content-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .discover-map-container {
+      height: 350px;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--color-gray-100);
+    }
+
+    .dark .discover-map-container {
+      background: var(--color-gray-800);
+    }
+
+    #discover-map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Results Section */
+    .discover-results-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+
+    .discover-results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--muted);
+    }
+
+    .discover-results-title {
+      font-weight: 600;
+      color: var(--foreground);
+    }
+
+    .discover-results-count {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+    }
+
+    .discover-results-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .discover-store-card {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .discover-store-card:last-child {
+      border-bottom: none;
+    }
+
+    .discover-store-card:hover {
+      background: var(--color-gray-50);
+    }
+
+    .dark .discover-store-card:hover {
+      background: var(--color-purple-700);
+    }
+
+    .discover-store-card.active {
+      background: var(--color-primary-50);
+      border-left: 3px solid var(--color-primary-500);
+    }
+
+    .dark .discover-store-card.active {
+      background: rgba(22, 163, 74, 0.1);
+    }
+
+    .discover-store-card.existing {
+      opacity: 0.6;
+    }
+
+    .discover-store-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--color-primary-500);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .discover-store-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .discover-store-name {
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 0.25rem;
+    }
+
+    .discover-store-address {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .discover-store-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      margin-top: 0.25rem;
+    }
+
+    .discover-store-rating svg {
+      color: #fbbf24;
+    }
+
+    .discover-store-actions {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .discover-badge {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.625rem;
+      font-weight: 600;
+      border-radius: 9999px;
+    }
+
+    .discover-badge-exists {
+      background: var(--color-gray-200);
+      color: var(--color-gray-600);
+    }
+
+    .dark .discover-badge-exists {
+      background: var(--color-gray-700);
+      color: var(--color-gray-400);
+    }
+
+    /* Loading and Empty States */
+    .discover-loading,
+    .discover-empty,
+    .discover-error {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--color-gray-500);
+    }
+
+    .discover-empty-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 1rem;
+      color: var(--color-gray-400);
+    }
+
+    .discover-empty-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 0.5rem;
+    }
+
+    .discover-empty-text {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--color-primary-500);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 0.5rem;
+    }
+
+    .spinner-sm {
+      width: 16px;
+      height: 16px;
+      border-width: 2px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Prompt for location */
+    .discover-location-prompt {
+      text-align: center;
+      padding: 3rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+    }
+
+    .discover-prompt-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      color: var(--color-primary-500);
+    }
+
+    .discover-prompt-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Discover Stores</h1>
+          <p class="user-page-subtitle">Find grocery stores by name or location to start tracking prices.</p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="discover-search-bar">
+          <input type="text"
+                 class="discover-search-input"
+                 id="search-input"
+                 placeholder="Search for stores (e.g., King Soopers, Safeway, Walmart...)">
+          <button class="discover-search-btn" id="search-btn" onclick="performTextSearch()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            Search
+          </button>
+        </div>
+
+        <!-- Location Prompt (shown if no location) -->
+        <div id="location-prompt" class="discover-location-prompt hidden">
+          <div class="discover-prompt-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+          </div>
+          <h3>Set Your Location</h3>
+          <p>To discover nearby stores or improve search results, please set your location.</p>
+          <div class="discover-prompt-actions">
+            <button class="btn btn-primary" onclick="detectLocation()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="3"></circle>
+                <line x1="12" y1="2" x2="12" y2="4"></line>
+                <line x1="12" y1="20" x2="12" y2="22"></line>
+                <line x1="2" y1="12" x2="4" y2="12"></line>
+                <line x1="20" y1="12" x2="22" y2="12"></line>
+              </svg>
+              Use Current Location
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='/user/profile/'">
+              Set Address in Profile
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Content (shown when location is available) -->
+        <div id="main-content" class="discover-main hidden">
+          <!-- Left Panel - Controls -->
+          <div class="discover-controls-panel">
+            <!-- Location Section -->
+            <div class="discover-control-section">
+              <div class="discover-control-title">Location</div>
+              <div class="discover-location-status">
+                <div class="discover-location-dot" id="location-dot"></div>
+                <span class="discover-location-text" id="location-text">No location set</span>
+              </div>
+              <button class="discover-control-btn" onclick="detectLocation()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                Update Location
+              </button>
+            </div>
+
+            <!-- Nearby Search Section -->
+            <div class="discover-control-section">
+              <div class="discover-control-title">Nearby Search</div>
+              <select class="discover-control-select" id="radius-select">
+                <option value="1000">Within 1 km</option>
+                <option value="2000">Within 2 km</option>
+                <option value="5000" selected>Within 5 km</option>
+                <option value="10000">Within 10 km</option>
+                <option value="20000">Within 20 km</option>
+              </select>
+              <button class="discover-control-btn primary" onclick="performNearbySearch()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                </svg>
+                Find Nearby Stores
+              </button>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="discover-control-section">
+              <div class="discover-control-title">Tips</div>
+              <ul style="font-size: 0.75rem; color: var(--color-gray-500); padding-left: 1rem; margin: 0;">
+                <li style="margin-bottom: 0.5rem;">Search by store name for best results</li>
+                <li style="margin-bottom: 0.5rem;">Click on map markers to see store details</li>
+                <li>Added stores appear in your Stores list</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Right Panel - Map and Results -->
+          <div class="discover-content-panel">
+            <!-- Map -->
+            <div class="discover-map-container">
+              <div id="discover-map"></div>
+            </div>
+
+            <!-- Results -->
+            <div class="discover-results-section">
+              <div class="discover-results-header">
+                <span class="discover-results-title">Search Results</span>
+                <span class="discover-results-count" id="results-count">0 stores</span>
+              </div>
+              <div class="discover-results-list" id="results-list">
+                <div class="discover-empty">
+                  <svg class="discover-empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <div class="discover-empty-title">Search for stores</div>
+                  <div class="discover-empty-text">Enter a store name above or click "Find Nearby Stores"</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/maps.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    // State
+    var discoverMap = null;
+    var discoverMarkers = [];
+    var userLocationMarker = null;
+    var discoveredStores = [];
+    var currentLocation = null;
+    var existingStoreIds = new Set();
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (!await user.init()) return;
+
+      initUserSidebar('discover');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Discover', href: '/user/discover/' }
+      ]);
+
+      // Setup search on Enter key
+      document.getElementById('search-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          performTextSearch();
+        }
+      });
+
+      // Check for existing location
+      if (user.currentUser && user.currentUser.latitude && user.currentUser.longitude) {
+        currentLocation = {
+          lat: user.currentUser.latitude,
+          lng: user.currentUser.longitude
+        };
+        showMainContent();
+        await initMap();
+      } else {
+        showLocationPrompt();
+      }
+
+      await loadExistingStoreIds();
+    });
+
+    function showLocationPrompt() {
+      document.getElementById('location-prompt').classList.remove('hidden');
+      document.getElementById('main-content').classList.add('hidden');
+    }
+
+    function showMainContent() {
+      document.getElementById('location-prompt').classList.add('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      updateLocationDisplay();
+    }
+
+    function updateLocationDisplay() {
+      var dot = document.getElementById('location-dot');
+      var text = document.getElementById('location-text');
+
+      if (currentLocation) {
+        dot.classList.add('active');
+        text.textContent = 'Location set';
+      } else {
+        dot.classList.remove('active');
+        text.textContent = 'No location set';
+      }
+    }
+
+    async function detectLocation() {
+      var btn = event.target.closest('button');
+      var originalContent = btn.innerHTML;
+
+      try {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-sm"></span> Detecting...';
+
+        currentLocation = await mapsApi.getCurrentLocation();
+        user.toast('Location detected successfully', 'success');
+
+        showMainContent();
+        await initMap();
+
+      } catch (err) {
+        console.error('Location detection failed:', err);
+        user.toast('Could not detect location. Please set your address in Profile.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    }
+
+    async function initMap() {
+      if (!mapsApi.isLoaded) {
+        await mapsApi.init();
+      }
+
+      if (!discoverMap) {
+        discoverMap = mapsApi.createMap('discover-map', {
+          center: currentLocation || { lat: 39.7392, lng: -104.9903 }, // Default to Denver
+          zoom: currentLocation ? 13 : 10
+        });
+      } else if (currentLocation) {
+        discoverMap.setCenter(currentLocation);
+        discoverMap.setZoom(13);
+      }
+
+      if (currentLocation) {
+        if (userLocationMarker) userLocationMarker.setMap(null);
+        userLocationMarker = mapsApi.addMarker(discoverMap, currentLocation, {
+          icon: mapsApi.createIcon('user'),
+          title: 'Your location'
+        });
+      }
+    }
+
+    async function loadExistingStoreIds() {
+      try {
+        var response = await storesApi.list({ limit: 500 });
+        existingStoreIds.clear();
+        var stores = Array.isArray(response && response.data) ? response.data : (Array.isArray(response) ? response : []);
+        for (var i = 0; i < stores.length; i++) {
+          var store = stores[i];
+          if (store.google_place_id) {
+            existingStoreIds.add(store.google_place_id);
+          }
+          if (store.name && store.zip_code) {
+            existingStoreIds.add(store.name.toLowerCase() + '_' + store.zip_code);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load existing stores:', err);
+      }
+    }
+
+    async function performTextSearch() {
+      var query = document.getElementById('search-input').value.trim();
+      if (!query) {
+        user.toast('Please enter a store name to search', 'warning');
+        return;
+      }
+
+      var btn = document.getElementById('search-btn');
+      var resultsContainer = document.getElementById('results-list');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-sm"></span> Searching...';
+      resultsContainer.innerHTML = '<div class="discover-loading"><div class="spinner"></div> Searching for "' + escapeHtml(query) + '"...</div>';
+
+      try {
+        var lat = currentLocation ? currentLocation.lat : 0;
+        var lng = currentLocation ? currentLocation.lng : 0;
+        var radius = parseInt(document.getElementById('radius-select').value);
+
+        var response = await mapsApi.textSearchStores(query, lat, lng, radius);
+        discoveredStores = Array.isArray(response && response.data) ? response.data : [];
+
+        clearMarkers();
+        addStoreMarkers();
+        renderResults();
+
+        if (discoveredStores.length > 0) {
+          fitMapToResults();
+        }
+
+      } catch (err) {
+        console.error('Search failed:', err);
+        resultsContainer.innerHTML = '<div class="discover-error">' +
+          '<div class="discover-empty-title">Search failed</div>' +
+          '<div class="discover-empty-text">Please try again</div>' +
+          '<button class="btn btn-secondary btn-sm" onclick="performTextSearch()" style="margin-top: 1rem;">Retry</button>' +
+        '</div>';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search';
+      }
+    }
+
+    async function performNearbySearch() {
+      if (!currentLocation) {
+        user.toast('Please set your location first', 'warning');
+        return;
+      }
+
+      var btn = event.target.closest('button');
+      var originalContent = btn.innerHTML;
+      var resultsContainer = document.getElementById('results-list');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-sm"></span> Searching...';
+      resultsContainer.innerHTML = '<div class="discover-loading"><div class="spinner"></div> Finding nearby stores...</div>';
+
+      try {
+        var radius = parseInt(document.getElementById('radius-select').value);
+
+        var response = await mapsApi.findNearbyStores(currentLocation.lat, currentLocation.lng, radius);
+        discoveredStores = Array.isArray(response && response.data) ? response.data : [];
+
+        clearMarkers();
+        addStoreMarkers();
+        renderResults();
+
+        if (discoveredStores.length > 0) {
+          fitMapToResults();
+        }
+
+      } catch (err) {
+        console.error('Nearby search failed:', err);
+        resultsContainer.innerHTML = '<div class="discover-error">' +
+          '<div class="discover-empty-title">Search failed</div>' +
+          '<div class="discover-empty-text">Please try again</div>' +
+          '<button class="btn btn-secondary btn-sm" onclick="performNearbySearch()" style="margin-top: 1rem;">Retry</button>' +
+        '</div>';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    }
+
+    function addStoreMarkers() {
+      for (var i = 0; i < discoveredStores.length; i++) {
+        var store = discoveredStores[i];
+        var lat = store.latitude || (store.geometry && store.geometry.location && store.geometry.location.lat);
+        var lng = store.longitude || (store.geometry && store.geometry.location && store.geometry.location.lng);
+
+        if (lat && lng) {
+          var isExisting = checkIfStoreExists(store);
+          var marker = mapsApi.addMarker(discoverMap,
+            { lat: lat, lng: lng },
+            {
+              icon: mapsApi.createIcon(isExisting ? 'store-selected' : 'store'),
+              title: store.name
+            }
+          );
+
+          (function(index) {
+            marker.addListener('click', function() { highlightStore(index); });
+          })(i);
+
+          discoverMarkers.push(marker);
+        }
+      }
+    }
+
+    function fitMapToResults() {
+      var positions = [];
+      if (currentLocation) {
+        positions.push(currentLocation);
+      }
+
+      for (var i = 0; i < discoveredStores.length; i++) {
+        var store = discoveredStores[i];
+        var lat = store.latitude || (store.geometry && store.geometry.location && store.geometry.location.lat);
+        var lng = store.longitude || (store.geometry && store.geometry.location && store.geometry.location.lng);
+        if (lat && lng) {
+          positions.push({ lat: lat, lng: lng });
+        }
+      }
+
+      if (positions.length > 0) {
+        mapsApi.fitBounds(discoverMap, positions);
+      }
+    }
+
+    function renderResults() {
+      var container = document.getElementById('results-list');
+      document.getElementById('results-count').textContent = discoveredStores.length + ' stores';
+
+      if (discoveredStores.length === 0) {
+        container.innerHTML = '<div class="discover-empty">' +
+          '<svg class="discover-empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+            '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>' +
+            '<polyline points="9 22 9 12 15 12 15 22"></polyline>' +
+          '</svg>' +
+          '<div class="discover-empty-title">No stores found</div>' +
+          '<div class="discover-empty-text">Try a different search or increase the radius</div>' +
+        '</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < discoveredStores.length; i++) {
+        var store = discoveredStores[i];
+        var isExisting = checkIfStoreExists(store);
+
+        html += '<div class="discover-store-card' + (isExisting ? ' existing' : '') + '" data-index="' + i + '" onclick="highlightStore(' + i + ')">';
+        html += '<div class="discover-store-number">' + (i + 1) + '</div>';
+        html += '<div class="discover-store-info">';
+        html += '<div class="discover-store-name">' + escapeHtml(store.name) + '</div>';
+        html += '<div class="discover-store-address">' + escapeHtml(store.formatted_address || store.address || store.vicinity || '') + '</div>';
+        if (store.rating) {
+          html += '<div class="discover-store-rating">';
+          html += '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+          html += ' ' + store.rating.toFixed(1);
+          if (store.user_ratings_total) {
+            html += ' <span style="color: var(--color-gray-400);">(' + store.user_ratings_total + ')</span>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+        html += '<div class="discover-store-actions">';
+        if (isExisting) {
+          html += '<span class="discover-badge discover-badge-exists">Already Added</span>';
+        } else {
+          html += '<button class="btn btn-primary btn-sm" onclick="addStore(' + i + ', event)">Add</button>';
+        }
+        html += '</div>';
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    function highlightStore(index) {
+      // Bounce marker
+      if (discoverMarkers[index]) {
+        discoverMarkers[index].setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(function() {
+          if (discoverMarkers[index]) {
+            discoverMarkers[index].setAnimation(null);
+          }
+        }, 1500);
+      }
+
+      // Highlight card
+      var cards = document.querySelectorAll('.discover-store-card');
+      for (var i = 0; i < cards.length; i++) {
+        cards[i].classList.toggle('active', i === index);
+      }
+
+      // Pan to store
+      var store = discoveredStores[index];
+      var lat = store.latitude || (store.geometry && store.geometry.location && store.geometry.location.lat);
+      var lng = store.longitude || (store.geometry && store.geometry.location && store.geometry.location.lng);
+      if (lat && lng) {
+        discoverMap.panTo({ lat: lat, lng: lng });
+      }
+
+      // Scroll card into view
+      var activeCard = document.querySelector('.discover-store-card.active');
+      if (activeCard) {
+        activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    async function addStore(index, event) {
+      event.stopPropagation();
+
+      var store = discoveredStores[index];
+      var btn = event.target;
+      var originalText = btn.textContent;
+
+      try {
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        // Get place details for better address info
+        var details = store;
+        if (store.place_id) {
+          try {
+            var response = await mapsApi.getPlaceDetails(store.place_id);
+            details = response && response.data ? response.data : (response || store);
+          } catch (err) {
+            console.warn('Could not fetch place details, using basic info');
+          }
+        }
+
+        // Parse address from formatted_address if components are missing
+        var parsedAddress = parseFormattedAddress(details.formatted_address || store.formatted_address || '');
+
+        var streetAddress = details.street_address || parsedAddress.street || store.address || store.vicinity || '';
+        var city = details.city || parsedAddress.city || '';
+        var state = details.state || parsedAddress.state || '';
+        var zipCode = details.zip_code || parsedAddress.zip || '';
+
+        await storesApi.create({
+          name: details.name || store.name,
+          street_address: streetAddress,
+          city: city,
+          state: state,
+          zip_code: zipCode,
+          latitude: details.latitude || store.latitude || (store.geometry && store.geometry.location && store.geometry.location.lat),
+          longitude: details.longitude || store.longitude || (store.geometry && store.geometry.location && store.geometry.location.lng),
+          store_type: determineStoreType(store.types || []),
+          chain: extractChainName(store.name),
+          google_place_id: store.place_id || null
+        });
+
+        user.toast(store.name + ' added successfully!', 'success');
+
+        // Update button
+        btn.textContent = 'Added';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        btn.style.background = 'var(--color-primary-500)';
+        btn.style.opacity = '0.7';
+
+        // Mark as existing
+        if (store.place_id) existingStoreIds.add(store.place_id);
+
+        var card = btn.closest('.discover-store-card');
+        if (card) card.classList.add('existing');
+
+        // Update marker color
+        if (discoverMarkers[index]) {
+          discoverMarkers[index].setIcon(mapsApi.createIcon('store-selected'));
+        }
+
+      } catch (err) {
+        console.error('Failed to add store:', err);
+        user.toast('Failed to add store: ' + (err.message || 'Unknown error'), 'error');
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    function checkIfStoreExists(googleStore) {
+      if (googleStore.place_id && existingStoreIds.has(googleStore.place_id)) {
+        return true;
+      }
+      var name = googleStore.name ? googleStore.name.toLowerCase() : null;
+      var zip = googleStore.zip_code;
+      if (name && zip && existingStoreIds.has(name + '_' + zip)) {
+        return true;
+      }
+      return false;
+    }
+
+    function determineStoreType(types) {
+      if (!types || !Array.isArray(types)) return 'grocery';
+      if (types.indexOf('supermarket') >= 0) return 'supermarket';
+      if (types.indexOf('grocery_or_supermarket') >= 0) return 'grocery';
+      if (types.indexOf('convenience_store') >= 0) return 'convenience';
+      if (types.indexOf('department_store') >= 0) return 'department';
+      return 'grocery';
+    }
+
+    function extractChainName(storeName) {
+      if (!storeName) return null;
+      var chains = [
+        'Walmart', 'Target', 'Kroger', 'Safeway', 'Albertsons',
+        'King Soopers', 'Publix', 'H-E-B', 'Whole Foods', "Trader Joe's",
+        'Costco', "Sam's Club", 'Aldi', 'Lidl', 'Sprouts', 'Natural Grocers',
+        'Save-A-Lot', 'Food Lion', 'Giant', 'Stop & Shop', 'Wegmans', 'WinCo'
+      ];
+
+      var lowerName = storeName.toLowerCase();
+      for (var i = 0; i < chains.length; i++) {
+        if (lowerName.indexOf(chains[i].toLowerCase()) >= 0) {
+          return chains[i];
+        }
+      }
+      return null;
+    }
+
+    function clearMarkers() {
+      for (var i = 0; i < discoverMarkers.length; i++) {
+        discoverMarkers[i].setMap(null);
+      }
+      discoverMarkers = [];
+    }
+
+    // Parse formatted address string into components
+    // Example: "1234 Main St, Denver, CO 80202, USA"
+    function parseFormattedAddress(formattedAddress) {
+      var result = { street: '', city: '', state: '', zip: '' };
+      if (!formattedAddress) return result;
+
+      // Remove country suffix if present
+      var addr = formattedAddress.replace(/,?\s*(USA|United States|US)$/i, '').trim();
+
+      // Split by comma
+      var parts = addr.split(',').map(function(p) { return p.trim(); });
+
+      if (parts.length >= 3) {
+        // Format: "Street, City, State ZIP"
+        result.street = parts[0];
+        result.city = parts[1];
+
+        // Parse "State ZIP" from last part
+        var stateZip = parts[parts.length - 1];
+        var stateZipMatch = stateZip.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+        if (stateZipMatch) {
+          result.state = stateZipMatch[1];
+          result.zip = stateZipMatch[2];
+        } else {
+          // Try just state
+          var stateMatch = stateZip.match(/^([A-Z]{2})$/);
+          if (stateMatch) {
+            result.state = stateMatch[1];
+          }
+          // Try to find zip anywhere in the string
+          var zipMatch = stateZip.match(/(\d{5}(?:-\d{4})?)/);
+          if (zipMatch) {
+            result.zip = zipMatch[1];
+          }
+        }
+      } else if (parts.length === 2) {
+        // Format: "Street, City State ZIP" or "City, State ZIP"
+        var lastPart = parts[1];
+        var cityStateZip = lastPart.match(/^(.+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+        if (cityStateZip) {
+          result.street = parts[0];
+          result.city = cityStateZip[1];
+          result.state = cityStateZip[2];
+          result.zip = cityStateZip[3];
+        } else {
+          result.street = parts[0];
+          result.city = parts[1];
+        }
+      } else if (parts.length === 1) {
+        // Just one part, try to parse inline
+        result.street = parts[0];
+      }
+
+      return result;
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

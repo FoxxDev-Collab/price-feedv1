@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Spending - PriceFeed</title>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/user.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <div class="user-layout">
+    <aside class="user-sidebar" id="user-sidebar"></aside>
+
+    <main class="user-main">
+      <header class="user-header" id="user-header"></header>
+
+      <div class="user-content">
+        <div class="user-page-header">
+          <h1 class="user-page-title">Monthly Spending</h1>
+          <p class="user-page-subtitle">Track how much you're spending each month from your receipts.</p>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="spending-stats" id="spending-stats">
+          <div class="user-stat-card">
+            <div class="user-stat-label">This Month</div>
+            <div class="user-stat-value" id="stat-this-month">$0.00</div>
+            <div class="spending-stat-trend" id="stat-trend"></div>
+          </div>
+          <div class="user-stat-card">
+            <div class="user-stat-label">Monthly Average</div>
+            <div class="user-stat-value" id="stat-average">$0.00</div>
+          </div>
+          <div class="user-stat-card">
+            <div class="user-stat-label">Total (6 months)</div>
+            <div class="user-stat-value" id="stat-total">$0.00</div>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="spending-chart-container">
+          <div class="spending-chart-title">Spending Over Time</div>
+          <div class="spending-chart" id="spending-chart">
+            <div class="spending-empty-text">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Month Selector for Breakdown -->
+        <div class="month-selector" id="month-selector"></div>
+
+        <!-- Store Breakdown -->
+        <div class="spending-breakdown">
+          <div class="spending-breakdown-title" id="breakdown-title">Store Breakdown</div>
+          <div id="store-breakdown">
+            <div class="spending-empty-text">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/user-common.js"></script>
+  <script src="/js/user-sidebar.js"></script>
+  <script>
+    let spendingData = null;
+    let selectedMonth = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!await user.init()) return;
+
+      initUserSidebar('spending');
+      initUserHeader([
+        { label: 'Dashboard', href: '/user/' },
+        { label: 'Spending', href: '/user/spending/' }
+      ]);
+
+      await loadSpendingData();
+    });
+
+    async function loadSpendingData() {
+      try {
+        const response = await api.request('/api/receipts/spending-summary?months=6');
+        spendingData = response?.data || response;
+
+        if (!spendingData || !spendingData.months || spendingData.months.length === 0) {
+          showEmptyState();
+          return;
+        }
+
+        renderStats();
+        renderChart();
+        renderMonthSelector();
+
+        // Select current month by default
+        selectedMonth = spendingData.months[0]?.month;
+        renderStoreBreakdown();
+      } catch (err) {
+        console.error('Failed to load spending data:', err);
+        document.getElementById('spending-chart').innerHTML =
+          '<div class="spending-empty-text" style="color: var(--color-error);">Failed to load spending data</div>';
+      }
+    }
+
+    function showEmptyState() {
+      document.getElementById('stat-this-month').textContent = '$0.00';
+      document.getElementById('stat-average').textContent = '$0.00';
+      document.getElementById('stat-total').textContent = '$0.00';
+      document.getElementById('stat-trend').textContent = '';
+
+      document.getElementById('spending-chart').innerHTML = `
+        <div class="user-empty-state" style="width: 100%;">
+          <div class="user-empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <line x1="12" y1="20" x2="12" y2="10"></line>
+              <line x1="18" y1="20" x2="18" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="16"></line>
+            </svg>
+          </div>
+          <div class="user-empty-title">No spending data yet</div>
+          <div class="user-empty-text">Upload receipts or complete shopping lists to track spending</div>
+          <div style="display: flex; gap: var(--space-2); margin-top: var(--space-4);">
+            <a href="/user/receipts/" class="btn btn-primary">Upload Receipt</a>
+            <a href="/user/lists/" class="btn btn-secondary">Shopping Lists</a>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('month-selector').innerHTML = '';
+      document.getElementById('store-breakdown').innerHTML =
+        '<div class="spending-empty-text">No data available</div>';
+    }
+
+    function renderStats() {
+      const thisMonth = spendingData.months[0];
+      const lastMonth = spendingData.months[1];
+
+      document.getElementById('stat-this-month').textContent = user.formatCurrency(thisMonth?.total || 0);
+      document.getElementById('stat-average').textContent = user.formatCurrency(spendingData.average_monthly || 0);
+      document.getElementById('stat-total').textContent = user.formatCurrency(spendingData.grand_total || 0);
+
+      // Calculate trend
+      const trendEl = document.getElementById('stat-trend');
+      if (thisMonth && lastMonth && lastMonth.total > 0) {
+        const change = ((thisMonth.total - lastMonth.total) / lastMonth.total) * 100;
+        const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '';
+        const trendClass = change > 5 ? 'up' : change < -5 ? 'down' : 'stable';
+        trendEl.className = 'spending-stat-trend ' + trendClass;
+        trendEl.textContent = `${arrow} ${Math.abs(change).toFixed(1)}% vs last month`;
+      } else {
+        trendEl.textContent = '';
+      }
+    }
+
+    function renderChart() {
+      const chartEl = document.getElementById('spending-chart');
+
+      // Reverse to show oldest first (left to right)
+      const months = [...spendingData.months].reverse();
+      const maxTotal = Math.max(...months.map(m => m.total), 1);
+
+      chartEl.innerHTML = months.map((month, idx) => {
+        const heightPercent = (month.total / maxTotal) * 100;
+        const isCurrentMonth = idx === months.length - 1;
+        const monthLabel = formatMonthLabel(month.month);
+
+        return `
+          <div class="spending-bar-container">
+            <div class="spending-bar-amount">${user.formatCurrency(month.total)}</div>
+            <div class="spending-bar-wrapper">
+              <div class="spending-bar ${isCurrentMonth ? 'current' : ''}"
+                   style="height: ${Math.max(heightPercent, 2)}%"
+                   onclick="selectMonth('${month.month}')"
+                   title="${monthLabel}: ${user.formatCurrency(month.total)}">
+              </div>
+            </div>
+            <div class="spending-bar-label">${monthLabel}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMonthSelector() {
+      const selectorEl = document.getElementById('month-selector');
+      selectorEl.innerHTML = spendingData.months.map(month => {
+        const label = formatMonthLabel(month.month);
+        return `
+          <button class="month-btn ${month.month === selectedMonth ? 'active' : ''}"
+                  onclick="selectMonth('${month.month}')">
+            ${label}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectMonth(month) {
+      selectedMonth = month;
+      renderMonthSelector();
+      renderStoreBreakdown();
+    }
+
+    function renderStoreBreakdown() {
+      const breakdownEl = document.getElementById('store-breakdown');
+      const titleEl = document.getElementById('breakdown-title');
+
+      const monthData = spendingData.months.find(m => m.month === selectedMonth);
+      if (!monthData || !monthData.stores || monthData.stores.length === 0) {
+        breakdownEl.innerHTML = '<div class="spending-empty-text">No data for this month</div>';
+        return;
+      }
+
+      // Build title with source breakdown
+      let titleText = `Breakdown - ${formatMonthLabel(selectedMonth)}`;
+      titleEl.textContent = titleText;
+
+      // Sort stores by total descending
+      const stores = [...monthData.stores].sort((a, b) => b.total - a.total);
+
+      breakdownEl.innerHTML = stores.map(store => {
+        const sourceLabel = store.source === 'list' ? 'list' : 'receipt';
+        const countLabel = store.transaction_count === 1 ? sourceLabel : sourceLabel + 's';
+        const sourceBadge = store.source === 'list'
+          ? '<span class="badge badge-secondary" style="margin-left: var(--space-2); font-size: 10px;">List</span>'
+          : '';
+
+        return `
+          <div class="spending-store-row">
+            <div class="spending-store-name">
+              ${user.escapeHtml(store.store_name)}${sourceBadge}
+            </div>
+            <div class="spending-store-details">
+              <div class="spending-store-total">${user.formatCurrency(store.total)}</div>
+              <div class="spending-store-count">${store.transaction_count} ${countLabel}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Show source totals if we have both
+      if (monthData.receipt_total > 0 && monthData.list_total > 0) {
+        breakdownEl.innerHTML += `
+          <div class="spending-source-summary">
+            <div class="spending-source-item">
+              <span>From Receipts:</span>
+              <strong>${user.formatCurrency(monthData.receipt_total)}</strong>
+            </div>
+            <div class="spending-source-item">
+              <span>From Lists:</span>
+              <strong>${user.formatCurrency(monthData.list_total)}</strong>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function formatMonthLabel(monthStr) {
+      // monthStr is "YYYY-MM"
+      const [year, month] = monthStr.split('-');
+      const date = new Date(year, parseInt(month) - 1, 1);
+      return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    }
+  </script>
+</body>
+</html>

@@ -19,33 +19,33 @@ const (
 type MatchStatus string
 
 const (
-	MatchStatusPending  MatchStatus = "pending"
-	MatchStatusMatched  MatchStatus = "matched"
-	MatchStatusNewItem  MatchStatus = "new_item"
-	MatchStatusSkipped  MatchStatus = "skipped"
+	MatchStatusPending MatchStatus = "pending"
+	MatchStatusMatched MatchStatus = "matched"
+	MatchStatusNewItem MatchStatus = "new_item"
+	MatchStatusSkipped MatchStatus = "skipped"
 )
 
 // Receipt represents an uploaded receipt image
 type Receipt struct {
-	ID               int            `json:"id"`
-	UserID           int            `json:"user_id"`
-	StoreID          *int           `json:"store_id,omitempty"`
-	S3Bucket         string         `json:"s3_bucket"`
-	S3Key            string         `json:"s3_key"`
-	OriginalFilename *string        `json:"original_filename,omitempty"`
-	ContentType      *string        `json:"content_type,omitempty"`
-	FileSizeBytes    *int64         `json:"file_size_bytes,omitempty"`
-	Status           ReceiptStatus  `json:"status"`
-	OCRText          *string        `json:"ocr_text,omitempty"`
-	ErrorMessage     *string        `json:"error_message,omitempty"`
-	ReceiptDate      *time.Time     `json:"receipt_date,omitempty"`
-	ReceiptTotal     *float64       `json:"receipt_total,omitempty"`
-	UploadedAt       time.Time      `json:"uploaded_at"`
-	ProcessedAt      *time.Time     `json:"processed_at,omitempty"`
-	ConfirmedAt      *time.Time     `json:"confirmed_at,omitempty"`
-	ExpiresAt        time.Time      `json:"expires_at"`
-	CreatedAt        time.Time      `json:"created_at"`
-	UpdatedAt        time.Time      `json:"updated_at"`
+	ID               int           `json:"id"`
+	UserID           int           `json:"user_id"`
+	StoreID          *int          `json:"store_id,omitempty"`
+	S3Bucket         string        `json:"s3_bucket"`
+	S3Key            string        `json:"s3_key"`
+	OriginalFilename *string       `json:"original_filename,omitempty"`
+	ContentType      *string       `json:"content_type,omitempty"`
+	FileSizeBytes    *int64        `json:"file_size_bytes,omitempty"`
+	Status           ReceiptStatus `json:"status"`
+	OCRText          *string       `json:"ocr_text,omitempty"`
+	ErrorMessage     *string       `json:"error_message,omitempty"`
+	ReceiptDate      *time.Time    `json:"receipt_date,omitempty"`
+	ReceiptTotal     *float64      `json:"receipt_total,omitempty"`
+	UploadedAt       time.Time     `json:"uploaded_at"`
+	ProcessedAt      *time.Time    `json:"processed_at,omitempty"`
+	ConfirmedAt      *time.Time    `json:"confirmed_at,omitempty"`
+	ExpiresAt        time.Time     `json:"expires_at"`
+	CreatedAt        time.Time     `json:"created_at"`
+	UpdatedAt        time.Time     `json:"updated_at"`
 }
 
 // ReceiptWithItems includes the parsed items
@@ -58,22 +58,22 @@ type ReceiptWithItems struct {
 
 // ReceiptItem represents a parsed line item from a receipt
 type ReceiptItem struct {
-	ID               int         `json:"id"`
-	ReceiptID        int         `json:"receipt_id"`
-	RawText          string      `json:"raw_text"`
-	ExtractedName    *string     `json:"extracted_name,omitempty"`
-	ExtractedPrice   *float64    `json:"extracted_price,omitempty"`
-	ExtractedQuantity int        `json:"extracted_quantity"`
-	MatchedItemID    *int        `json:"matched_item_id,omitempty"`
-	MatchConfidence  *float64    `json:"match_confidence,omitempty"`
-	MatchStatus      MatchStatus `json:"match_status"`
-	ConfirmedItemID  *int        `json:"confirmed_item_id,omitempty"`
-	ConfirmedPrice   *float64    `json:"confirmed_price,omitempty"`
-	IsConfirmed      bool        `json:"is_confirmed"`
-	CreatedItemID    *int        `json:"created_item_id,omitempty"`
-	LineNumber       *int        `json:"line_number,omitempty"`
-	CreatedAt        time.Time   `json:"created_at"`
-	UpdatedAt        time.Time   `json:"updated_at"`
+	ID                int         `json:"id"`
+	ReceiptID         int         `json:"receipt_id"`
+	RawText           string      `json:"raw_text"`
+	ExtractedName     *string     `json:"extracted_name,omitempty"`
+	ExtractedPrice    *float64    `json:"extracted_price,omitempty"`
+	ExtractedQuantity int         `json:"extracted_quantity"`
+	MatchedItemID     *int        `json:"matched_item_id,omitempty"`
+	MatchConfidence   *float64    `json:"match_confidence,omitempty"`
+	MatchStatus       MatchStatus `json:"match_status"`
+	ConfirmedItemID   *int        `json:"confirmed_item_id,omitempty"`
+	ConfirmedPrice    *float64    `json:"confirmed_price,omitempty"`
+	IsConfirmed       bool        `json:"is_confirmed"`
+	CreatedItemID     *int        `json:"created_item_id,omitempty"`
+	LineNumber        *int        `json:"line_number,omitempty"`
+	CreatedAt         time.Time   `json:"created_at"`
+	UpdatedAt         time.Time   `json:"updated_at"`
 }
 
 // ReceiptItemWithSuggestions includes match suggestions
@@ -105,15 +105,15 @@ type CreateReceiptRequest struct {
 
 // CreateReceiptItemRequest is used when creating parsed items
 type CreateReceiptItemRequest struct {
-	ReceiptID        int
-	RawText          string
-	ExtractedName    *string
-	ExtractedPrice   *float64
+	ReceiptID         int
+	RawText           string
+	ExtractedName     *string
+	ExtractedPrice    *float64
 	ExtractedQuantity int
-	MatchedItemID    *int
-	MatchConfidence  *float64
-	MatchStatus      MatchStatus
-	LineNumber       int
+	MatchedItemID     *int
+	MatchConfidence   *float64
+	MatchStatus       MatchStatus
+	LineNumber        int
 }
 
 // UpdateReceiptItemRequest is used when user confirms/updates an item
@@ -150,6 +150,23 @@ type ReceiptListParams struct {
 	UserID int
 }
 
+// CreateManualReceiptRequest is used when manually entering a receipt
+type CreateManualReceiptRequest struct {
+	StoreID     int                 `json:"store_id"`
+	ReceiptDate *string             `json:"receipt_date,omitempty"`
+	Total       *float64            `json:"total,omitempty"`
+	Items       []ManualReceiptItem `json:"items"`
+	Notes       *string             `json:"notes,omitempty"`
+}
+
+// ManualReceiptItem represents an item in a manual receipt entry
+type ManualReceiptItem struct {
+	ItemID   *int    `json:"item_id,omitempty"`
+	Name     string  `json:"name"`
+	Price    float64 `json:"price"`
+	Quantity int     `json:"quantity"`
+}
+
 // ParsedItem represents an item parsed from OCR text
 type ParsedItem struct {
 	RawText    string
@@ -169,11 +186,11 @@ type ParsedReceipt struct {
 
 // MatchResult represents a fuzzy match result
 type MatchResult struct {
-	ItemID      int
-	Name        string
-	Brand       *string
-	Confidence  float64
-	MatchType   string
+	ItemID     int
+	Name       string
+	Brand      *string
+	Confidence float64
+	MatchType  string
 }
 
 // SpendingSummary represents monthly spending aggregations
@@ -185,16 +202,19 @@ type SpendingSummary struct {
 
 // MonthlySpending represents spending for a single month
 type MonthlySpending struct {
-	Month        string         `json:"month"`
-	Total        float64        `json:"total"`
-	ReceiptCount int            `json:"receipt_count"`
-	Stores       []StoreSpend   `json:"stores"`
+	Month            string       `json:"month"`
+	Total            float64      `json:"total"`
+	TransactionCount int          `json:"transaction_count"`
+	ReceiptTotal     float64      `json:"receipt_total"`
+	ListTotal        float64      `json:"list_total"`
+	Stores           []StoreSpend `json:"stores"`
 }
 
 // StoreSpend represents spending at a specific store
 type StoreSpend struct {
-	StoreID      int     `json:"store_id"`
-	StoreName    string  `json:"store_name"`
-	Total        float64 `json:"total"`
-	ReceiptCount int     `json:"receipt_count"`
+	StoreID          int     `json:"store_id"`
+	StoreName        string  `json:"store_name"`
+	Total            float64 `json:"total"`
+	TransactionCount int     `json:"transaction_count"`
+	Source           string  `json:"source"` // "receipt" or "list"
 }

@@ -8,6 +8,243 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/user.css">
   <script src="/js/theme.js"></script>
+  <style>
+    /* Stats Summary Bar */
+    .receipts-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    .stat-card {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      text-align: center;
+    }
+    .stat-card-value {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      color: var(--color-text);
+    }
+    .stat-card-value.currency {
+      color: var(--color-success);
+    }
+    .stat-card-label {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+      margin-top: var(--space-1);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Toolbar */
+    .receipts-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .filter-tabs {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    .filter-tab {
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-gray-600);
+      transition: all 0.15s ease;
+    }
+    .filter-tab:hover {
+      background: var(--color-bg-secondary);
+    }
+    .filter-tab.active {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+    .filter-tab .count {
+      background: var(--color-bg-tertiary);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      margin-left: var(--space-2);
+    }
+    .filter-tab.active .count {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* View Toggle */
+    .view-toggle {
+      display: flex;
+      gap: var(--space-1);
+      background: var(--color-bg-secondary);
+      padding: var(--space-1);
+      border-radius: var(--radius-md);
+    }
+    .view-toggle-btn {
+      padding: var(--space-2);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--color-gray-500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .view-toggle-btn:hover {
+      background: var(--color-bg-tertiary);
+    }
+    .view-toggle-btn.active {
+      background: var(--color-bg);
+      color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Receipt Cards */
+    .receipt-card {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .receipt-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .receipt-card-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .receipt-store {
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: var(--space-1);
+    }
+    .receipt-date {
+      font-size: var(--text-sm);
+      color: var(--color-gray-500);
+    }
+    .receipt-card-body {
+      padding: var(--space-4);
+    }
+    .receipt-total {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--color-success);
+      margin-bottom: var(--space-2);
+    }
+    .receipt-meta {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+    }
+    .receipt-card-footer {
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-bg-tertiary);
+      display: flex;
+      gap: var(--space-2);
+      justify-content: flex-end;
+    }
+
+    /* Table View */
+    .receipts-table {
+      width: 100%;
+      border-collapse: collapse;
+      display: none;
+    }
+    .receipts-table.active {
+      display: table;
+    }
+    .receipts-table th,
+    .receipts-table td {
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .receipts-table th {
+      background: var(--color-bg-secondary);
+      font-weight: 600;
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-gray-600);
+    }
+    .receipts-table tr:hover td {
+      background: var(--color-bg-secondary);
+    }
+    .receipts-table .total-cell {
+      font-weight: 600;
+      color: var(--color-success);
+    }
+
+    /* Grid/Table Container */
+    .receipts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-4);
+    }
+    .receipts-grid.hidden {
+      display: none;
+    }
+
+    /* Item Rows */
+    .item-rows {
+      margin-top: var(--space-4);
+    }
+    .item-row {
+      display: grid;
+      grid-template-columns: 1fr 100px 80px 40px;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+      align-items: center;
+    }
+    .item-row input {
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+    }
+    .item-row .remove-item {
+      background: none;
+      border: none;
+      color: var(--color-error);
+      cursor: pointer;
+      padding: var(--space-2);
+    }
+    .add-item-btn {
+      margin-top: var(--space-3);
+      width: 100%;
+      padding: var(--space-2);
+      border: 2px dashed var(--color-border);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--color-gray-500);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      transition: all 0.15s ease;
+    }
+    .add-item-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+  </style>
 </head>
 <body>
   <div class="user-layout">
@@ -18,34 +255,151 @@
 
       <div class="user-content">
         <div class="user-page-header">
-          <h1 class="user-page-title">Receipt Scanning</h1>
-          <p class="user-page-subtitle">Upload receipt photos to automatically add items and prices.</p>
+          <h1 class="user-page-title">Receipts</h1>
+          <p class="user-page-subtitle">Track your purchases and spending</p>
           <div class="user-page-header-actions">
+            <button class="btn btn-secondary" onclick="openManualEntry()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Manual Entry
+            </button>
             <a href="/user/receipts/upload.html" class="btn btn-primary">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
               </svg>
-              Upload Receipt
+              Scan Receipt
             </a>
           </div>
         </div>
 
-        <!-- Status Tabs -->
-        <div class="user-tabs" id="status-tabs">
-          <button class="user-tab active" data-status="" onclick="filterByStatus('')">All</button>
-          <button class="user-tab" data-status="pending" onclick="filterByStatus('pending')">Pending</button>
-          <button class="user-tab" data-status="completed" onclick="filterByStatus('completed')">Ready for Review</button>
-          <button class="user-tab" data-status="confirmed" onclick="filterByStatus('confirmed')">Confirmed</button>
+        <!-- Stats Summary -->
+        <div class="receipts-stats" id="stats-bar">
+          <div class="stat-card">
+            <div class="stat-card-value currency" id="stat-total">$0.00</div>
+            <div class="stat-card-label">Total Spent</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-value" id="stat-receipts">0</div>
+            <div class="stat-card-label">Receipts</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-value" id="stat-confirmed">0</div>
+            <div class="stat-card-label">Confirmed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-value" id="stat-pending">0</div>
+            <div class="stat-card-label">Pending</div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="receipts-toolbar">
+          <div class="filter-tabs" id="filter-tabs">
+            <button class="filter-tab active" data-status="" onclick="filterByStatus('')">All</button>
+            <button class="filter-tab" data-status="pending" onclick="filterByStatus('pending')">Pending</button>
+            <button class="filter-tab" data-status="completed" onclick="filterByStatus('completed')">Ready</button>
+            <button class="filter-tab" data-status="confirmed" onclick="filterByStatus('confirmed')">Confirmed</button>
+          </div>
+          <div class="view-toggle">
+            <button class="view-toggle-btn active" onclick="setView('cards')" title="Card View" id="view-cards">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </button>
+            <button class="view-toggle-btn" onclick="setView('table')" title="Table View" id="view-table">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Receipts Grid -->
-        <div id="receipts-container" class="user-item-grid">
+        <div id="receipts-grid" class="receipts-grid">
           <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>
         </div>
+
+        <!-- Receipts Table -->
+        <table class="receipts-table" id="receipts-table">
+          <thead>
+            <tr>
+              <th>Store</th>
+              <th>Date</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="receipts-table-body"></tbody>
+        </table>
       </div>
     </main>
+  </div>
+
+  <!-- Manual Entry Modal -->
+  <div class="user-modal-backdrop hidden" id="manual-modal">
+    <div class="user-modal user-modal-lg">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">Manual Receipt Entry</h3>
+        <button class="user-modal-close" onclick="userModal.close('manual-modal')">&times;</button>
+      </div>
+      <div class="user-modal-body">
+        <div class="user-form-group">
+          <label class="user-form-label">Store *</label>
+          <select class="user-form-select" id="manual-store" required style="width: 100%;">
+            <option value="">Select a store...</option>
+          </select>
+        </div>
+        <div class="user-form-group">
+          <label class="user-form-label">Receipt Date</label>
+          <input type="date" class="user-form-input" id="manual-date">
+        </div>
+        <div class="user-form-group">
+          <label class="user-form-label">Items</label>
+          <div class="item-row" style="margin-bottom: var(--space-2);">
+            <span style="font-size: var(--text-xs); color: var(--color-gray-500);">Name</span>
+            <span style="font-size: var(--text-xs); color: var(--color-gray-500);">Price</span>
+            <span style="font-size: var(--text-xs); color: var(--color-gray-500);">Qty</span>
+            <span></span>
+          </div>
+          <div class="item-rows" id="item-rows">
+            <div class="item-row">
+              <input type="text" placeholder="Item name" class="item-name user-form-input" required>
+              <input type="number" step="0.01" min="0" placeholder="0.00" class="item-price user-form-input" required>
+              <input type="number" min="1" value="1" class="item-qty user-form-input">
+              <button type="button" class="remove-item" onclick="removeItemRow(this)" title="Remove">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="add-item-btn" onclick="addItemRow()">+ Add Item</button>
+        </div>
+        <div class="user-form-group">
+          <label class="user-form-label">Calculated Total</label>
+          <div style="font-size: var(--text-xl); font-weight: 700; color: var(--color-success);" id="manual-total">$0.00</div>
+        </div>
+        <div class="user-form-error" id="manual-error"></div>
+      </div>
+      <div class="user-modal-footer">
+        <button class="btn btn-secondary" onclick="userModal.close('manual-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveManualReceipt()">Save Receipt</button>
+      </div>
+    </div>
   </div>
 
   <script src="/js/api.js"></script>
@@ -54,6 +408,9 @@
   <script src="/js/user-sidebar.js"></script>
   <script>
     let currentStatusFilter = '';
+    let currentView = localStorage.getItem('receiptsView') || 'cards';
+    let allReceipts = [];
+    let stores = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
       if (!await user.init()) return;
@@ -64,101 +421,138 @@
         { label: 'Receipts', href: '/user/receipts/' }
       ]);
 
-      await loadReceipts();
+      setView(currentView);
+      userModal.setupBackdropClose();
+      await Promise.all([loadReceipts(), loadStores()]);
+
+      // Update total on item changes
+      document.getElementById('item-rows').addEventListener('input', updateManualTotal);
     });
+
+    function setView(view) {
+      currentView = view;
+      localStorage.setItem('receiptsView', view);
+
+      document.getElementById('view-cards').classList.toggle('active', view === 'cards');
+      document.getElementById('view-table').classList.toggle('active', view === 'table');
+      document.getElementById('receipts-grid').classList.toggle('hidden', view !== 'cards');
+      document.getElementById('receipts-table').classList.toggle('active', view === 'table');
+    }
 
     function filterByStatus(status) {
       currentStatusFilter = status;
-      document.querySelectorAll('#status-tabs .user-tab').forEach(tab => {
+      document.querySelectorAll('#filter-tabs .filter-tab').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.status === status);
       });
-      loadReceipts();
+      renderReceipts();
     }
 
     async function loadReceipts() {
-      const container = document.getElementById('receipts-container');
-      container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
+      const grid = document.getElementById('receipts-grid');
+      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-gray-500);">Loading...</div>';
 
       try {
-        const params = { limit: 50 };
-        if (currentStatusFilter) params.status = currentStatusFilter;
-        const response = await receiptsApi.list(params);
-        const receipts = response?.data || response || [];
-
-        if (receipts.length === 0) {
-          container.innerHTML = `
-            <div style="grid-column: 1 / -1;" class="user-empty-state">
-              <div class="user-empty-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-              </div>
-              <div class="user-empty-title">No receipts yet</div>
-              <div class="user-empty-text">Upload your first receipt to automatically extract items and prices</div>
-              <a href="/user/receipts/upload.html" class="btn btn-primary">Upload Your First Receipt</a>
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = receipts.map(receipt => renderReceiptCard(receipt)).join('');
+        const response = await receiptsApi.list({ limit: 100 });
+        allReceipts = response?.data || response || [];
+        updateStats();
+        renderReceipts();
       } catch (err) {
         console.error('Failed to load receipts:', err);
-        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load receipts</div>';
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--color-error);">Failed to load receipts</div>';
       }
     }
 
-    function renderReceiptCard(receipt) {
-      const statusColors = {
-        pending: 'warning',
-        processing: 'warning',
-        completed: 'primary',
-        failed: 'error',
-        confirmed: 'success'
-      };
-      const statusLabels = {
-        pending: 'Pending',
-        processing: 'Processing',
-        completed: 'Ready for Review',
-        failed: 'Failed',
-        confirmed: 'Confirmed'
-      };
+    async function loadStores() {
+      try {
+        const response = await storesApi.list({ limit: 500 });
+        stores = response?.data || response || [];
+        populateStoreSelect();
+      } catch (err) {
+        console.error('Failed to load stores:', err);
+      }
+    }
 
-      const statusColor = statusColors[receipt.status] || 'gray';
-      const statusLabel = statusLabels[receipt.status] || receipt.status;
+    function populateStoreSelect() {
+      const select = document.getElementById('manual-store');
+      select.innerHTML = '<option value="">Select a store...</option>';
+      stores.forEach(store => {
+        const opt = document.createElement('option');
+        opt.value = store.id;
+        opt.textContent = store.name;
+        select.appendChild(opt);
+      });
+    }
+
+    function updateStats() {
+      const total = allReceipts.reduce((sum, r) => sum + (r.receipt_total || 0), 0);
+      const confirmed = allReceipts.filter(r => r.status === 'confirmed').length;
+      const pending = allReceipts.filter(r => ['pending', 'processing', 'completed'].includes(r.status)).length;
+
+      document.getElementById('stat-total').textContent = user.formatCurrency(total);
+      document.getElementById('stat-receipts').textContent = allReceipts.length;
+      document.getElementById('stat-confirmed').textContent = confirmed;
+      document.getElementById('stat-pending').textContent = pending;
+    }
+
+    function renderReceipts() {
+      let filtered = allReceipts;
+      if (currentStatusFilter) {
+        filtered = allReceipts.filter(r => r.status === currentStatusFilter);
+      }
+
+      // Render cards
+      const grid = document.getElementById('receipts-grid');
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1;" class="user-empty-state">
+            <div class="user-empty-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </div>
+            <div class="user-empty-title">No receipts yet</div>
+            <div class="user-empty-text">Track your purchases by uploading receipts or adding them manually</div>
+            <div style="display: flex; gap: var(--space-3); justify-content: center; margin-top: var(--space-4);">
+              <button class="btn btn-secondary" onclick="openManualEntry()">Manual Entry</button>
+              <a href="/user/receipts/upload.html" class="btn btn-primary">Scan Receipt</a>
+            </div>
+          </div>
+        `;
+      } else {
+        grid.innerHTML = filtered.map(renderReceiptCard).join('');
+      }
+
+      // Render table
+      const tbody = document.getElementById('receipts-table-body');
+      tbody.innerHTML = filtered.map(renderReceiptRow).join('');
+    }
+
+    function renderReceiptCard(receipt) {
+      const statusBadge = getStatusBadge(receipt.status);
+      const store = receipt.store_name || 'Unknown Store';
+      const date = receipt.receipt_date ? user.formatDateShort(receipt.receipt_date) : 'No date';
+      const total = receipt.receipt_total ? user.formatCurrency(receipt.receipt_total) : '-';
 
       return `
-        <div class="user-list-card">
-          <div class="user-list-card-header">
+        <div class="receipt-card">
+          <div class="receipt-card-header">
             <div>
-              <div class="user-list-card-title">${receipt.original_filename ? user.escapeHtml(receipt.original_filename) : 'Receipt #' + receipt.id}</div>
-              <div style="font-size: var(--text-xs); color: var(--color-gray-500);">
-                ${receipt.store_name ? user.escapeHtml(receipt.store_name) : 'No store assigned'}
-              </div>
+              <div class="receipt-store">${user.escapeHtml(store)}</div>
+              <div class="receipt-date">${date}</div>
             </div>
-            <span class="badge badge-${statusColor}">${statusLabel}</span>
+            ${statusBadge}
           </div>
-          <div class="user-list-card-stats">
-            <div class="user-list-stat">
-              <div class="user-list-stat-value">${receipt.receipt_total ? user.formatCurrency(receipt.receipt_total) : '-'}</div>
-              <div class="user-list-stat-label">Total</div>
-            </div>
-            <div class="user-list-stat">
-              <div class="user-list-stat-value">${receipt.receipt_date ? user.formatDateShort(receipt.receipt_date) : '-'}</div>
-              <div class="user-list-stat-label">Date</div>
-            </div>
+          <div class="receipt-card-body">
+            <div class="receipt-total">${total}</div>
+            <div class="receipt-meta">Uploaded ${user.formatDateShort(receipt.uploaded_at)}</div>
           </div>
-          <div style="font-size: var(--text-xs); color: var(--color-gray-500); margin-bottom: var(--space-3);">
-            Uploaded ${user.formatDateShort(receipt.uploaded_at)}
-          </div>
-          <div class="user-list-card-actions">
+          <div class="receipt-card-footer">
             ${receipt.status === 'completed'
-              ? `<a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-primary btn-sm">Review & Confirm</a>`
-              : receipt.status === 'confirmed'
-                ? `<a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-secondary btn-sm">View Details</a>`
-                : `<a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-secondary btn-sm">View</a>`
+              ? `<a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-primary btn-sm">Review</a>`
+              : `<a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-secondary btn-sm">View</a>`
             }
             <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteReceipt(${receipt.id})">Delete</button>
           </div>
@@ -166,17 +560,157 @@
       `;
     }
 
-    async function deleteReceipt(receiptId) {
-      if (!await user.confirm('Are you sure you want to delete this receipt?')) {
-        return;
-      }
+    function renderReceiptRow(receipt) {
+      const statusBadge = getStatusBadge(receipt.status);
+      const store = receipt.store_name || 'Unknown Store';
+      const date = receipt.receipt_date ? user.formatDateShort(receipt.receipt_date) : '-';
+      const total = receipt.receipt_total ? user.formatCurrency(receipt.receipt_total) : '-';
 
+      return `
+        <tr>
+          <td>${user.escapeHtml(store)}</td>
+          <td>${date}</td>
+          <td class="total-cell">${total}</td>
+          <td>${statusBadge}</td>
+          <td>
+            <div style="display: flex; gap: var(--space-2);">
+              <a href="/user/receipts/review.html?id=${receipt.id}" class="btn btn-secondary btn-sm">View</a>
+              <button class="btn btn-secondary btn-sm" style="color: var(--color-error);" onclick="deleteReceipt(${receipt.id})">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function getStatusBadge(status) {
+      const map = {
+        pending: { color: 'warning', label: 'Pending' },
+        processing: { color: 'warning', label: 'Processing' },
+        completed: { color: 'primary', label: 'Ready' },
+        failed: { color: 'error', label: 'Failed' },
+        confirmed: { color: 'success', label: 'Confirmed' }
+      };
+      const s = map[status] || { color: 'gray', label: status };
+      return `<span class="badge badge-${s.color}">${s.label}</span>`;
+    }
+
+    async function deleteReceipt(receiptId) {
+      if (!await user.confirm('Are you sure you want to delete this receipt?')) return;
       try {
         await receiptsApi.delete(receiptId);
         user.toast('Receipt deleted', 'success');
         await loadReceipts();
       } catch (err) {
         user.toast('Failed to delete receipt: ' + (err.message || 'Unknown error'), 'error');
+      }
+    }
+
+    // Manual Entry Functions
+    function openManualEntry() {
+      userModal.open('manual-modal');
+      document.getElementById('manual-date').value = new Date().toISOString().split('T')[0];
+    }
+
+    function closeManualEntry() {
+      userModal.close('manual-modal');
+      resetManualForm();
+    }
+
+    function resetManualForm() {
+      document.getElementById('manual-store').value = '';
+      document.getElementById('manual-date').value = '';
+      document.getElementById('item-rows').innerHTML = `
+        <div class="item-row">
+          <input type="text" placeholder="Item name" class="item-name user-form-input" required>
+          <input type="number" step="0.01" min="0" placeholder="0.00" class="item-price user-form-input" required>
+          <input type="number" min="1" value="1" class="item-qty user-form-input">
+          <button type="button" class="remove-item" onclick="removeItemRow(this)" title="Remove">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      `;
+      document.getElementById('manual-total').textContent = '$0.00';
+    }
+
+    function addItemRow() {
+      const container = document.getElementById('item-rows');
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Item name" class="item-name user-form-input" required>
+        <input type="number" step="0.01" min="0" placeholder="0.00" class="item-price user-form-input" required>
+        <input type="number" min="1" value="1" class="item-qty user-form-input">
+        <button type="button" class="remove-item" onclick="removeItemRow(this)" title="Remove">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      `;
+      container.appendChild(row);
+    }
+
+    function removeItemRow(btn) {
+      const container = document.getElementById('item-rows');
+      if (container.children.length > 1) {
+        btn.closest('.item-row').remove();
+        updateManualTotal();
+      }
+    }
+
+    function updateManualTotal() {
+      const rows = document.querySelectorAll('#item-rows .item-row');
+      let total = 0;
+      rows.forEach(row => {
+        const price = parseFloat(row.querySelector('.item-price').value) || 0;
+        const qty = parseInt(row.querySelector('.item-qty').value) || 1;
+        total += price * qty;
+      });
+      document.getElementById('manual-total').textContent = user.formatCurrency(total);
+    }
+
+    async function saveManualReceipt() {
+      const storeId = parseInt(document.getElementById('manual-store').value);
+      const date = document.getElementById('manual-date').value;
+
+      if (!storeId) {
+        user.toast('Please select a store', 'error');
+        return;
+      }
+
+      const items = [];
+      const rows = document.querySelectorAll('#item-rows .item-row');
+      for (const row of rows) {
+        const name = row.querySelector('.item-name').value.trim();
+        const price = parseFloat(row.querySelector('.item-price').value);
+        const qty = parseInt(row.querySelector('.item-qty').value) || 1;
+
+        if (name && price > 0) {
+          items.push({ name, price, quantity: qty });
+        }
+      }
+
+      if (items.length === 0) {
+        user.toast('Please add at least one item', 'error');
+        return;
+      }
+
+      try {
+        const data = {
+          store_id: storeId,
+          items: items
+        };
+        if (date) data.receipt_date = date;
+
+        await receiptsApi.createManual(data);
+        user.toast('Receipt saved successfully', 'success');
+        closeManualEntry();
+        await loadReceipts();
+      } catch (err) {
+        user.toast('Failed to save receipt: ' + (err.message || 'Unknown error'), 'error');
       }
     }
   </script>

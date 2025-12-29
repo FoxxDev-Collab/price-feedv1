@@ -40,6 +40,14 @@ type NearbyStoresRequest struct {
 	Radius    int     `json:"radius"` // in meters, optional
 }
 
+// TextSearchRequest is the request body for text-based store search
+type TextSearchRequest struct {
+	Query     string  `json:"query"`
+	Latitude  float64 `json:"latitude"`  // optional, for location bias
+	Longitude float64 `json:"longitude"` // optional, for location bias
+	Radius    int     `json:"radius"`    // in meters, optional
+}
+
 // MapsConfigResponse is the response for the config endpoint
 type MapsConfigResponse struct {
 	FrontendKey string `json:"frontend_key"`
@@ -115,8 +123,48 @@ func (h *MapsHandler) NearbyStores(c *fiber.Ctx) error {
 		radius = 50000
 	}
 
-	// Search for supermarkets/grocery stores
-	results, err := h.mapsService.NearbySearch(c.Context(), req.Latitude, req.Longitude, radius, "supermarket")
+	// Search for supermarkets/grocery stores (empty type triggers multi-type search)
+	results, err := h.mapsService.NearbySearch(c.Context(), req.Latitude, req.Longitude, radius, "")
+	if err != nil {
+		return handleMapsError(c, err)
+	}
+
+	return Success(c, results)
+}
+
+// TextSearch searches for stores by name/query with optional location bias
+// POST /api/maps/text-search
+func (h *MapsHandler) TextSearch(c *fiber.Ctx) error {
+	var req TextSearchRequest
+	if err := c.BodyParser(&req); err != nil {
+		return Error(c, fiber.StatusBadRequest, "invalid request body")
+	}
+
+	if req.Query == "" {
+		return Error(c, fiber.StatusBadRequest, "query is required")
+	}
+
+	// Validate coordinates if provided
+	if req.Latitude != 0 || req.Longitude != 0 {
+		if req.Latitude < -90 || req.Latitude > 90 {
+			return Error(c, fiber.StatusBadRequest, "latitude must be between -90 and 90")
+		}
+		if req.Longitude < -180 || req.Longitude > 180 {
+			return Error(c, fiber.StatusBadRequest, "longitude must be between -180 and 180")
+		}
+	}
+
+	// Default radius to 50km for text search (broader search)
+	radius := req.Radius
+	if radius <= 0 {
+		radius = 50000
+	}
+	// Cap radius at 50km
+	if radius > 50000 {
+		radius = 50000
+	}
+
+	results, err := h.mapsService.TextSearch(c.Context(), req.Query, req.Latitude, req.Longitude, radius)
 	if err != nil {
 		return handleMapsError(c, err)
 	}
