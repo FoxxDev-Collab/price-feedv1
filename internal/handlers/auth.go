@@ -1,20 +1,32 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"log"
 	"regexp"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/pbkdf2"
 
 	"github.com/foxxcyber/price-feed/internal/database"
 	"github.com/foxxcyber/price-feed/internal/middleware"
 	"github.com/foxxcyber/price-feed/internal/models"
 )
+
+// encryptionSalt for PBKDF2 - must match settings_repo.go
+var encryptionSalt = []byte("pricefeed-settings-v1")
+
+// DeriveEncryptionKey derives a secure 32-byte key using PBKDF2
+func DeriveEncryptionKey(secret string) []byte {
+	return pbkdf2.Key([]byte(secret), encryptionSalt, 100000, 32, sha256.New)
+}
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
@@ -27,11 +39,10 @@ func generateSecureToken() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-// getEncryptionKey returns the encryption key for settings
+// getEncryptionKey returns the encryption key for settings using PBKDF2
 func (h *Handler) getEncryptionKey() []byte {
-	key := make([]byte, 32)
-	copy(key, []byte(h.cfg.JWTSecret))
-	return key
+	// Use the same key derivation as settings_repo
+	return DeriveEncryptionKey(h.cfg.JWTSecret)
 }
 
 // isEmailVerificationRequired checks if email verification is enabled
@@ -111,8 +122,26 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 				baseURL := scheme + "://" + c.Hostname()
 				verifyURL := baseURL + "/verify-email"
 
-				// Send verification email (don't block on failure)
-				go h.emailService.SendEmailVerificationEmail(user.Email, verifyToken, verifyURL)
+				// Send verification email in background with timeout
+				go func(email, token, url string) {
+					ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+					defer cancel()
+
+					// Use a channel to wait for completion or timeout
+					done := make(chan error, 1)
+					go func() {
+						done <- h.emailService.SendEmailVerificationEmail(email, token, url)
+					}()
+
+					select {
+					case err := <-done:
+						if err != nil {
+							log.Printf("Warning: Failed to send verification email to %s: %v", email, err)
+						}
+					case <-ctx.Done():
+						log.Printf("Warning: Verification email to %s timed out", email)
+					}
+				}(user.Email, verifyToken, verifyURL)
 			}
 		}
 	}

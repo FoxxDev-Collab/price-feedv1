@@ -4,9 +4,11 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
@@ -72,9 +74,8 @@ func main() {
 	// Initialize Storage service for receipts (load from database settings)
 	var receiptHandler *handlers.ReceiptHandler
 	initReceiptService := func() {
-		// Create encryption key from JWT secret
-		encryptionKey := make([]byte, 32)
-		copy(encryptionKey, []byte(cfg.JWTSecret))
+		// Create encryption key from JWT secret using PBKDF2
+		encryptionKey := services.DeriveEncryptionKey(cfg.JWTSecret)
 
 		// Load S3 settings from database
 		ctx := context.Background()
@@ -147,12 +148,19 @@ func main() {
 		)
 		log.Println("Receipt scanning service initialized")
 
-		// Run cleanup of expired receipts on startup
+		// Run cleanup of expired receipts on startup with timeout
 		go func() {
-			cleanupCtx := context.Background()
+			// Set a 5-minute timeout for the entire cleanup operation
+			cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+
 			keys, err := db.CleanupExpiredReceipts(cleanupCtx)
 			if err != nil {
-				log.Printf("Warning: Failed to cleanup expired receipts: %v", err)
+				if cleanupCtx.Err() == context.DeadlineExceeded {
+					log.Printf("Warning: Receipt cleanup timed out after 5 minutes")
+				} else {
+					log.Printf("Warning: Failed to cleanup expired receipts: %v", err)
+				}
 				return
 			}
 			if len(keys) > 0 {
@@ -179,11 +187,26 @@ func main() {
 	// Create email verification middleware for write operations
 	emailVerified := middleware.EmailVerifiedRequiredFunc(h.CreateEmailVerificationChecker())
 
-	// Auth routes (public)
+	// Rate limiter for auth endpoints - stricter limits to prevent brute force
+	authLimiter := limiter.New(limiter.Config{
+		Max:        5,               // 5 requests
+		Expiration: 1 * time.Minute, // per minute
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP() // Rate limit by IP
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"success": false,
+				"error":   "Too many attempts. Please try again later.",
+			})
+		},
+	})
+
+	// Auth routes (public) - with rate limiting on login/register
 	auth := api.Group("/auth")
 	auth.Get("/captcha-config", h.GetCaptchaConfig)
-	auth.Post("/register", h.Register)
-	auth.Post("/login", h.Login)
+	auth.Post("/register", authLimiter, h.Register)
+	auth.Post("/login", authLimiter, h.Login)
 	auth.Post("/logout", h.Logout)
 	auth.Get("/me", middleware.AuthRequired(cfg), h.GetCurrentUser)
 	auth.Post("/refresh", middleware.AuthRequired(cfg), h.RefreshToken)

@@ -38,13 +38,10 @@ type CaptchaConfig struct {
 
 // NewCaptchaService creates a new captcha service instance
 func NewCaptchaService(db *database.DB, cfg *config.Config) *CaptchaService {
-	key := make([]byte, 32)
-	copy(key, []byte(cfg.JWTSecret))
-
 	return &CaptchaService{
 		db:            db,
 		cfg:           cfg,
-		encryptionKey: key,
+		encryptionKey: DeriveEncryptionKey(cfg.JWTSecret),
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},

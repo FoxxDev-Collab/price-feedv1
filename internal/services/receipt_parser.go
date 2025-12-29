@@ -21,6 +21,9 @@ type ReceiptParser struct {
 func NewReceiptParser() *ReceiptParser {
 	return &ReceiptParser{
 		pricePatterns: []*regexp.Regexp{
+			// Pattern: Commissary format - ITEM NAME UPC $X.XX F (UPC is 11-14 digits)
+			// Examples: CANDY PNUT BTR 00034000004409 $1.18 F, MILK WHOLE GALL 00015700146019 $3.02 F
+			regexp.MustCompile(`^(.+?)\s+\d{11,14}\s+\$?(\d{1,3}\.\d{2})\s*[FNT]?\s*$`),
 			// Pattern: ITEM NAME    $X.XX or ITEM NAME    X.XX (price at end)
 			regexp.MustCompile(`^(.+?)\s+\$?(\d{1,3}\.\d{2})\s*$`),
 			// Pattern: ITEM NAME @ X.XX EA
@@ -31,10 +34,14 @@ func NewReceiptParser() *ReceiptParser {
 			regexp.MustCompile(`^(.+?)\s+\$?(\d{1,3}\.\d{2})\s*[FNT]?\s*$`),
 		},
 		excludePatterns: []*regexp.Regexp{
-			regexp.MustCompile(`(?i)^\s*(TAX|SUBTOTAL|SUB\s*TOTAL|TOTAL|GRAND\s*TOTAL|BALANCE|CHANGE|CASH|CREDIT|DEBIT|CARD|VISA|MASTERCARD|AMEX|DISCOVER|SAVINGS|DISCOUNT|COUPON|MEMBER|LOYALTY|POINTS|REWARD|THANK\s*YOU|HAVE\s*A|STORE\s*#|CASHIER|TRANS|REG|DATE|TIME|TEL|PHONE|ADDRESS|RECEIPT|RETURN|REFUND|VOID)\b`),
+			regexp.MustCompile(`(?i)^\s*(TAX|SUBTOTAL|SUB\s*TOTAL|TOTAL|GRAND\s*TOTAL|BALANCE|CHANGE|CASH|CREDIT|DEBIT|CARD|VISA|MASTERCARD|AMEX|DISCOVER|SAVINGS|DISCOUNT|COUPON|MEMBER|LOYALTY|POINTS|REWARD|THANK\s*YOU|HAVE\s*A|STORE\s*#|CASHIER|TRANS|REG|DATE|TIME|TEL|PHONE|ADDRESS|RECEIPT|RETURN|REFUND|VOID|SURCHARGE|SOLD\s*ITEMS?|PAID|PURCHASE|CREDIT\s*CARD)\b`),
 			regexp.MustCompile(`^\s*[-=*]+\s*$`),
 			regexp.MustCompile(`^\s*\d{2}[/-]\d{2}[/-]\d{2,4}\s*$`),
 			regexp.MustCompile(`^\s*\d{1,2}:\d{2}\s*(AM|PM)?\s*$`),
+			// Commissary category headers
+			regexp.MustCompile(`(?i)^\s*(BREAD\s*(AND|&)\s*SNACKS|DAIRY|PACKAGE\s*FOOD|PRE\s*PACKAGED\s*MEAT|PRODUCE|SPECIALTY\s*FOODS?|FROZEN\s*FOODS?|BEVERAGES?|DELI|BAKERY|MEAT|SEAFOOD|GROCERY|HEALTH\s*(AND|&)\s*BEAUTY|HOUSEHOLD|PET\s*SUPPLIES?)\s*$`),
+			// Quantity/weight detail lines: "2 @ $2.79 EACH" or "2.96 lb @ $0.99 / lb"
+			regexp.MustCompile(`^\s*\d+\.?\d*\s*(lb|oz|kg|g)?\s*@\s*\$?\d+\.\d{2}\s*(\/\s*(lb|oz|kg|g)|EACH|EA)?\s*$`),
 		},
 		datePatterns: []*regexp.Regexp{
 			regexp.MustCompile(`(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})`),

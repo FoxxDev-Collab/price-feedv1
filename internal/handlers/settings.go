@@ -23,14 +23,11 @@ type SettingsHandler struct {
 
 // NewSettingsHandler creates a new SettingsHandler instance
 func NewSettingsHandler(db *database.DB, cfg *config.Config, emailService *services.EmailService) *SettingsHandler {
-	key := make([]byte, 32)
-	copy(key, []byte(cfg.JWTSecret))
-
 	return &SettingsHandler{
 		db:            db,
 		cfg:           cfg,
 		emailService:  emailService,
-		encryptionKey: key,
+		encryptionKey: DeriveEncryptionKey(cfg.JWTSecret),
 	}
 }
 

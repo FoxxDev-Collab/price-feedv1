@@ -105,9 +105,7 @@ func (h *Handler) CreateEmailVerificationChecker() func(c *fiber.Ctx) (required 
 		}
 
 		// Check if verification is required from settings
-		key := make([]byte, 32)
-		copy(key, []byte(h.cfg.JWTSecret))
-		required := h.db.GetSettingBool(c.Context(), "require_email_verify", false, key)
+		required := h.db.GetSettingBool(c.Context(), "require_email_verify", false, DeriveEncryptionKey(h.cfg.JWTSecret))
 
 		// If not required, don't need to check further
 		if !required {

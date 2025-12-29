@@ -85,10 +85,17 @@ const user = {
 
     const toast = document.createElement('div');
     toast.className = `user-toast user-toast-${type}`;
-    toast.innerHTML = `
-      <span>${message}</span>
-      <button onclick="this.parentElement.remove()">&times;</button>
-    `;
+
+    // Create elements safely to prevent XSS
+    const span = document.createElement('span');
+    span.textContent = message; // Use textContent to prevent XSS
+
+    const button = document.createElement('button');
+    button.textContent = '\u00D7'; // × character
+    button.onclick = function() { this.parentElement.remove(); };
+
+    toast.appendChild(span);
+    toast.appendChild(button);
 
     container.appendChild(toast);
 

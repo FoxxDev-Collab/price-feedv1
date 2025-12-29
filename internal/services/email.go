@@ -20,14 +20,10 @@ type EmailService struct {
 
 // NewEmailService creates a new email service instance
 func NewEmailService(db *database.DB, cfg *config.Config) *EmailService {
-	// Use JWT secret as encryption key for settings
-	key := make([]byte, 32)
-	copy(key, []byte(cfg.JWTSecret))
-
 	return &EmailService{
 		db:            db,
 		cfg:           cfg,
-		encryptionKey: key,
+		encryptionKey: DeriveEncryptionKey(cfg.JWTSecret),
 	}
 }
 

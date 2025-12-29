@@ -1,8 +1,12 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -47,17 +51,76 @@ type Config struct {
 	S3Region    string
 }
 
+// generateSecureSecret generates a cryptographically secure random secret
+func generateSecureSecret(length int) string {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		log.Printf("Warning: Failed to generate secure secret, using fallback")
+		return "insecure-fallback-change-me-" + time.Now().Format("20060102150405")
+	}
+	return hex.EncodeToString(bytes)
+}
+
+// isWeakSecret checks if a JWT secret is too weak for use
+func isWeakSecret(secret string) bool {
+	weakSecrets := []string{
+		"change-me-in-production-please",
+		"change-me",
+		"secret",
+		"password",
+		"jwt-secret",
+		"your-secret-key",
+	}
+	lowerSecret := strings.ToLower(secret)
+	for _, weak := range weakSecrets {
+		if lowerSecret == weak || strings.Contains(lowerSecret, weak) {
+			return true
+		}
+	}
+	// Also check if it's too short (less than 32 chars)
+	return len(secret) < 32
+}
+
 func Load() *Config {
+	env := getEnv("ENVIRONMENT", "development")
+	jwtSecret := getEnv("JWT_SECRET", "")
+
+	// Handle JWT secret based on environment
+	if jwtSecret == "" || isWeakSecret(jwtSecret) {
+		if env == "production" {
+			log.Fatal("FATAL: JWT_SECRET must be set to a strong value (32+ characters) in production")
+		}
+		// In development, generate a random secret if not set
+		if jwtSecret == "" {
+			jwtSecret = generateSecureSecret(32)
+			log.Printf("Warning: JWT_SECRET not set, generated random secret for development")
+		} else {
+			log.Printf("Warning: JWT_SECRET appears weak. Use a 32+ character random string in production")
+		}
+	}
+
+	// Warn about CORS wildcard in non-development
+	allowedOrigins := getEnv("ALLOWED_ORIGINS", "*")
+	if allowedOrigins == "*" && env != "development" {
+		log.Printf("Warning: ALLOWED_ORIGINS is set to '*' which allows all origins. Restrict this in production")
+	}
+
+	// Warn about SSL mode in database connection
+	dbURL := getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/pricefeed?sslmode=disable")
+	if strings.Contains(dbURL, "sslmode=disable") && env == "production" {
+		log.Printf("Warning: Database SSL is disabled. Enable SSL for production: sslmode=require")
+	}
+
 	return &Config{
 		Port:             getEnv("PORT", "8080"),
-		AllowedOrigins:   getEnv("ALLOWED_ORIGINS", "*"),
-		DatabaseURL:      getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/pricefeed?sslmode=disable"),
-		JWTSecret:        getEnv("JWT_SECRET", "change-me-in-production-please"),
+		AllowedOrigins:   allowedOrigins,
+		DatabaseURL:      dbURL,
+		JWTSecret:        jwtSecret,
 		JWTExpiry:        getDurationEnv("JWT_EXPIRY_HOURS", 24) * time.Hour,
 		RefreshJWTExpiry: getDurationEnv("REFRESH_JWT_EXPIRY_DAYS", 7) * 24 * time.Hour,
 		AdminEmail:       getEnv("ADMIN_EMAIL", "admin@pricefeed.local"),
 		AdminPassword:    getEnv("ADMIN_PASSWORD", ""),
-		Environment:      getEnv("ENVIRONMENT", "development"),
+		Environment:      env,
 		GoogleMapsAPIKey: getEnv("GOOGLE_API_KEY_MAPS", ""),
 		SMTPHost:         getEnv("SMTP_HOST", ""),
 		SMTPPort:         getIntEnv("SMTP_PORT", 587),

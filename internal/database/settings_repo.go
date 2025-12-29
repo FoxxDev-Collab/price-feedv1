@@ -5,6 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,8 @@ import (
 	"io"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/pbkdf2"
 )
 
 // SystemSetting represents a configuration setting stored in the database
@@ -31,13 +34,16 @@ type SettingsMap map[string]interface{}
 
 var ErrSettingNotFound = errors.New("setting not found")
 
-// encryptionKey should be derived from JWT secret or a dedicated settings key
-// For now we'll use a simple approach - in production, use proper key derivation
+// Salt for PBKDF2 key derivation - this is fixed but combined with the secret
+// In a production system, you might want to store this separately
+var encryptionSalt = []byte("pricefeed-settings-v1")
+
+// getEncryptionKey derives a secure 32-byte key using PBKDF2
+// This is much more secure than simple copy/padding
 func getEncryptionKey(secret string) []byte {
-	// Pad or truncate to 32 bytes for AES-256
-	key := make([]byte, 32)
-	copy(key, []byte(secret))
-	return key
+	// Use PBKDF2 with SHA-256 to derive a 32-byte key
+	// 100,000 iterations is recommended for PBKDF2-SHA256 as of 2024
+	return pbkdf2.Key([]byte(secret), encryptionSalt, 100000, 32, sha256.New)
 }
 
 // encrypt encrypts a string value

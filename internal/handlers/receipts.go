@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -111,18 +112,24 @@ func (h *ReceiptHandler) UploadReceipt(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		// Clean up S3 on failure
-		_ = h.storage.Delete(c.Context(), s3Key)
+		if deleteErr := h.storage.Delete(c.Context(), s3Key); deleteErr != nil {
+			log.Printf("Warning: Failed to clean up S3 object %s after receipt creation failure: %v", s3Key, deleteErr)
+		}
 		return Error(c, fiber.StatusInternalServerError, "failed to create receipt record")
 	}
 
 	// Update status to processing
-	_ = h.db.UpdateReceiptStatus(c.Context(), receipt.ID, models.ReceiptStatusProcessing, nil, nil)
+	if err := h.db.UpdateReceiptStatus(c.Context(), receipt.ID, models.ReceiptStatusProcessing, nil, nil); err != nil {
+		log.Printf("Warning: Failed to update receipt %d status to processing: %v", receipt.ID, err)
+	}
 
 	// Process with OCR
 	ocrResult, err := h.ocr.ProcessImage(imageBytes)
 	if err != nil {
 		errMsg := err.Error()
-		_ = h.db.UpdateReceiptStatus(c.Context(), receipt.ID, models.ReceiptStatusFailed, nil, &errMsg)
+		if statusErr := h.db.UpdateReceiptStatus(c.Context(), receipt.ID, models.ReceiptStatusFailed, nil, &errMsg); statusErr != nil {
+			log.Printf("Warning: Failed to update receipt %d status to failed: %v", receipt.ID, statusErr)
+		}
 		return Error(c, fiber.StatusInternalServerError, "OCR processing failed")
 	}
 
@@ -130,13 +137,19 @@ func (h *ReceiptHandler) UploadReceipt(c *fiber.Ctx) error {
 	parsed, err := h.parser.Parse(ocrResult.Text)
 	if err != nil {
 		errMsg := err.Error()
-		_ = h.db.UpdateReceiptStatus(c.Context(), receipt.ID, models.ReceiptStatusFailed, &ocrResult.Text, &errMsg)
+		if statusErr := h.db.UpdateReceiptStatus(c.Context(), receipt.ID, models.ReceiptStatusFailed, &ocrResult.Text, &errMsg); statusErr != nil {
+			log.Printf("Warning: Failed to update receipt %d status to failed: %v", receipt.ID, statusErr)
+		}
 		return Error(c, fiber.StatusInternalServerError, "failed to parse receipt")
 	}
 
 	// Update receipt with OCR text and metadata
-	_ = h.db.UpdateReceiptStatus(c.Context(), receipt.ID, models.ReceiptStatusCompleted, &ocrResult.Text, nil)
-	_ = h.db.UpdateReceiptMetadata(c.Context(), receipt.ID, parsed.Date, parsed.Total)
+	if err := h.db.UpdateReceiptStatus(c.Context(), receipt.ID, models.ReceiptStatusCompleted, &ocrResult.Text, nil); err != nil {
+		log.Printf("Warning: Failed to update receipt %d status to completed: %v", receipt.ID, err)
+	}
+	if err := h.db.UpdateReceiptMetadata(c.Context(), receipt.ID, parsed.Date, parsed.Total); err != nil {
+		log.Printf("Warning: Failed to update receipt %d metadata: %v", receipt.ID, err)
+	}
 
 	// Match items and save to database
 	matched, err := h.matcher.MatchReceiptItems(c.Context(), parsed.Items)
@@ -408,8 +421,10 @@ func (h *ReceiptHandler) DeleteReceipt(c *fiber.Ctx) error {
 		return Error(c, fiber.StatusForbidden, "access denied")
 	}
 
-	// Delete from S3
-	_ = h.storage.Delete(c.Context(), receipt.S3Key)
+	// Delete from S3 (log error but continue with database deletion)
+	if err := h.storage.Delete(c.Context(), receipt.S3Key); err != nil {
+		log.Printf("Warning: Failed to delete S3 object %s for receipt %d: %v", receipt.S3Key, id, err)
+	}
 
 	// Delete from database
 	err = h.db.DeleteReceipt(c.Context(), id)
